@@ -60,7 +60,8 @@ chrisDone =
         ,styleDefConfig =
            defaultConfig {configMaxColumns = 80
                          ,configIndentSpaces = 2}
-        ,styleCommentPreprocessor = return}
+        ,styleCommentPreprocessor = return
+        ,styleLinePenalty = defaultLinePenalty}
 
 --------------------------------------------------------------------------------
 -- Extenders
