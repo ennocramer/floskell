@@ -48,6 +48,7 @@ library
                    , containers
                    , haskell-src-exts >= 1.18
                    , monad-loops
+                   , monad-dijkstra
                    , mtl
                    , text
                    , transformers
