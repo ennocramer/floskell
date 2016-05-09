@@ -317,7 +317,7 @@ context ctx@(CxTuple _ asserts) =
         else prettyNoExt ctx
 context ctx = prettyNoExt ctx
 
-unboxParens :: MonadState (PrintState s) m => m a -> m a
+unboxParens :: Printer s a -> Printer s a
 unboxParens p =
   depend (write "(# ")
          (do v <- p
@@ -469,14 +469,14 @@ isRecord (QualConDecl _ _ _ RecDecl{}) = True
 isRecord _ = False
 
 -- | Does printing the given thing overflow column limit? (e.g. 80)
-isOverflow :: MonadState (PrintState s) m => m a -> m Bool
+isOverflow :: Printer s a -> Printer s Bool
 isOverflow p =
   do (_,st) <- sandbox p
      columnLimit <- getColumnLimit
      return (psColumn st > columnLimit)
 
 -- | Does printing the given thing overflow column limit? (e.g. 80)
-fitsOnOneLine :: MonadState (PrintState s) m => m a -> m (Bool,PrintState s)
+fitsOnOneLine :: Printer s a -> Printer s (Bool,PrintState s)
 fitsOnOneLine p =
   do line <- gets psLine
      (_,st) <- sandbox p
@@ -484,8 +484,7 @@ fitsOnOneLine p =
      return (psLine st == line && psColumn st < columnLimit,st)
 
 -- | Is the given expression a single-liner when printed?
-isSingleLiner :: MonadState (PrintState s) m
-              => m a -> m Bool
+isSingleLiner :: Printer s a -> Printer s Bool
 isSingleLiner p =
   do line <- gets psLine
      (_,st) <- sandbox p
@@ -528,7 +527,7 @@ fieldupdate e =
                              pretty e'
     _ -> prettyNoExt e
 
-isSmall :: MonadState (PrintState t) m => m a -> m Bool
+isSmall :: Printer s a -> Printer s Bool
 isSmall p =
   do overflows <- isOverflow p
      oneLine <- isSingleLiner p

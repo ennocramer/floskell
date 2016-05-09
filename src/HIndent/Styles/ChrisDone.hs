@@ -463,8 +463,7 @@ isShort p =
 
 -- | Is the given expression "small"? I.e. does it fit on one line and
 -- under 'smallColumnLimit' columns.
-isSmall :: MonadState (PrintState t) m
-        => m a -> m (Bool,PrintState t)
+isSmall :: Printer s a -> Printer s (Bool,PrintState s)
 isSmall p =
   do line <- gets psLine
      (_,st) <- sandbox p
@@ -472,8 +471,7 @@ isSmall p =
 
 -- | Is the given expression "small"? I.e. does it fit under
 -- 'smallColumnLimit' columns.
-isSmallFitting :: MonadState (PrintState t) m
-               => m a -> m (Bool,PrintState t)
+isSmallFitting :: Printer s a -> Printer s (Bool,PrintState s)
 isSmallFitting p =
   do (_,st) <- sandbox p
      return (psColumn st < smallColumnLimit,st)
@@ -506,7 +504,7 @@ isFlatExp (RightSection _ _ e) = isFlatExp e
 isFlatExp _ = False
 
 -- | Does printing the given thing overflow column limit? (e.g. 80)
-fitsOnOneLine :: MonadState (PrintState s) m => m a -> m (Bool,PrintState s)
+fitsOnOneLine :: Printer s a -> Printer s (Bool,PrintState s)
 fitsOnOneLine p =
   do line <- gets psLine
      (_,st) <- sandbox p
