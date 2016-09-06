@@ -394,9 +394,9 @@ decl (DataDecl _ dataornew ctx dhead condecls@[_] mderivs)
   | any isRecord condecls =
     do depend (do pretty dataornew
                   unless (null condecls) space)
-              (withCtx ctx
-                       (do pretty dhead
-                           multiCons condecls))
+              (depend (maybeCtx ctx)
+                      (do pretty dhead
+                          multiCons condecls))
        case mderivs of
          Nothing -> return ()
          Just derivs -> pretty derivs
@@ -409,13 +409,17 @@ decl e = prettyNoExt e
 -- | Use special record display, used by 'dataDecl' in a record scenario.
 qualConDecl :: QualConDecl NodeInfo -> Printer s ()
 qualConDecl x =
-  case x of
-    QualConDecl _ tyvars ctx d ->
-      depend (unless (null (fromMaybe [] tyvars))
+    case x of
+        QualConDecl _ tyvars ctx d ->
+            depend
+                (unless
+                     (null (fromMaybe [] tyvars))
                      (do write "forall "
                          spaced (map pretty (fromMaybe [] tyvars))
                          write ". "))
-             (withCtx ctx (recDecl d))
+                (depend
+                     (maybeCtx ctx)
+                     (recDecl d))
 
 -- | Fields are preceded with a space.
 conDecl :: ConDecl NodeInfo -> Printer s ()

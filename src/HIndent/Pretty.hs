@@ -26,6 +26,7 @@ module HIndent.Pretty
   , int
   , string
   -- * Common node types
+  , maybeCtx
   , withCtx
   , printComment
   , printComments
@@ -405,6 +406,14 @@ sandbox p =
 nullBinds :: Binds NodeInfo -> Bool
 nullBinds (BDecls _ x) = null x
 nullBinds (IPBinds _ x) = null x
+
+-- | Maybe render a class context.
+maybeCtx :: MonadState (PrintState s) m => Maybe (Context NodeInfo) -> m ()
+maybeCtx =
+  maybe (return ())
+        (\p ->
+           pretty p >>
+           write " => ")
 
 -- | Render a type with a context, or not.
 withCtx :: (MonadState (PrintState s) m

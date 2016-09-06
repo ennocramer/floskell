@@ -1,8 +1,7 @@
 type X = Y
 >
 -- Comment
-instance A a =>
-         B a where
+instance A a => B a where
   x = y
 
 {-# INLINE x #-}

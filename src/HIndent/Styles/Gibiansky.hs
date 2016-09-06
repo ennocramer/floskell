@@ -54,6 +54,7 @@ gibiansky = Style { styleName = "gibiansky"
                                      , Extender pragmas
                                      , Extender pat
                                      , Extender qualConDecl
+                                     , Extender instRule
                                      ]
                   , styleDefConfig = defaultConfig { configMaxColumns = 100
                                                    , configIndentSpaces = indentSpaces
@@ -947,7 +948,7 @@ decls (ClassDecl _ ctx dhead fundeps mayDecls) = do
 
   -- Header
   depend (write "class ") $
-    withCtx ctx $
+    depend (maybeCtx ctx) $
       depend (pretty dhead >> space) $
         depend (unless (null fundeps) (write " | " >> commas (map pretty fundeps))) $
           unless noDecls (write "where")
@@ -972,6 +973,14 @@ qualConDecl (QualConDecl _ tyvars ctx d) =
                       (\p ->
                         pretty p >>
                         write " =>")
+
+instRule :: Extend InstRule
+instRule (IRule _ mvarbinds mctx ihead) =
+  do case mvarbinds of
+       Nothing -> return ()
+       Just xs -> spaced (map pretty xs)
+     depend (maybeCtx mctx) (pretty ihead)
+instRule rule = prettyNoExt rule
 
 funBody :: [Pat NodeInfo] -> Rhs NodeInfo -> Maybe (Binds NodeInfo) -> Printer State ()
 funBody pat rhs mbinds = do

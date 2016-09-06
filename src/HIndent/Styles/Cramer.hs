@@ -69,7 +69,8 @@ cramer =
            ,Extender extStmt
            ,Extender extMatch
            ,Extender extBinds
-           ,Extender extFieldUpdate]
+           ,Extender extFieldUpdate
+           ,Extender extInstRule]
         ,styleDefConfig =
            defaultConfig {configMaxColumns = 80
                          ,configIndentSpaces = 4
@@ -644,13 +645,11 @@ extDecl (TypeDecl _ declhead ty) =
 -- Fix whitespace before 'where' in class decl
 extDecl (ClassDecl _ mcontext declhead fundeps mdecls) =
   do depend (write "class ") $
-       withCtx mcontext $
-       depend (pretty declhead) $
-       depend (unless (null fundeps) $
-               write " | " >>
-               inter (write ", ")
-                     (map pretty fundeps)) $
-       when (isJust mdecls) $ write " where"
+       depend (maybeCtx mcontext) $
+         depend (pretty declhead) $
+           depend (unless (null fundeps) $
+               write " | " >> inter (write ", ") (map pretty fundeps)) $
+             when (isJust mdecls) $ write " where"
      maybeM_ mdecls $
        \decls ->
          do newline
@@ -910,3 +909,11 @@ extFieldUpdate (FieldUpdate _ qname expr) =
      write " = "
      pretty expr
 extFieldUpdate other = prettyNoExt other
+
+extInstRule :: Extend InstRule
+extInstRule (IRule _ mvarbinds mctx ihead) =
+  do case mvarbinds of
+       Nothing -> return ()
+       Just xs -> spaced (map pretty xs)
+     depend (maybeCtx mctx) (pretty ihead)
+extInstRule rule = prettyNoExt rule
