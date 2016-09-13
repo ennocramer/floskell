@@ -789,6 +789,10 @@ extPat (PInfixApp _ arg1 op arg2) =
 extPat (PTuple _ boxed pats) = withLineBreak Single $ tupleExpr boxed pats
 -- List patterns on one line, with space after comma
 extPat (PList _ pats) = withLineBreak Single $ listExpr pats
+-- No space after record name in patterns
+extPat (PRec _ qname fields) =
+  depend (pretty qname)
+         (braces (commas (map pretty fields)))
 extPat other = prettyNoExt other
 
 extExp :: Extend Exp
