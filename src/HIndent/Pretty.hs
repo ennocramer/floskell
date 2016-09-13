@@ -610,6 +610,11 @@ instance Pretty Type where
           Just n ->
             do write "_"
                pretty n
+      TyQuasiQuote _ n s ->
+        brackets (depend (do string n
+                             write "|")
+                         (do string s
+                             write "|"))
 
 instance Pretty Exp where
   prettyInternal = exp
@@ -763,6 +768,9 @@ exp (MultiIf _ alts) =
                               pretty p)
                         alts)))
 exp (Lit _ lit) = prettyInternal lit
+exp (TypeApp _ t) = do
+  write "@"
+  pretty t
 exp x@XTag{} = pretty' x
 exp x@XETag{} = pretty' x
 exp x@XPcdata{} = pretty' x
