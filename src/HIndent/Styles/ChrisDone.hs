@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -fno-warn-name-shadowing #-}
+
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -478,8 +480,6 @@ isSmallFitting p =
 
 isFlatPat :: Pat NodeInfo -> Bool
 isFlatPat (PApp _ _ b) = all isFlatPat b
-  where isName (PVar{}) = True
-        isName _ = False
 isFlatPat (PAsPat _ _ b) = isFlatPat b
 isFlatPat (PInfixApp _ a _ b) = isFlatPat a && isFlatPat b
 isFlatPat (PList _ []) = True

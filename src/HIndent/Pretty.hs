@@ -168,7 +168,7 @@ printComment mayNodespan (Comment inline cspan str) =
 
 -- | Pretty print using HSE's own printer. The 'P.Pretty' class here
 -- is HSE's.
-pretty' :: (Pretty ast,P.Pretty (ast SrcSpanInfo),Functor ast,MonadState (PrintState s) m)
+pretty' :: (Pretty ast,P.Pretty (ast SrcSpanInfo),MonadState (PrintState s) m)
         => ast NodeInfo -> m ()
 pretty' = write . T.fromText . T.pack . P.prettyPrint . fmap nodeInfoSpan
 

@@ -1,7 +1,6 @@
 module Main(main) where
 
 import Control.Monad
-import Control.Applicative
 import Data.List (find, unfoldr, isPrefixOf, intercalate)
 
 import System.Directory

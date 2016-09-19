@@ -20,7 +20,6 @@ import qualified Data.Text.Lazy.IO as T
 import           Data.Version (showVersion)
 import           Descriptive
 import           Descriptive.Options
-import           GHC.Tuple
 import           Language.Haskell.Exts hiding (Style,style)
 import           Paths_hindent (version)
 import           System.Directory

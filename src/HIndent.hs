@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -fno-warn-name-shadowing #-}
+
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE OverloadedStrings, TupleSections, ScopedTypeVariables #-}
 
@@ -34,14 +36,12 @@ import           HIndent.Styles.Gibiansky (gibiansky)
 import           HIndent.Styles.JohanTibell (johanTibell)
 import           HIndent.Types
 
-import           Control.Applicative ((<$>))
 import           Control.Monad.State.Strict
 import           Control.Monad.Trans.Maybe
 import           Data.Function (on)
 import           Data.Functor.Identity
 import           Data.List
-import           Data.List (groupBy, intersperse)
-import           Data.Maybe (fromMaybe)
+import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Text.IO as ST
 import           Data.Text.Lazy (Text)
