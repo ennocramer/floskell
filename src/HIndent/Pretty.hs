@@ -765,8 +765,22 @@ exp (MultiIf _ alts) =
     (depend (write "if ")
             (lined (map (\p ->
                            do write "| "
-                              pretty p)
+                              prettyG p)
                         alts)))
+  where
+    prettyG (GuardedRhs _ stmts e) = do
+      indented
+        1
+        (do (lined (map
+                         (\(i,p) -> do
+                            unless (i == 1)
+                                   space
+                            pretty p
+                            unless (i == length stmts)
+                                   (write ","))
+                         (zip [1..] stmts))))
+      swing (write " " >> rhsSeparator) (pretty e)
+
 exp (Lit _ lit) = prettyInternal lit
 exp (TypeApp _ t) = do
   write "@"
