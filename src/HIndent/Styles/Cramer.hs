@@ -311,7 +311,7 @@ listAutoWrap open close sep ps =
 -- | Like `inter newline . map pretty`, but preserve empty lines
 -- between elements.
 preserveLineSpacing
-  :: (Pretty ast,Annotated ast)
+  :: Pretty ast
   => [ast NodeInfo] -> Printer State ()
 preserveLineSpacing [] = return ()
 preserveLineSpacing asts@(first:rest) =

@@ -1011,7 +1011,7 @@ writeWhereBinds ds@(BDecls _ binds) = do
 writeWhereBinds binds = prettyNoExt binds
 
 -- Print all the ASTs on separate lines, respecting user spacing.
-onSeparateLines :: (Pretty ast, Annotated ast) => [ast NodeInfo] -> Printer State ()
+onSeparateLines :: Pretty ast => [ast NodeInfo] -> Printer State ()
 onSeparateLines = onSeparateLines' pretty
 
 onSeparateLines' :: Annotated ast => (ast NodeInfo -> Printer State ()) -> [ast NodeInfo] -> Printer State ()

@@ -573,8 +573,7 @@ flattenOpChain e = [OpChainExp e]
 -- | Make the right hand side dependent if it's flat, otherwise
 -- newline it.
 dependOrNewline
-  :: Pretty ast
-  => Printer t ()
+  :: Printer t ()
   -> ast NodeInfo
   -> (ast NodeInfo -> Printer t ())
   -> Printer t ()
