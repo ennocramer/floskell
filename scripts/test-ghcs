@@ -1,0 +1,12 @@
+#!/bin/sh
+
+set -e
+
+for pair in "8.0.1 nightly-2016-05-27" "7.10.3 lts-4.0" "7.10.2 lts-3.0" "7.8.4 lts-1.0"; do
+    version=`echo $pair | cut -d\  -f1`
+    resolver=`echo $pair | cut -d\  -f2`
+
+    echo GHC $version ...
+    stack setup --resolver $resolver --verbosity silent
+    stack build --resolver $resolver --verbosity silent --pedantic --test --bench --no-run-benchmarks --force-dirty --ghc-options=-fforce-recomp
+done
