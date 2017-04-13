@@ -73,9 +73,8 @@ stmt (Qualifier _ e@(InfixApp _ a op b)) =
                  (sandbox (write ""))
      infixApp e a op b (Just col)
 stmt (Generator _ p e) =
-  do indentSpaces <- getIndentSpaces
-     pretty p
-     indented indentSpaces
+  do pretty p
+     indentedBlock
               (dependOrNewline
                  (write " <- ")
                  e
@@ -219,8 +218,7 @@ exp (If _ if' then' else') =
   do depend (write "if ")
             (pretty if')
      newline
-     indentSpaces <- getIndentSpaces
-     indented indentSpaces
+     indentedBlock
               (do branch "then " then'
                   newline
                   branch "else " else')
@@ -231,8 +229,7 @@ exp (If _ if' then' else') =
               do write str
                  write "do"
                  newline
-                 indentSpaces <- getIndentSpaces
-                 indented indentSpaces (lined (map pretty stmts))
+                 indentedBlock (lined (map pretty stmts))
             _ ->
               depend (write str)
                      (pretty e)
@@ -245,8 +242,7 @@ exp (App _ op a) =
         then put st
         else do pretty f
                 newline
-                spaces <- getIndentSpaces
-                indented spaces (lined (map pretty args))
+                indentedBlock (lined (map pretty args))
   where (f,args) = flatten op [a]
         flatten :: Exp NodeInfo
                 -> [Exp NodeInfo]
@@ -350,8 +346,7 @@ decl (TypeSig _ names ty') =
         else do inter (write ", ")
                       (map pretty names)
                 newline
-                indentSpaces <- getIndentSpaces
-                indented indentSpaces
+                indentedBlock
                          (depend (write ":: ")
                                  (declTy ty'))
   where declTy dty =

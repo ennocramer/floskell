@@ -107,8 +107,7 @@ decl (TypeSig _ names ty') =
         else do inter (write ", ")
                       (map pretty names)
                 newline
-                indentSpaces <- getIndentSpaces
-                indented indentSpaces
+                indentedBlock
                          (depend (write ":: ")
                                  (declTy ty'))
   where dependent =
@@ -174,8 +173,7 @@ match (Match _ name pats rhs mbinds) =
        Nothing -> return ()
        Just binds ->
          do newline
-            indentSpaces <- getIndentSpaces
-            indented indentSpaces
+            indentedBlock
                      (depend (write "where ")
                              (pretty binds))
 match e = prettyNoExt e
@@ -216,8 +214,7 @@ rhs grhs =
 -- | Right-hand sides are dependent.
 unguardedrhs :: Rhs NodeInfo -> Printer t ()
 unguardedrhs (UnGuardedRhs _ e) =
-  do indentSpaces <- getIndentSpaces
-     indented indentSpaces
+  do indentedBlock
               (dependOrNewline (write " = ")
                                e
                                pretty)
@@ -283,9 +280,8 @@ stmt (Qualifier _ e@(InfixApp _ a op b)) =
                  (sandbox (write ""))
      infixApp e a op b (Just col)
 stmt (Generator _ p e) =
-  do indentSpaces <- getIndentSpaces
-     pretty p
-     indented indentSpaces
+  do pretty p
+     indentedBlock
               (dependOrNewline
                  (write " <- ")
                  e

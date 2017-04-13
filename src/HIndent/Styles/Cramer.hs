@@ -189,7 +189,7 @@ spaced = inter space
 
 -- | Indent one level.
 indentFull :: Printer s a -> Printer s a
-indentFull p = getIndentSpaces >>= flip indented p
+indentFull = indentedBlock
 
 -- | Indent a half level.
 indentHalf :: Printer s a -> Printer s a

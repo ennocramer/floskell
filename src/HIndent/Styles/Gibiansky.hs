@@ -950,8 +950,7 @@ decls (ClassDecl _ ctx dhead fundeps mayDecls) = do
   -- Class method declarations
   unless noDecls $ do
     newline
-    indentSpaces <- getIndentSpaces
-    indented indentSpaces (onSeparateLines decls)
+    indentedBlock (onSeparateLines decls)
 decls decl = prettyNoExt decl
 
 qualConDecl :: Extend QualConDecl
