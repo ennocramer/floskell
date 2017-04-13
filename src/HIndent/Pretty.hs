@@ -605,7 +605,7 @@ instance Pretty Type where
            write " ~ "
            pretty right
       ty@TyPromoted{} -> pretty' ty
-      TySplice{} -> error "FIXME: No implementation for TySplice."
+      TySplice _ splice -> pretty splice
       TyWildCard _ name ->
         case name of
           Nothing -> write "_"
@@ -807,9 +807,11 @@ exp x@ParArray{} = pretty' x
 exp x@ParArrayFromTo{} = pretty' x
 exp x@ParArrayFromThenTo{} = pretty' x
 exp x@ParArrayComp{} = pretty' x
-exp ParComp{} =
-  error "FIXME: No implementation for ParComp."
+exp x@ParComp{} = pretty' x
 exp (OverloadedLabel _ label) = string ('#' : label)
+
+instance Pretty IPName where
+ prettyInternal = pretty'
 
 instance Pretty Stmt where
   prettyInternal x =
@@ -829,16 +831,25 @@ instance Pretty QualStmt where
   prettyInternal x =
     case x of
       QualStmt _ s -> pretty s
-      ThenTrans{} ->
-        error "FIXME: No implementation for ThenTrans."
-      ThenBy{} ->
-        error "FIXME: No implementation for ThenBy."
-      GroupBy{} ->
-        error "FIXME: No implementation for GroupBy."
-      GroupUsing{} ->
-        error "FIXME: No implementation for GroupUsing."
-      GroupByUsing{} ->
-        error "FIXME: No implementation for GroupByUsing."
+      ThenTrans _ s -> do
+        write "then "
+        pretty s
+      ThenBy _ s t -> do
+        write "then "
+        pretty s
+        write " by "
+        pretty t
+      GroupBy _ s -> do
+        write "then group by "
+        pretty s
+      GroupUsing _ s -> do
+        write "then group using "
+        pretty s
+      GroupByUsing _ s t -> do
+        write "then group by "
+        pretty s
+        write " using "
+        pretty t
 
 instance Pretty Decl where
   prettyInternal = decl
@@ -889,8 +900,21 @@ decl (TypeDecl _ typehead typ) =
                  (depend (write " = ")
                          (pretty typ)))
 
-decl TypeFamDecl{} =
-  error "FIXME: No implementation for TypeFamDecl."
+decl (TypeFamDecl _ declhead result injectivity) =
+  do write "type family "
+     pretty declhead
+     case result of
+       Just r -> do
+         space
+         write "="
+         space
+         pretty r
+       Nothing -> return ()
+     case injectivity of
+       Just i -> do
+         space
+         pretty i
+       Nothing -> return ()
 decl (DataDecl _ dataornew ctx dhead condecls mderivs) =
   do depend (do pretty dataornew
                 space)
@@ -960,7 +984,10 @@ instance Pretty Asst where
     case x of
       ClassA _ name types -> spaced (pretty name : map pretty types)
       i@InfixA{} -> pretty' i
-      IParam{} -> error "FIXME: No implementation for IParam."
+      IParam _ name ty -> do
+        pretty name
+        write " :: "
+        pretty ty
       EqualP _ a b ->
         do pretty a
            write " ~ "
@@ -1267,17 +1294,25 @@ instance Pretty Bracket where
         brackets (depend (write "|")
                          (do pretty p
                              write "|"))
-      PatBracket _ _ ->
-        error "FIXME: No implementation for PatBracket."
-      TypeBracket _ _ ->
-        error "FIXME: No implementation for TypeBracket."
+      PatBracket _ p ->
+        brackets (depend (write "p|")
+                         (do pretty p
+                             write "|"))
+      TypeBracket _ ty ->
+        brackets (depend (write "t|")
+                         (do pretty ty
+                             write "|"))
       d@(DeclBracket _ _) -> pretty' d
 
 instance Pretty IPBind where
   prettyInternal x =
     case x of
-      IPBind _ _ _ ->
-        error "FIXME: No implementation for IPBind."
+      IPBind _ name expr -> do
+        pretty name
+        space
+        write "="
+        space
+        pretty expr
 
 --------------------------------------------------------------------------------
 -- * Fallback printers
