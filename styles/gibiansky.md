@@ -124,7 +124,7 @@ class Applicative m => Monad m where
   return :: a -> m a
   (>>=) :: a -> (a -> m b) -> m b
 
-class Monad m => MonadState s m  | m -> swhere
+class Monad m => MonadState s m | m -> s where
   get :: m s
   put :: s -> m ()
   state :: (s -> (a, s)) -> m a

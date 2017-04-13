@@ -950,7 +950,7 @@ decls (ClassDecl _ ctx dhead fundeps mayDecls) = do
   depend (write "class ") $
     depend (maybeCtx ctx) $
       depend (pretty dhead >> space) $
-        depend (unless (null fundeps) (write " | " >> commas (map pretty fundeps))) $
+        depend (unless (null fundeps) (write "| " >> commas (map pretty fundeps) >> space)) $
           unless noDecls (write "where")
 
   -- Class method declarations
