@@ -388,20 +388,6 @@ guardedRhsExpr (GuardedRhs _ guards expr) =
   do inter (write ", ") $ map pretty guards
      rhsExpr expr
 
--- | Pretty print a name for being an infix operator.
-prettyInfixOp :: QName NodeInfo -> Printer s ()
-prettyInfixOp op =
-  case op of
-    Qual{} ->
-      do write "`"
-         pretty' op
-         write "`"
-    UnQual _ n ->
-      case n of
-        Ident _ i -> string ("`" ++ i ++ "`")
-        Symbol _ s -> string s
-    Special _ s -> pretty s
-
 tupleExpr
   :: Pretty ast
   => Boxed -> [ast NodeInfo] -> Printer State ()

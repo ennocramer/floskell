@@ -33,6 +33,7 @@ module HIndent.Pretty
   , printComments
   , withCaseContext
   , rhsSeparator
+  , prettyInfixOp
   -- * Interspersing
   , inter
   , spaced
@@ -542,8 +543,8 @@ instance Pretty Pat where
 
 -- | Pretty print a name for being an infix operator.
 prettyInfixOp :: QName NodeInfo -> Printer s ()
-prettyInfixOp x =
-  case x of
+prettyInfixOp op =
+  case op of
     Qual _ mn n ->
       case n of
         Ident _ i -> do write "`"; pretty mn; write "."; string i; write "`";
