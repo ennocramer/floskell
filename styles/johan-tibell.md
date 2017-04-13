@@ -82,10 +82,10 @@ data Void = Void
     } 
 
 data Empty =
-    Empty 
+    Empty
 
 data Maybe a
-    = Nothing 
+    = Nothing
     | Just a
 
 data Either a b
@@ -96,14 +96,14 @@ data Op a b =
     Op (b -> a)
 
 data Enum
-    = Foo 
-    | Bar 
-    | Baz 
+    = Foo
+    | Bar
+    | Baz
 
 data Enum
-    = Foo  -- first
-    | Bar  -- second
-    | Baz  -- third
+    = Foo -- first
+    | Bar -- second
+    | Baz -- third
 ```
 
 ## Records
@@ -578,8 +578,8 @@ main
 main = return ()
 
 data X
-    = X  -- ^ X is for xylophone.
-    | Y  -- ^ Y is for why did I eat that pizza.
+    = X -- ^ X is for xylophone.
+    | Y -- ^ Y is for why did I eat that pizza.
 
 data X = X
     { field1 :: Int -- ^ Field1 is the first field.

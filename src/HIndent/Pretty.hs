@@ -1057,6 +1057,7 @@ instance Pretty ClassDecl where
 instance Pretty ConDecl where
   prettyInternal x =
     case x of
+      ConDecl _ name [] -> pretty name
       ConDecl _ name bangty ->
         depend (do pretty name
                    space)
