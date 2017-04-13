@@ -208,8 +208,9 @@ attemptSingleLine single multiple = do
 
       --  If it doesn't fit, reprint on multiple lines.
       col <- getColumn
+      line <- getLineNum
       maxColumns <- configMaxColumns <$> gets psConfig
-      if col > maxColumns
+      if col > maxColumns || line > psLine prevState
         then do
           put prevState
           multiple

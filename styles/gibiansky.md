@@ -229,9 +229,10 @@ lorem = [ "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
         ]
 
 comment :: [Int]
-comment = [1 -- the first
-, 2 -- the second
-  , 3]
+comment = [ 1 -- the first
+          , 2 -- the second
+          , 3
+          ]
 
 match [] = undefined
 match [_] = undefined
@@ -342,8 +343,9 @@ main = do
 main = repeatedly $ do
   getLine >>= putStrLn
 
-main = repeatedly $ getline >>= \s -> do
-                      putStrLn s
+main = repeatedly $ getline >>= \s ->
+                      do
+                        putStrLn s
 
 main =
   -- comment
