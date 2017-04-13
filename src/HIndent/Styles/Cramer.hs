@@ -666,9 +666,10 @@ extDecl decl@(DataDecl _ dataOrNew mcontext declHead constructors mderiv) =
      space
      pretty declHead
      space
-     if isEnum decl || isSingletonType decl
-        then attemptSingleLine single multi
-        else multi
+     unless (null constructors) $
+       if isEnum decl || isSingletonType decl
+          then attemptSingleLine single multi
+          else multi
      maybeM_ mderiv $ \deriv -> indentFull $ newline >> pretty deriv
   where single =
           do write "= "
