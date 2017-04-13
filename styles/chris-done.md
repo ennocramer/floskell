@@ -414,7 +414,7 @@ simple _ = False
 ## List comprehensions
 
 ``` haskell
-map f xs = [f x|x <- xs]
+map f xs = [f x | x <- xs]
 
 defaultExtensions = 
   [e
@@ -427,7 +427,7 @@ defaultExtensions =
 
 -- comment
 defaultExtensions = 
-  [e|e@EnableExtension {} <- knownExtensions] \\
+  [e | e@EnableExtension {} <- knownExtensions] \\
   map EnableExtension badExtensions
 ```
 

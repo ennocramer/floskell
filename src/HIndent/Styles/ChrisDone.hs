@@ -382,7 +382,7 @@ exp (ListComp _ e qstmt) =
                                           then put st
                                           else lined))
   where oneLiner = do line <- gets psLine
-                      write "|"
+                      write " | "
                       commas (map pretty qstmt)
                       st <- get
                       columnLimit <- getColumnLimit
