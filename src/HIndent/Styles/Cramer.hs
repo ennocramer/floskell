@@ -327,7 +327,7 @@ preserveLineSpacing asts@(first:rest) =
   do cut $ pretty first
      forM_ (zip asts rest) $
        \(prev,cur) ->
-         do replicateM_ (max 1 $ lineDelta prev cur)
+         do replicateM_ (min 2 (max 1 $ lineDelta prev cur))
                         newline
             cut $ pretty cur
 
