@@ -663,13 +663,19 @@ opExpr exp = prettyNoExt exp
 lambdaExpr :: Exp NodeInfo -> Printer State ()
 lambdaExpr (Lambda _ pats exp) = do
   write "\\"
+  maybeSpace
   spaced $ map pretty pats
   write " ->"
   if any isBefore $ nodeInfoComments $ ann exp
     then multi
     else attemptSingleLine (space >> pretty exp) multi
 
-  where multi = do
+  where maybeSpace =
+          case pats of
+            (PBangPat {}):_ -> space
+            (PIrrPat {}):_ -> space
+            _ -> return ()
+        multi = do
          newline
          indented indentSpaces $ pretty exp
 

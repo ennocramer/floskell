@@ -564,13 +564,13 @@ qualIdent = left `L.or` right
 ## Lazy Patterns in a Lambda
 
 ``` haskell
-f = \~a -> undefined -- \~a yields parse error on input ‘\~’
+f = \ ~a -> undefined -- \~a yields parse error on input ‘\~’
 ```
 
 ## Bang Patterns in a Lambda
 
 ``` haskell
-f = \!a -> undefined -- \!a yields parse error on input ‘\!’
+f = \ !a -> undefined -- \!a yields parse error on input ‘\!’
 ```
 
 ## Binding Implicit Parameters

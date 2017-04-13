@@ -645,10 +645,15 @@ exp (NegApp _ e) =
   depend (write "-")
          (pretty e)
 exp (Lambda _ ps e) =
-  depend (write "\\")
+  depend (write "\\" >> maybeSpace)
          (do spaced (map pretty ps)
              swing (write " -> ")
                    (pretty e))
+  where maybeSpace =
+          case ps of
+            (PBangPat {}):_ -> space
+            (PIrrPat {}):_ -> space
+            _ -> return ()
 exp (Let _ binds e) =
   do depend (write "let ")
             (pretty binds)

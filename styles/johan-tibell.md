@@ -632,16 +632,16 @@ qualIdent = left `L.or` right
 
 ``` haskell
 f = 
-    \~a -> 
-         undefined -- \~a yields parse error on input ‘\~’
+    \ ~a -> 
+          undefined -- \~a yields parse error on input ‘\~’
 ```
 
 ## Bang Patterns in a Lambda
 
 ``` haskell
 f = 
-    \!a -> 
-         undefined -- \!a yields parse error on input ‘\!’
+    \ !a -> 
+          undefined -- \!a yields parse error on input ‘\!’
 ```
 
 ## Binding Implicit Parameters
