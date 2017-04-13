@@ -9,7 +9,7 @@ module HIndent.Styles.Cramer (cramer) where
 import Control.Monad (forM_, replicateM_, unless, when)
 import Control.Monad.State.Strict (get, gets, put)
 
-import Data.List (intersperse, sortOn)
+import Data.List (groupBy, intersperse, sortOn)
 import Data.Maybe (catMaybes, isJust, mapMaybe)
 
 import Language.Haskell.Exts.Syntax
@@ -362,6 +362,15 @@ inlineExpr fmt expr = fmt (pretty expr)
 --------------------------------------------------------------------------------
 -- Printer for reused syntactical constructs
 
+moduleImports
+  :: [ImportDecl NodeInfo] -> Printer State ()
+moduleImports =
+  inter (newline >> newline) .
+  map preserveLineSpacing .
+  groupBy samePrefix . sortOn (moduleName . importModule)
+  where samePrefix left right = prefix left == prefix right
+        prefix = takeWhile (/= '.') . moduleName . importModule
+
 whereBinds :: Binds NodeInfo -> Printer State ()
 whereBinds binds =
   do newline
@@ -530,7 +539,7 @@ extModule (Module _ mhead pragmas imports decls) =
      inter (newline >> newline) $
        catMaybes [unless' (null pragmas) $ preserveLineSpacing pragmas
                  ,pretty <$> mhead
-                 ,unless' (null imports) $ preserveLineSpacing imports
+                 ,unless' (null imports) $ moduleImports imports
                  ,unless' (null decls) $
                   do forM_ (init decls) $
                        \decl ->
