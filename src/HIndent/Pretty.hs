@@ -1044,15 +1044,15 @@ instance Pretty ClassDecl where
                        (depend (traverse_ (\kind -> write " :: " >> pretty kind) mkind)
                                (traverse_ pretty minj)))
       ClsTyDef _ (TypeEqn _ this that) ->
-        do write "type "
-           pretty this
-           write " = "
-           pretty that
+        depend (write "type ")
+               (depend (pretty this)
+                       (depend (write " = ")
+                               (pretty that)))
       ClsDefSig _ name ty ->
-        do write "default "
-           pretty name
-           write " :: "
-           pretty ty
+        depend (write "default ")
+               (depend (pretty name)
+                       (depend (write " :: ")
+                               (pretty ty)))
 
 instance Pretty ConDecl where
   prettyInternal x =

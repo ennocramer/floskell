@@ -157,7 +157,7 @@ class Monad m =>
 class ToJSON a where
     toJSON :: a -> Value
     default toJSON :: (Generic a, GToJSON (Rep a)) =>
-    a -> Value
+                      a -> Value
     toJSON = genericToJSON defaultOptions
 ```
 
