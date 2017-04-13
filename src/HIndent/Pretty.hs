@@ -70,17 +70,14 @@ import           Language.Haskell.Exts.Comments
 import           Control.Applicative (empty)
 import           Control.Monad.State.Strict hiding (state)
 import           Control.Monad.Search (cost,cost')
+import qualified Data.ByteString as S
+import qualified Data.ByteString.Lazy as S (toStrict)
+import qualified Data.ByteString.Builder as S
 import           Data.Int
 import           Data.List
 import           Data.Maybe
 import           Data.Foldable (traverse_)
 import           Data.Monoid hiding (Alt)
-import           Data.Text (Text)
-import qualified Data.Text as T
-import qualified Data.Text.Lazy as LT
-import           Data.Text.Lazy.Builder (Builder)
-import qualified Data.Text.Lazy.Builder as T
-import           Data.Text.Lazy.Builder.Int
 import           Data.Typeable
 import qualified Language.Haskell.Exts as P
 import           Language.Haskell.Exts.Syntax
@@ -176,7 +173,7 @@ printComment mayNodespan (Comment inline cspan str) =
 -- is HSE's.
 pretty' :: (Pretty ast,P.Pretty (ast SrcSpanInfo))
         => ast NodeInfo -> Printer s ()
-pretty' = write . T.fromText . T.pack . P.prettyPrint . fmap nodeInfoSpan
+pretty' = write . S.stringUtf8 . P.prettyPrint . fmap nodeInfoSpan
 
 --------------------------------------------------------------------------------
 -- * Combinators
@@ -233,18 +230,18 @@ lined ps = sequence_ (intersperse newline ps)
 
 -- | Print all the printers separated newlines and optionally a line
 -- prefix.
-prefixedLined :: Text -> [Printer s ()] -> Printer s ()
+prefixedLined :: S.ByteString -> [Printer s ()] -> Printer s ()
 prefixedLined pref ps' =
   case ps' of
     [] -> return ()
     (p:ps) ->
       do p
          indented (fromIntegral
-                     (T.length pref *
+                     (S.length pref *
                       (-1)))
                   (mapM_ (\p' ->
                             do newline
-                               depend (write (T.fromText pref)) p')
+                               depend (write (S.byteString pref)) p')
                          ps)
 
 -- | Set the (newline-) indent level to the given column for the given
@@ -274,11 +271,11 @@ newline =
            if psNewline state && not clearEmpty
               then fromIntegral (psIndentLevel state)
               else 0
-         out = T.justifyRight (indent + 1) ' ' "\n"
+         out = S.replicate indent 32
      penalty <- psLinePenalty state True (psColumn state)
      when (penalty /= mempty) $ cost penalty mempty
      modify (\s ->
-               s {psOutput = psOutput state <> T.fromText out
+               s {psOutput = psOutput state <> S.byteString out <> "\n"
                  ,psNewline = True
                  ,psEolComment = False
                  ,psLine = psLine state + 1
@@ -358,35 +355,34 @@ comma :: Printer s ()
 comma = write ","
 
 -- | Write an integral.
-int :: Integral n
-    => n -> Printer s ()
-int = write . decimal
+int :: Integer -> Printer s ()
+int = write . S.stringUtf8 . show
 
 -- | Write out a string, updating the current position information.
-write :: Builder -> Printer s ()
+write :: S.Builder -> Printer s ()
 write x =
   do eol <- gets psEolComment
      when eol newline
-     write' $ T.toLazyText x
+     write' $ S.toStrict $ S.toLazyByteString x
   where write' x' =
           do state <- get
              let indent = fromIntegral (psIndentLevel state)
                  out =
                    if psNewline state
-                      then LT.replicate indent " " `LT.append` x'
+                      then S.replicate indent 32 <> x'
                       else x'
-                 newCol = psColumn state + fromIntegral (LT.length out)
+                 newCol = psColumn state + fromIntegral (S.length out)
              penalty <- psLinePenalty state False newCol
              when (penalty /= mempty) $ cost mempty penalty
              modify (\s ->
-                       s {psOutput = psOutput state <> T.fromLazyText out
+                       s {psOutput = psOutput state <> S.byteString out
                          ,psNewline = False
                          ,psEolComment = False
                          ,psColumn = newCol})
 
 -- | Write a string.
 string :: String -> Printer s ()
-string = write . T.fromText . T.pack
+string = write . S.stringUtf8
 
 -- | Indent spaces, e.g. 2.
 getIndentSpaces :: Printer s Int64
@@ -1358,7 +1354,7 @@ instance Pretty ImportDecl where
 
 instance Pretty ModuleName where
   prettyInternal (ModuleName _ name) =
-    write (T.fromString name)
+    string name
 
 instance Pretty ImportSpecList where
   prettyInternal = pretty'

@@ -12,11 +12,12 @@ import           HIndent
 import           HIndent.Types
 
 import           Control.Applicative
+import qualified Data.ByteString as S
+import qualified Data.ByteString.Builder as S
+import qualified Data.ByteString.Lazy.Char8 as L8
 import           Data.List
 import           Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.Lazy.Builder as T
-import qualified Data.Text.Lazy.IO as T
 import           Data.Version (showVersion)
 import           Descriptive
 import           Descriptive.Options
@@ -38,12 +39,12 @@ main =
        Succeeded (style,exts,mfilepath) ->
          case mfilepath of
            Just filepath ->
-             do text <- T.readFile filepath
+             do text <- S.readFile filepath
                 tmpDir <- getTemporaryDirectory
                 (fp,h) <- openTempFile tmpDir "hindent.hs"
-                T.hPutStrLn
+                L8.hPutStrLn
                   h
-                  (either error T.toLazyText (reformat style (Just exts) text))
+                  (either error S.toLazyByteString (reformat style (Just exts) text))
                 hFlush h
                 hClose h
                 let exdev e = if ioe_errno e == Just ((\(Errno a) -> a) eXDEV)
@@ -51,7 +52,7 @@ main =
                                   else throw e
                 renameFile fp filepath `catch` exdev
            Nothing ->
-             T.interact (either error T.toLazyText . reformat style (Just exts))
+             L8.interact (either error S.toLazyByteString . reformat style (Just exts) . L8.toStrict)
        Failed (Wrap (Stopped Version) _) ->
          putStrLn ("hindent " ++ showVersion version)
        _ ->

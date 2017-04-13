@@ -26,11 +26,11 @@ import Control.Applicative
 import Control.Monad
 import Control.Monad.State.Strict (MonadState(..),StateT,execStateT,gets)
 import Control.Monad.Search (MonadSearch,Search,runSearch)
+import Data.ByteString.Builder (Builder)
 import Data.Data
 import Data.Int (Int64)
 import Data.Maybe (listToMaybe)
 import Data.Text (Text)
-import Data.Text.Lazy.Builder (Builder)
 import Language.Haskell.Exts.Comments
 import Language.Haskell.Exts.Parser
 import Language.Haskell.Exts.SrcLoc

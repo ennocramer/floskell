@@ -1,13 +1,17 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main(main) where
 
 import Control.Monad
-import Data.List (find, unfoldr, isPrefixOf, intercalate)
+import Data.List (find, unfoldr, isPrefixOf)
 
 import System.Directory
 import System.Environment
+import Data.ByteString (ByteString)
+import qualified Data.ByteString.Builder as S
+import qualified Data.ByteString.Char8 as S
+import qualified Data.ByteString.Lazy as L
 import qualified Data.Text as T
-import qualified Data.Text.Lazy as L
-import qualified Data.Text.Lazy.Builder as L
 
 import qualified HIndent
 
@@ -45,44 +49,44 @@ generateTests from to = do
   -- Generate expectation files for the new style test directory.
   forM_ testFilenamesFrom $ \filename -> do
     let dstFilename = expected to ++ expectedFilename filename
-    contents <- expectationFileContents toStyle <$> readFile (tests to ++ filename)
-    writeFile dstFilename contents
+    contents <- expectationFileContents toStyle <$> S.readFile (tests to ++ filename)
+    S.writeFile dstFilename contents
 
   where
     findStyle style = find ((== style). HIndent.styleName) HIndent.styles
     tests style = "test/" ++ style ++ "/" ++ testDir ++ "/"
     expected style = "test/" ++ style ++ "/" ++ expectedDir ++ "/"
-    expectedFilename filename = take (length filename - 4) filename ++ "exp"
+    expectedFilename filename = take (length filename - 4) filename ++ ("exp" :: String)
 
-expectationFileContents :: HIndent.Style -> String -> String
+expectationFileContents :: HIndent.Style -> ByteString -> ByteString
 expectationFileContents style contents =
   let testDecls = parsePieces contents
-      fmt input = L.unpack $ L.toLazyText $ case HIndent.reformat style Nothing $ L.pack input of
-                                              Left err      -> error err
-                                              Right builder -> builder
+      fmt input = L.toStrict . S.toLazyByteString $ case HIndent.reformat style Nothing input of
+                      Left err      -> error err
+                      Right builder -> builder
       outputs = map (replaceEmptyNewlines . fmt) testDecls
-  in intercalate "\n" outputs
+  in S.intercalate "\n" outputs
   where
-    replaceEmptyNewlines = unlines . map replaceNewline . lines
+    replaceEmptyNewlines = S.unlines . map replaceNewline . S.lines
     replaceNewline "" = ">"
     replaceNewline x = x
 
-parsePieces :: String -> [String]
-parsePieces str = map (intercalate "\n" . map mkNewlines) pieces
+parsePieces :: ByteString -> [ByteString]
+parsePieces str = map (S.intercalate "\n" . map mkNewlines) pieces
   where
-    pieces = unfoldr unfolder (lines str)
+    pieces = unfoldr unfolder (S.lines str)
 
-    unfolder :: [String] -> Maybe ([String], [String])
+    unfolder :: [ByteString] -> Maybe ([ByteString], [ByteString])
     unfolder [] = Nothing
     unfolder remaining = Just $
      case break pieceBreak (zip remaining (tail remaining ++ [""]))  of
        (nonNull, [])     -> (map fst nonNull, [])
        (nonNull, _:rest) -> (map fst nonNull, map fst rest)
 
-    pieceBreak :: (String, String) -> Bool
+    pieceBreak :: (ByteString, ByteString) -> Bool
     pieceBreak ("", "") = error "Two consecutive line breaks!"
-    pieceBreak (line, next) = null line && head next /= ' '
+    pieceBreak (line, next) = S.null line && S.head next /= ' '
 
-    mkNewlines :: String -> String
+    mkNewlines :: ByteString -> ByteString
     mkNewlines ">" = ""
     mkNewlines x = x

@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main (main) where
 
 import           Control.Monad
@@ -6,9 +8,10 @@ import           Data.List (find, unfoldr, break, isPrefixOf, intercalate)
 
 import           Test.Hspec
 import           System.Directory
+import qualified Data.ByteString.Char8 as S
+import qualified Data.ByteString.Builder as S
+import qualified Data.ByteString.Lazy as L
 import qualified Data.Text as T
-import qualified Data.Text.Lazy as L
-import qualified Data.Text.Lazy.Builder as L
 
 import Language.Haskell.Exts.Extension
 
@@ -37,12 +40,12 @@ testStyle style = do
     tests = "test/" ++ style ++ "/" ++ testDir ++ "/"
     expected = "test/" ++ style ++ "/" ++ expectedDir ++ "/"
 
-    expectedFilename filename = take (length filename - 4) filename ++ "exp"
+    expectedFilename filename = take (length filename - 4) filename ++ ("exp" :: String)
 
 useTestFiles :: HIndent.Style -> FilePath -> FilePath -> IO Spec
 useTestFiles style test exp = do
-  testContents <- readFile test
-  expContents <- readFile exp
+  testContents <- S.readFile test
+  expContents <- S.readFile exp
   let testDecls = parsePieces testContents
       expDecls = parsePieces expContents
   when (length testDecls /= length expDecls) $
@@ -61,31 +64,31 @@ useTestFiles style test exp = do
   return $ describe ("hindent applied to chunks in " ++ test) $ foldl1 (>>) $ zipWith (mkSpec style)
                                                                                 testDecls expDecls
 
-mkSpec :: HIndent.Style -> String -> String -> Spec
+mkSpec :: HIndent.Style -> S.ByteString -> S.ByteString -> Spec
 mkSpec style input desired = it "works" $
-  case HIndent.reformat style (Just exts) (L.pack input) of
+  case HIndent.reformat style (Just exts) input of
     Left err      -> expectationFailure ("Error: " ++ err)
-    Right builder -> L.unpack (L.toLazyText builder) `shouldBe` desired
+    Right builder -> L.toStrict (S.toLazyByteString builder) `shouldBe` desired
   where exts =
           glasgowExts ++
           map EnableExtension [TemplateHaskell,DataKinds, MultiWayIf]
 
-parsePieces :: String -> [String]
-parsePieces str = map (intercalate "\n" . map mkNewlines) pieces
+parsePieces :: S.ByteString -> [S.ByteString]
+parsePieces str = map (S.intercalate "\n" . map mkNewlines) pieces
   where
-    pieces = unfoldr unfolder (lines str)
+    pieces = unfoldr unfolder (S.lines str)
 
-    unfolder :: [String] -> Maybe ([String], [String])
+    unfolder :: [S.ByteString] -> Maybe ([S.ByteString], [S.ByteString])
     unfolder [] = Nothing
     unfolder remaining = Just $
       case break pieceBreak (zip remaining (tail remaining ++ [""])) of
         (nonNull, [])     -> (map fst nonNull, [])
         (nonNull, _:rest) -> (map fst nonNull, map fst rest)
 
-    pieceBreak :: (String, String) -> Bool
-    pieceBreak ("", "") = error $ "Two consecutive line breaks in:\n" ++ str
-    pieceBreak (line, next) = null line && head next /= ' '
+    pieceBreak :: (S.ByteString, S.ByteString) -> Bool
+    pieceBreak ("", "") = error $ "Two consecutive line breaks in:\n" ++ S.unpack str
+    pieceBreak (line, next) = S.null line && S.head next /= ' '
 
-    mkNewlines :: String -> String
+    mkNewlines :: S.ByteString -> S.ByteString
     mkNewlines ">" = ""
     mkNewlines x = x

@@ -50,8 +50,10 @@ library
                    , monad-loops
                    , monad-dijkstra
                    , mtl
-                   , text
+                   , bytestring
+                   , utf8-string
                    , transformers
+                   , text
 
 executable hindent
   hs-source-dirs:    src/main
@@ -59,11 +61,12 @@ executable hindent
   main-is:           Main.hs
   build-depends:     base >= 4 && < 5
                    , hindent
-                   , text
+                   , bytestring
                    , descriptive >= 0.7 && < 0.10
                    , haskell-src-exts
                    , ghc-prim
                    , directory
+                   , text
 
 executable hindent-generate-tests
   hs-source-dirs:    src/main
@@ -71,8 +74,9 @@ executable hindent-generate-tests
   main-is:           TestGenerate.hs
   build-depends:     base >= 4 && < 5
                    , hindent
-                   , text
+                   , bytestring
                    , directory
+                   , text
 
 test-suite hspec
   type: exitcode-stdio-1.0
@@ -83,9 +87,10 @@ test-suite hspec
                    , haskell-src-exts
                    , monad-loops
                    , mtl
-                   , text
+                   , bytestring
                    , hspec
                    , directory
+                   , text
 
 benchmark hindent-bench
   type: exitcode-stdio-1.0
@@ -94,7 +99,7 @@ benchmark hindent-bench
   main-is:           Benchmark.hs
   build-depends:     base >= 4 && < 5
                    , hindent
-                   , text
+                   , bytestring
                    , haskell-src-exts
                    , ghc-prim
                    , directory
