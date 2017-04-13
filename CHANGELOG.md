@@ -1,0 +1,27 @@
+4.6.4
+
+	* Copy/delete file instead of renaming
+
+4.4.6
+
+	* Fix whole module printer
+	* Accept a filename to reformat
+
+4.4.5
+
+	* Fix bug in infix patterns
+
+4.4.2
+
+	* Bunch of Gibiansky style fixes.
+	* Support CPP.
+	* Tibell style fixes.
+
+4.3.8
+
+	* Fixed: bug in printing operators in statements.
+
+4.5.4
+
+	* Improvements to Tibell style.
+	* 6x speed up on rendering operators.

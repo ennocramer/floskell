@@ -19,10 +19,6 @@ module HIndent
   ,gibiansky
   ,cramer
   -- * Testing
-  ,test
-  ,testFile
-  ,testAll
-  ,testAst
   ,defaultExtensions
   )
   where
@@ -36,7 +32,6 @@ import           HIndent.Styles.Gibiansky (gibiansky)
 import           HIndent.Styles.JohanTibell (johanTibell)
 import           HIndent.Types
 
-import           Control.Monad.State.Strict
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as S
 import           Data.ByteString.Builder (Builder)
@@ -51,7 +46,6 @@ import           Data.Function (on)
 import           Data.List
 import           Data.Maybe
 import           Data.Monoid
-import           Data.Text.Encoding (encodeUtf8)
 import           Language.Haskell.Exts hiding (Style, prettyPrint, Pretty, style, parse)
 
 data CodeBlock = HaskellSource ByteString
@@ -205,32 +199,6 @@ parseMode =
           filter isDisabledExtention knownExtensions
         isDisabledExtention (DisableExtension _) = False
         isDisabledExtention _ = True
-
--- | Test the given file.
-testFile :: FilePath -> Style -> IO ()
-testFile fp style  = S.readFile fp >>= test style
-
--- | Test with the given style, prints to stdout.
-test :: Style -> ByteString -> IO ()
-test style =
-  either error (L8.putStrLn . S.toLazyByteString) .
-  reformat style Nothing
-
--- | Test with all styles, prints to stdout.
-testAll :: ByteString -> IO ()
-testAll i =
-  forM_ styles
-        (\style ->
-           do S8.putStrLn ("-- " <> encodeUtf8 (styleName style) <> ":")
-              test style i
-              S8.putStrLn "")
-
--- | Parse the source and annotate it with comments, yielding the resulting AST.
-testAst :: ByteString -> Either String ([ComInfo], Module NodeInfo)
-testAst x =
-  case parseModuleWithComments parseMode (UTF8.toString x) of
-    ParseOk (m,comments) -> Right (annotateComments m comments)
-    ParseFailed _ e -> Left e
 
 -- | Styles list, useful for programmatically choosing.
 styles :: [Style]

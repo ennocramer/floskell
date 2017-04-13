@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE BangPatterns #-}
 
 -- | Benchmark the pretty printer.
@@ -7,28 +8,41 @@ module Main where
 import           Control.DeepSeq
 import           Criterion
 import           Criterion.Main
-import           Data.ByteString (ByteString)
 import qualified Data.ByteString as S
+import qualified Data.ByteString.Char8 as S8
 import qualified Data.ByteString.Lazy.Builder as L
+import qualified Data.ByteString.UTF8 as UTF8
+import qualified Data.Text as T
 import           HIndent
+import           Markdone
 
 -- | Main benchmarks.
 main :: IO ()
-main =
-  defaultMain
-    [env setupEnv
-         (\ ~bigDecls ->
-             bgroup "Main"
-                    [bgroup "BigDeclarations"
-                            [bench ("HIndent.reformat: " ++
-                                    show (styleName style))
-                                   (nf (either error L.toLazyByteString .
-                                        reformat style (Just defaultExtensions))
-                                       bigDecls)|style <- styles]])]
+main = do
+    bytes <- S.readFile "BENCHMARK.md"
+    !forest <- fmap force (parse (tokenize bytes))
+    defaultMain [ bgroup (T.unpack $ styleName style) $ toCriterion style forest
+                | style <- styles ]
 
--- | Setup the environment for the benchmarks.
-setupEnv :: IO ByteString
-setupEnv = do
-  bigDecls <- S.readFile "benchmarks/BigDeclarations.hs"
-  let !decls = force bigDecls
-  return decls
+-- | Convert the Markdone document to Criterion benchmarks.
+toCriterion :: Style -> [Markdone] -> [Benchmark]
+toCriterion style = go
+  where
+    go (Section name children:next) =
+      bgroup (S8.unpack name) (go children) : go next
+    go (PlainText desc:CodeFence lang code:next) =
+      if lang == "haskell"
+        then (bench
+                (UTF8.toString desc)
+                (nf
+                   (either error L.toLazyByteString .
+                    reformat
+                      style
+                      (Just defaultExtensions))
+                   code)) :
+             go next
+        else go next
+    go (PlainText {}:next) = go next
+    go (CodeFence {}:next) = go next
+    go [] = []
+
