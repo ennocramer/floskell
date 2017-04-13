@@ -540,6 +540,15 @@ extModule (Module _ mhead pragmas imports decls) =
              then Just expr
              else Nothing
         skipNewline TypeSig{} = True
+        skipNewline DeprPragmaDecl{} = True
+        skipNewline WarnPragmaDecl{} = True
+        skipNewline AnnPragma{} = True
+        skipNewline MinimalPragma{} = True
+        skipNewline InlineSig{} = True
+        skipNewline InlineConlikeSig{} = True
+        skipNewline SpecSig{} = True
+        skipNewline SpecInlineSig{} = True
+        skipNewline InstSig{} = True
         skipNewline _ = False
 extModule other = prettyNoExt other
 
