@@ -72,7 +72,8 @@ cramer =
            ,Extender extMatch
            ,Extender extBinds
            ,Extender extFieldUpdate
-           ,Extender extInstRule]
+           ,Extender extInstRule
+           ,Extender extQualConDecl]
         ,styleDefConfig =
            defaultConfig {configMaxColumns = 80
                          ,configIndentSpaces = 4
@@ -359,6 +360,12 @@ moduleImports =
   groupBy samePrefix . sortOn (moduleName . importModule)
   where samePrefix left right = prefix left == prefix right
         prefix = takeWhile (/= '.') . moduleName . importModule
+
+forallVars :: [TyVarBind NodeInfo] -> Printer State ()
+forallVars vars =
+  do write "forall "
+     spaced $ map pretty vars
+     write "."
 
 whereBinds :: Binds NodeInfo -> Printer State ()
 whereBinds binds =
@@ -752,18 +759,14 @@ extContext other = prettyNoExt other
 extType :: Extend Type
 extType (TyForall _ mforall mcontext ty) = attemptSingleLine single multi
   where single =
-          do maybeM_ mforall $ \vars -> prettyForall vars >> space
+          do maybeM_ mforall $ \vars -> forallVars vars >> space
              maybeM_ mcontext $ \context -> pretty context >> write " => "
              pretty ty
         multi =
-          do maybeM_ mforall $ \vars -> prettyForall vars >> newline
+          do maybeM_ mforall $ \vars -> forallVars vars >> newline
              maybeM_ mcontext $
                \context -> pretty context >> newline >> write "=> "
              pretty ty
-        prettyForall vars =
-          do write "forall "
-             spaced $ map pretty vars
-             write "."
 -- Type signature should line break at each arrow if necessary
 extType (TyFun _ from to) =
   attemptSingleLineType (pretty from >> write " -> " >> pretty to)
@@ -917,3 +920,9 @@ extInstRule (IRule _ mvarbinds mctx ihead) =
        Just xs -> spaced (map pretty xs)
      depend (maybeCtx mctx) (pretty ihead)
 extInstRule rule = prettyNoExt rule
+
+extQualConDecl :: Extend QualConDecl
+extQualConDecl (QualConDecl _ mforall ctx d) =
+  do maybeM_ mforall $ \vars -> forallVars vars >> space
+     depend (maybeCtx ctx)
+            (pretty d)
