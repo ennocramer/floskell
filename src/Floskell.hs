@@ -49,30 +49,36 @@ import           Floskell.Types
 
 import           Language.Haskell.Exts       hiding ( Pretty, Style, parse
                                                     , prettyPrint, style )
+import qualified Language.Haskell.Exts       as Exts
 
-data CodeBlock = HaskellSource ByteString
+data CodeBlock = HaskellSource Int ByteString
                | CPPDirectives ByteString
     deriving (Show, Eq)
 
 -- | Format the given source.
-reformat :: Style -> Maybe [Extension] -> ByteString -> Either String Builder
-reformat style mexts x = preserveTrailingNewline x .
+reformat :: Style
+         -> Maybe [Extension]
+         -> Maybe FilePath
+         -> ByteString
+         -> Either String Builder
+reformat style mexts mfilepath x = preserveTrailingNewline x .
     mconcat . intersperse "\n" <$> mapM processBlock (cppSplitBlocks x)
   where
     processBlock :: CodeBlock -> Either String Builder
     processBlock (CPPDirectives text) = Right $ S.byteString text
-    processBlock (HaskellSource text) =
+    processBlock (HaskellSource offset text) =
         let ls = S8.lines text
             prefix = findPrefix ls
             code = unlines' (map (stripPrefix prefix) ls)
             exts = readExtensions (UTF8.toString code)
             mode'' = case exts of
-                       Nothing -> mode'
-                       Just (Nothing, exts') ->
-                         mode' { extensions = exts' ++ extensions mode' }
-                       Just (Just lang, exts') ->
-                         mode' { baseLanguage = lang
-                               , extensions = exts' ++ extensions mode' }
+                Nothing -> mode'
+                Just (Nothing, exts') ->
+                    mode' { extensions = exts' ++ extensions mode' }
+                Just (Just lang, exts') ->
+                    mode' { baseLanguage = lang
+                          , extensions = exts' ++ extensions mode'
+                          }
         in
             case parseModuleWithComments mode'' (UTF8.toString code) of
                 ParseOk (m, comments) ->
@@ -80,7 +86,9 @@ reformat style mexts x = preserveTrailingNewline x .
                               addPrefix prefix .
                                   S.toLazyByteString)
                          (prettyPrint mode' style m comments)
-                ParseFailed _ e -> Left e
+                ParseFailed loc e -> Left $
+                    Exts.prettyPrint (loc { srcLine = srcLine loc + offset }) ++
+                        ": " ++ e
 
     unlines' = S.concat . intersperse "\n"
     unlines'' = L.concat . intersperse "\n"
@@ -120,9 +128,11 @@ reformat style mexts x = preserveTrailingNewline x .
             then S8.cons first (findSmallestPrefix (S.tail p : map S.tail ps))
             else ""
 
-    mode' = case mexts of
-        Just exts -> parseMode { extensions = exts }
-        Nothing -> parseMode
+    mode' = let m = case mexts of
+                    Just exts -> parseMode { extensions = exts }
+                    Nothing -> parseMode
+            in
+                m { parseFilename = fromMaybe "<stdin>" mfilepath }
 
     preserveTrailingNewline x x' = if not (S8.null x) && S8.last x == '\n' &&
                                        not (L8.null x'') && L8.last x'' /= '\n'
@@ -145,9 +155,8 @@ reformat style mexts x = preserveTrailingNewline x .
 --
 -- will become five blocks, one for each CPP line and one for each pair of declarations.
 cppSplitBlocks :: ByteString -> [CodeBlock]
-cppSplitBlocks inp = modifyLast (inBlock (<> trailing)) .
-    map (classify . mconcat . intersperse "\n") .
-        groupBy ((==) `on` cppLine) . S8.lines $ inp
+cppSplitBlocks inp = map (classify . unlines') .
+    groupBy ((==) `on` (cppLine . snd)) . zip [0 ..] . S8.lines $ inp
   where
     cppLine :: ByteString -> Bool
     cppLine src = any (`S8.isPrefixOf` src)
@@ -161,21 +170,12 @@ cppSplitBlocks inp = modifyLast (inBlock (<> trailing)) .
                       , "#error"
                       , "#warning"
                       ]
-    classify :: ByteString -> CodeBlock
-    classify text =
-        if cppLine text then CPPDirectives text else HaskellSource text
-    -- Hack to work around some parser issues in haskell-src-exts: Some pragmas
-    -- need to have a newline following them in order to parse properly, so we include
-    -- the trailing newline in the code block if it existed.
-    trailing :: ByteString
-    trailing = if S8.isSuffixOf "\n" inp then "\n" else ""
-    modifyLast :: (a -> a) -> [a] -> [a]
-    modifyLast _ [] = []
-    modifyLast f [ x ] = [ f x ]
-    modifyLast f (x : xs) = x : modifyLast f xs
-    inBlock :: (ByteString -> ByteString) -> CodeBlock -> CodeBlock
-    inBlock f (HaskellSource txt) = HaskellSource (f txt)
-    inBlock _ dir = dir
+    unlines' :: [(Int, ByteString)] -> (Int, ByteString)
+    unlines' [] = (0, "")
+    unlines' xs@((line, _) : _) = (line, S8.unlines $ map snd xs)
+    classify :: (Int, ByteString) -> CodeBlock
+    classify (ofs, text) =
+        if cppLine text then CPPDirectives text else HaskellSource ofs text
 
 -- | Print the module.
 prettyPrint :: ParseMode

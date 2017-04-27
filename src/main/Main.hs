@@ -50,7 +50,10 @@ main = do
                 L8.hPutStr h
                            (either error
                                    S.toLazyByteString
-                                   (reformat style (Just exts) text))
+                                   (reformat style
+                                             (Just exts)
+                                             (Just filepath)
+                                             text))
                 hFlush h
                 hClose h
                 let exdev e = if ioe_errno e == Just ((\(Errno a) -> a) eXDEV)
@@ -59,7 +62,7 @@ main = do
                 copyPermissions filepath fp
                 renameFile fp filepath `catch` exdev
             Nothing -> L8.interact (either error S.toLazyByteString .
-                                        reformat style (Just exts) .
+                                        reformat style (Just exts) Nothing .
                                             L8.toStrict)
         Failed (Wrap (Stopped Version) _) -> putStrLn ("floskell " ++
                                                            showVersion version)

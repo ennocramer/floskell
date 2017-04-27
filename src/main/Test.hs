@@ -109,7 +109,7 @@ testAll = do
 
 reformatSnippet :: Style -> ByteString -> Either String ByteString
 reformatSnippet style code = L.toStrict . L.toLazyByteString <$>
-    reformat style (Just defaultExtensions) code
+    reformat style (Just defaultExtensions) (Just "TEST.md") code
 
 regenerate :: Style -> [Markdone] -> [Markdone]
 regenerate style = map fmt

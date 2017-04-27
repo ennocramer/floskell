@@ -37,7 +37,9 @@ toCriterion style = go
         if lang == "haskell"
         then (bench (UTF8.toString desc)
                     (nf (either error L.toLazyByteString .
-                             reformat style (Just defaultExtensions))
+                             reformat style
+                                      (Just defaultExtensions)
+                                      (Just "BENCHMARK.md"))
                         code)) :
             go next
         else go next
