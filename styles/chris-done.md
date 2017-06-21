@@ -4,7 +4,7 @@ This file is a test suite. Each section maps to an HSpec test, and
 each line that is followed by a Haskell code fence is tested to make
 sure re-formatting that code snippet produces the same result.
 
-You can browse through this document to see what HIndent's style is
+You can browse through this document to see what Floskell's style is
 like, or contribute additional sections to it, or regression tests.
 
 # Modules

@@ -1,71 +1,81 @@
+# Floskell [![Build Status](https://travis-ci.org/ennocramer/floskell.png)](https://travis-ci.org/ennocramer/floskell)
 
-# hindent [![Hackage](https://img.shields.io/hackage/v/hindent.svg?style=flat)](https://hackage.haskell.org/package/hindent) [![Build Status](https://travis-ci.org/chrisdone/hindent.png)](https://travis-ci.org/chrisdone/hindent)
+Floskell is a flexible Haskell source code pretty printer.
 
-Extensible Haskell pretty printer. Both a library and an
-executable. Currently a work in progress (see
-[FIXME items](https://github.com/chrisdone/hindent/blob/master/src/HIndent/Pretty.hs)).
+[Documentation](https://github.com/ennocramer/floskell/blob/master/README.md)
 
-[Documentation](http://chrisdone.github.io/hindent/)
+[Examples](https://github.com/ennocramer/floskell/blob/master/styles)
 
-## Install
+Floskell started as a fork of version 4 of
+[Chris Done's hindent](https://github.com/commercialhaskell/hindent).
 
-    $ stack build --copy-bins
+## Installation
+
+    $ git clone https://github.com/ennocramer/floskell
+    $ cd floskell
+    $ stack install
 
 ## Usage
 
-    hindent is used in a pipeline style:
+    floskell is used in a pipeline style:
 
-    $ cat path/to/sourcefile.hs | hindent > outfile.hs
+    $ cat path/to/sourcefile.hs | floskell > outfile.hs
 
-    hindent: arguments: --style [fundamental|chris-done|johan-tibell|gibiansky|cramer]
+    floskell: arguments: --style [fundamental|chris-done|johan-tibell|gibiansky|cramer]
 
 ## Emacs
 
 In
-[elisp/hindent.el](https://github.com/chrisdone/hindent/blob/master/elisp/hindent.el)
-there is `hindent-mode`, which provides keybindings to reindent parts of the
-buffer:
+[contrib/floskell.el](https://github.com/ennocramer/floskell/blob/master/contrib/floskell.el)
+there is `floskell-mode`, which provides keybindings to reindent parts
+of the buffer:
 
-- `M-q` reformats the current declaration.  When inside a comment, it fills the
-  current paragraph instead, like the standard `M-q`.
+- `M-q` reformats the current declaration.  When inside a comment, it
+  fills the current paragraph instead, like the standard `M-q`.
 - `C-M-\` reformats the current region.
 
 To enable it, add the following to your init file:
 
 ```lisp
-(add-to-list 'load-path "/path/to/hindent/elisp")
-(require 'hindent)
-(add-hook 'haskell-mode-hook #'hindent-mode)
+(add-to-list 'load-path "/path/to/floskell/contrib")
+(require 'floskell)
+(add-hook 'haskell-mode-hook #'floskell-mode)
 ```
 
 By default it uses the style called `fundamental`, if you want to use
 another, `johan-tibell`, run `M-x customize-variable
-hindent-style`. If you want to configure per-project, make a file
+floskell-style`. If you want to configure per-project, make a file
 called `.dir-locals.el` in the project root directory like this:
 
 ``` lisp
-((nil . ((hindent-style . "johan-tibell"))))
+((nil . ((floskell-style . "johan-tibell"))))
 ```
 
 ## Vim
 
-The `'formatprg'` option lets you use an external program (like hindent) to
-format your text. Put the following line into ~/.vim/ftplugin/haskell.vim
-to set this option for Haskell files:
+The `'formatprg'` option lets you use an external program (like
+floskell) to format your text. Put the following line into
+~/.vim/ftplugin/haskell.vim to set this option for Haskell files:
 
-    setlocal formatprg=hindent\ --style\ chris-done
+    setlocal formatprg=floskell\ --style\ chris-done
 
-Then you can format with hindent using `gq`. Read `:help gq` and `help
+Then you can format with floskell using `gq`. Read `:help gq` and `help
 'formatprg'` for more details.
 
-Note that unlike in emacs you have to take care of selecting a sensible buffer region as input to
-hindent yourself. If that is too much trouble you can try [vim-textobj-haskell](https://github.com/gilligan/vim-textobj-haskell) which provides a text object for top level bindings.
+Note that unlike in emacs you have to take care of selecting a
+sensible buffer region as input to floskell yourself. If that is too
+much trouble you can try
+[vim-textobj-haskell](https://github.com/gilligan/vim-textobj-haskell)
+which provides a text object for top level bindings.
 
 ## Atom
 
-Basic support is provided through [atom/hindent.coffee](https://github.com/chrisdone/hindent/blob/master/atom/hindent.coffee),
-which adds hindent to atom menu with each available style. Mode should be installed as package into `.atom\packages\${PACKAGE_NAME}`,
-here is simple example of atom [package](https://github.com/Heather/atom-hindent).
+Basic support is provided through
+[contrib/floskell.coffee](https://github.com/ennocramer/floskell/blob/master/contrib/floskell.coffee),
+which adds floskell to atom menu with each available style. Mode should
+be installed as package into `.atom\packages\${PACKAGE_NAME}`, here is
+simple example of atom
+[package](https://github.com/Heather/atom-hindent).
 
 ## Contributing your own printer style
 
@@ -73,42 +83,30 @@ This package comes with a basic fundamental pretty printer, which is
 probably not desirable to use.
 
 It comes with other styles implemented on top of this fundamental
-printer, in the modules in `HIndent.Styles.*`.
+printer, in the modules in `Floskell.Styles.*`.
 
-Make a module `HIndent.Styles.YourName` in which to place the printer.
+Make a module `Floskell.Styles.YourName` in which to place the printer.
 
 To define your own, see
-[HIndent.Styles.Fundamental](https://github.com/chrisdone/hindent/blob/master/src/HIndent/Styles/Fundamental.hs)
+[Floskell.Styles.Fundamental](https://github.com/ennocramer/floskell/blob/master/src/Floskell/Styles/Fundamental.hs)
 for a starting point. This module defines a blank style, adds no
 additional extensions. Customizations are specified via the
 `styleExtenders` property. See
-[HIndent.Styles.ChrisDone](https://github.com/chrisdone/hindent/blob/master/src/HIndent/Styles/ChrisDone.hs)
+[Floskell.Styles.ChrisDone](https://github.com/ennocramer/floskell/blob/master/src/Floskell/Styles/ChrisDone.hs)
 for an example of a non-trivial style.
 
 Useful combinators can be found in
-[HIndent.Pretty](https://github.com/chrisdone/hindent/blob/master/src/HIndent/Pretty.hs)
+[Floskell.Pretty](https://github.com/ennocramer/floskell/blob/master/src/Floskell/Pretty.hs)
 for defining printers. When you want to use a fundamental printer, use
 `prettyNoExt` instead of `pretty`. Comments will still be inserted by
 `prettyNoExt`.
 
 If you want to contribute it to the package, add it to the list of
 styles in
-[HIndent](https://github.com/chrisdone/hindent/blob/master/src/HIndent.hs)
+[Floskell](https://github.com/ennocramer/floskell/blob/master/src/Floskell.hs)
 and export it, and open a pull request. Use
 [the Erlang git commit guide](https://github.com/erlang/otp/wiki/Writing-good-commit-messages)
 for your commits.
-
-## Remaining issues
-
-* Add test suite.
-* Flesh out more obscure parts of the AST.
-* Improve comment re-insertion.
-* Possibly: Support formatting whole modules.
-* Implement some operator-specific layouts: e.g.
-
-        Foo <$> foo
-            <*> bar
-            <*> mu
 
 ## Example
 
