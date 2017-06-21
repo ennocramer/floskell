@@ -6,14 +6,14 @@
 prettify = (style, text, workingDirectory, {onComplete, onFailure}) ->
   lines = []
   proc = new BufferedProcess
-    command: 'hindent'
+    command: 'floskell'
     args: ['--style', style]
     options:
       cwd: workingDirectory
     stdout: (line) -> lines.push(line)
     exit: -> onComplete?(lines.join(''))
   proc.onWillThrowError ({error, handle}) ->
-    atom.notifications.addError "Hindent could not spawn",
+    atom.notifications.addError "Floskell could not spawn",
       detail: "#{error}"
     onFailure?()
     handle()
@@ -39,7 +39,7 @@ prettifyFile = (style, editor, format = 'haskell') ->
           editor.addCursorAtBufferPosition cursor,
             autoscroll: false
 
-module.exports = Hindent =
+module.exports = Floskell =
   disposables: null
   menu: null
 
@@ -49,22 +49,22 @@ module.exports = Hindent =
 
     @disposables.add \
       atom.commands.add 'atom-text-editor[data-grammar~="haskell"]',
-        'hindent:prettify-fundamental': ({target}) =>
+        'floskell:prettify-fundamental': ({target}) =>
           prettifyFile 'fundamental', target.getModel()
-        'hindent:prettify-chris-done': ({target}) =>
+        'floskell:prettify-chris-done': ({target}) =>
           prettifyFile 'chris-done', target.getModel()
-        'hindent:prettify-johan-tibell': ({target}) =>
+        'floskell:prettify-johan-tibell': ({target}) =>
           prettifyFile 'johan-tibell', target.getModel()
-        'hindent:prettify-gibiansky': ({target}) =>
+        'floskell:prettify-gibiansky': ({target}) =>
           prettifyFile 'gibiansky', target.getModel()
 
     @menu.add atom.menu.add [
-      label: 'hindent'
+      label: 'floskell'
       submenu : [
-        {label: 'Fundamental', command: 'hindent:prettify-fundamental'}
-        {label: 'Chris Done', command: 'hindent:prettify-chris-done'}
-        {label: 'Johan Tibell', command: 'hindent:prettify-johan-tibell'}
-        {label: 'Gibiansky', command: 'hindent:prettify-gibiansky'}
+        {label: 'Fundamental', command: 'floskell:prettify-fundamental'}
+        {label: 'Chris Done', command: 'floskell:prettify-chris-done'}
+        {label: 'Johan Tibell', command: 'floskell:prettify-johan-tibell'}
+        {label: 'Gibiansky', command: 'floskell:prettify-gibiansky'}
       ]
     ]
 

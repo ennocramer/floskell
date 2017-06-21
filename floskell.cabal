@@ -15,7 +15,8 @@ build-type:          Simple
 cabal-version:       >=1.8
 homepage:            https://www.github.com/ennocramer/floskell
 bug-reports:         https://github.com/ennocramer/floskell/issues
-data-files:          elisp/hindent.el
+data-files:          contrib/floskell.el
+                     contrib/floskell.coffee
 extra-source-files:  README.md
                      CHANGELOG.md
                      BENCHMARK.md

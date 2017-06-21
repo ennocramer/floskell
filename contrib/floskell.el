@@ -1,9 +1,9 @@
-;;; hindent.el --- Indent haskell code using the "hindent" program
+;;; floskell.el --- Indent haskell code using the "floskell" program
 
 ;; Copyright (c) 2014 Chris Done. All rights reserved.
 
 ;; Author: Chris Done <chrisdone@gmail.com>
-;; URL: https://github.com/chrisdone/hindent
+;; URL: https://github.com/ennocramer/floskell
 ;; Package-Requires: ((cl-lib "0.5"))
 
 ;; This file is free software; you can redistribute it and/or modify
@@ -26,44 +26,44 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Minor mode
 
-(defvar hindent-mode-map
+(defvar floskell-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map [remap indent-region] #'hindent-reformat-region)
-    (define-key map [remap fill-paragraph] #'hindent-reformat-decl-or-fill)
+    (define-key map [remap indent-region] #'floskell-reformat-region)
+    (define-key map [remap fill-paragraph] #'floskell-reformat-decl-or-fill)
     map)
-  "Keymap for `hindent-mode'.")
+  "Keymap for `floskell-mode'.")
 
 ;;;###autoload
-(define-minor-mode hindent-mode
-  "Indent code with the hindent program.
+(define-minor-mode floskell-mode
+  "Indent code with the floskell program.
 
 Provide the following keybindings:
 
-\\{hindent-mode-map}"
+\\{floskell-mode-map}"
   :init-value nil
-  :keymap hindent-mode-map
+  :keymap floskell-mode-map
   :lighter " HI"
   :group 'haskell
-  :require 'hindent)
+  :require 'floskell)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Customization properties
 
-(defcustom hindent-style
+(defcustom floskell-style
   "fundamental"
   "The style to use for formatting."
   :group 'haskell
   :type 'string
   :safe #'stringp)
 
-(defcustom hindent-process-path
-  "hindent"
-  "Location where the hindent executable is located."
+(defcustom floskell-process-path
+  "floskell"
+  "Location where the floskell executable is located."
   :group 'haskell
   :type 'string
   :safe #'stringp)
 
-(defcustom hindent-line-length
+(defcustom floskell-line-length
   nil
   "Optionally override the line length of the formatting style."
   :group 'haskell
@@ -75,26 +75,26 @@ Provide the following keybindings:
 ;; Interactive functions
 
 ;;;###autoload
-(defun hindent-reformat-decl ()
+(defun floskell-reformat-decl ()
   "Re-format the current declaration by parsing and pretty
   printing it. Comments are preserved, although placement may be
   funky."
   (interactive)
-  (let ((start-end (hindent-decl-points)))
+  (let ((start-end (floskell-decl-points)))
     (when start-end
       (let ((beg (car start-end))
             (end (cdr start-end)))
-        (hindent-reformat-region beg end)))))
+        (floskell-reformat-region beg end)))))
 
 ;;;###autoload
-(defun hindent-reformat-buffer ()
+(defun floskell-reformat-buffer ()
   "Reformat the whole buffer."
   (interactive)
-  (hindent-reformat-region (point-min)
+  (floskell-reformat-region (point-min)
                            (point-max)))
 
 ;;;###autoload
-(defun hindent-reformat-decl-or-fill (justify)
+(defun floskell-reformat-decl-or-fill (justify)
   "Re-format current declaration, or fill paragraph.
 
 Fill paragraph if in a comment, otherwise reformat the current
@@ -103,23 +103,23 @@ declaration."
                  ;; Copied from `fill-paragraph'
                  (barf-if-buffer-read-only)
                  (list (if current-prefix-arg 'full))))
-  (if (hindent-in-comment)
+  (if (floskell-in-comment)
       (fill-paragraph justify t)
-    (hindent/reformat-decl)))
+    (floskell/reformat-decl)))
 
 ;;;###autoload
-(defun hindent-reformat-region (beg end)
+(defun floskell-reformat-region (beg end)
   "Reformat the given region, accounting for indentation."
   (interactive "r")
   (if (= (save-excursion (goto-char beg)
                          (line-beginning-position))
          beg)
-      (hindent-reformat-region-as-is beg end)
+      (floskell-reformat-region-as-is beg end)
     (let* ((column (- beg (line-beginning-position)))
            (string (buffer-substring-no-properties beg end))
            (new-string (with-temp-buffer
                          (insert (make-string column ? ) string)
-                         (hindent-reformat-region-as-is (point-min)
+                         (floskell-reformat-region-as-is (point-min)
                                                         (point-max))
                          (delete-region (point-min) (1+ column))
                          (buffer-substring (point-min)
@@ -130,17 +130,17 @@ declaration."
         (insert new-string)))))
 
 ;;;###autoload
-(defun hindent/reformat-decl ()
-  "See `hindent-reformat-decl'."
-  (hindent-reformat-decl))
+(defun floskell/reformat-decl ()
+  "See `floskell-reformat-decl'."
+  (floskell-reformat-decl))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Internal library
 
-(defun hindent-reformat-region-as-is (beg end)
+(defun floskell-reformat-region-as-is (beg end)
   "Reformat the given region as-is.
 
-This is the place where hindent is actually called."
+This is the place where floskell is actually called."
   (let* ((original (current-buffer))
          (orig-str (buffer-substring-no-properties beg end)))
     (with-temp-buffer
@@ -149,17 +149,17 @@ This is the place where hindent is actually called."
           (let ((ret (apply #'call-process-region
                             (append (list beg
                                           end
-                                          hindent-process-path
+                                          floskell-process-path
                                           nil ; delete
                                           temp ; output
                                           nil
                                           "--style"
-                                          hindent-style)
-                                    (when hindent-line-length
+                                          floskell-style)
+                                    (when floskell-line-length
                                       (list "--line-length"
                                             (number-to-string
-                                             hindent-line-length)))
-                                    (hindent-extra-arguments)))))
+                                             floskell-line-length)))
+                                    (floskell-extra-arguments)))))
             (cond
              ((= ret 1)
               (let ((error-string
@@ -168,7 +168,7 @@ This is the place where hindent is actually called."
                                             (buffer-substring (line-beginning-position)
                                                               (line-end-position)))))
                          string))))
-                (if (string= error-string "hindent: Parse error: EOF")
+                (if (string= error-string "floskell: Parse error: EOF")
                     (message "language pragma")
                   (error error-string))))
              ((= ret 0)
@@ -191,7 +191,7 @@ This is the place where hindent is actually called."
                       (message "Formatted."))
                   (message "Already formatted.")))))))))))
 
-(defun hindent-decl-points (&optional use-line-comments)
+(defun floskell-decl-points (&optional use-line-comments)
   "Get the start and end position of the current
 declaration. This assumes that declarations start at column zero
 and that the rest is always indented by one space afterwards, so
@@ -203,9 +203,9 @@ expected to work."
    ;; is at the beginning of the line, we don't care to treat it as a
    ;; proper declaration.
    ((and (not use-line-comments)
-         (hindent-in-comment)
+         (floskell-in-comment)
          (save-excursion (goto-char (line-beginning-position))
-                         (hindent-in-comment)))
+                         (floskell-in-comment)))
     nil)
    ((save-excursion
       (goto-char (line-beginning-position))
@@ -249,7 +249,7 @@ expected to work."
                    (point-max)))))
         (cons start end))))))
 
-(defun hindent-in-comment ()
+(defun floskell-in-comment ()
   "Are we currently in a comment?"
   (save-excursion
     (when (and (= (line-end-position)
@@ -269,13 +269,13 @@ expected to work."
          (not (save-excursion (goto-char (line-beginning-position))
                               (looking-at "{-# "))))))
 
-(defun hindent-extra-arguments ()
+(defun floskell-extra-arguments ()
   "Pass in extra arguments, such as extensions and optionally
 other things later."
   (if (boundp 'haskell-language-extensions)
       haskell-language-extensions
     '()))
 
-(provide 'hindent)
+(provide 'floskell)
 
-;;; hindent.el ends here
+;;; floskell.el ends here
