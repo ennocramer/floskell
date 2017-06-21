@@ -1,9 +1,9 @@
-name:                hindent
-version:             4.6.4
-synopsis:            Extensible Haskell pretty printer
-description:         Extensible Haskell pretty printer. Both a library and an executable.
+name:                floskell
+version:             1.0.0
+synopsis:            A flexible Haskell source code pretty printer
+description:         A flexible Haskell source code pretty printer.
                      .
-                     See the Github page for usage\/explanation: <https://github.com/chrisdone/hindent>
+                     See the Github page for usage\/explanation: <https://github.com/ennocramer/floskell>
 license:             BSD3
 stability:           Unstable
 license-file:        LICENSE.md
@@ -13,8 +13,8 @@ copyright:           2014 Chris Done, 2015 Andrew Gibiansky
 category:            Development
 build-type:          Simple
 cabal-version:       >=1.8
-homepage: http://www.github.com/chrisdone/hindent
-bug-reports: https://github.com/chrisdone/hindent/issues
+homepage:            https://www.github.com/ennocramer/floskell
+bug-reports:         https://github.com/ennocramer/floskell/issues
 data-files:          elisp/hindent.el
 extra-source-files:  README.md
                      CHANGELOG.md
@@ -23,7 +23,7 @@ extra-source-files:  README.md
 
 source-repository head
     type:           git
-    location:       https://github.com/chrisdone/hindent
+    location:       https://github.com/ennocramer/floskell
 
 library
   hs-source-dirs:    src/
@@ -48,12 +48,12 @@ library
                    , transformers
                    , text
 
-executable hindent
+executable floskell
   hs-source-dirs:    src/main
   ghc-options:       -Wall -O2
   main-is:           Main.hs
   build-depends:     base >= 4 && < 5
-                   , hindent
+                   , floskell
                    , bytestring
                    , descriptive >= 0.7 && < 0.10
                    , haskell-src-exts
@@ -61,13 +61,13 @@ executable hindent
                    , directory
                    , text
 
-test-suite hindent-test
+test-suite floskell-test
   type: exitcode-stdio-1.0
   hs-source-dirs: src/main
   main-is:           Test.hs
   other-modules:     Markdone
   build-depends:     base >= 4 && <5
-                   , hindent
+                   , floskell
                    , haskell-src-exts
                    , monad-loops
                    , mtl
@@ -79,14 +79,14 @@ test-suite hindent-test
                    , deepseq
                    , exceptions
 
-benchmark hindent-bench
+benchmark floskell-bench
   type: exitcode-stdio-1.0
   hs-source-dirs:    src/main
   ghc-options:       -Wall -O2 -rtsopts
   main-is:           Benchmark.hs
   other-modules:     Markdone
   build-depends:     base >= 4 && < 5
-                   , hindent
+                   , floskell
                    , bytestring
                    , utf8-string
                    , haskell-src-exts

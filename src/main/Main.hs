@@ -2,10 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 
--- | Main entry point to hindent.
---
--- hindent
-
+-- | Main entry point to floskell.
 module Main where
 
 import           HIndent
@@ -22,7 +19,7 @@ import           Data.Version (showVersion)
 import           Descriptive
 import           Descriptive.Options
 import           Language.Haskell.Exts hiding (Style,style)
-import           Paths_hindent (version)
+import           Paths_floskell (version)
 import           System.Directory
 import           System.Environment
 import           System.IO
@@ -41,7 +38,7 @@ main =
            Just filepath ->
              do text <- S.readFile filepath
                 tmpDir <- getTemporaryDirectory
-                (fp,h) <- openTempFile tmpDir "hindent.hs"
+                (fp,h) <- openTempFile tmpDir "floskell.hs"
                 L8.hPutStrLn
                   h
                   (either error S.toLazyByteString (reformat style (Just exts) text))
@@ -54,7 +51,7 @@ main =
            Nothing ->
              L8.interact (either error S.toLazyByteString . reformat style (Just exts) . L8.toStrict)
        Failed (Wrap (Stopped Version) _) ->
-         putStrLn ("hindent " ++ showVersion version)
+         putStrLn ("floskell " ++ showVersion version)
        _ ->
          error (T.unpack (textDescription (describe options [])))
 
