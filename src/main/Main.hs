@@ -5,8 +5,8 @@
 -- | Main entry point to floskell.
 module Main where
 
-import           HIndent
-import           HIndent.Types
+import           Floskell
+import           Floskell.Types
 
 import           Control.Applicative
 import qualified Data.ByteString as S

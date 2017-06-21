@@ -3,12 +3,12 @@
 
 -- | Comment handling.
 
-module HIndent.Comments where
+module Floskell.Comments where
 
 import Control.Arrow (first, second)
 import Control.Monad.State.Strict
 import qualified Data.Map.Strict as M
-import HIndent.Types
+import Floskell.Types
 import Language.Haskell.Exts hiding (Style,prettyPrint,Pretty,style,parse)
 
 -- Order by start of span, larger spans before smaller spans.

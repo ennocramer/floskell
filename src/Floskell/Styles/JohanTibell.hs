@@ -11,16 +11,16 @@
 -- How to indent let?
 -- How to indent large ADT constructors types?
 
-module HIndent.Styles.JohanTibell where
+module Floskell.Styles.JohanTibell where
 
 import Control.Monad hiding (forM_)
 import Control.Monad.State.Class
 import Data.Foldable (forM_)
 import Data.Int
 import Data.Maybe
-import HIndent.Pretty
-import HIndent.Styles.ChrisDone (infixApp)
-import HIndent.Types
+import Floskell.Pretty
+import Floskell.Styles.ChrisDone (infixApp)
+import Floskell.Types
 import Language.Haskell.Exts.Syntax
 import Prelude hiding (exp)
 

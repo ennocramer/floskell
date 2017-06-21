@@ -12,7 +12,7 @@ import qualified Data.ByteString.Lazy.Builder as L
 import qualified Data.ByteString.UTF8 as UTF8
 import Data.Maybe (mapMaybe)
 import qualified Data.Text as T
-import HIndent
+import Floskell
 import Markdone (Markdone(..))
 import qualified Markdone as MD
 import Test.Hspec

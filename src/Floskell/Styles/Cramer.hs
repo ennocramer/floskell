@@ -4,7 +4,7 @@
 
 -- | Enno Cramer's Style.
 
-module HIndent.Styles.Cramer (cramer) where
+module Floskell.Styles.Cramer (cramer) where
 
 import Control.Applicative ((<|>), empty)
 import Control.Monad (forM_, guard, replicateM_, unless, when)
@@ -19,8 +19,8 @@ import Language.Haskell.Exts.Comments
 import Language.Haskell.Exts.SrcLoc
 import Language.Haskell.Exts (prettyPrint)
 
-import HIndent.Pretty hiding (inter, spaced)
-import HIndent.Types
+import Floskell.Pretty hiding (inter, spaced)
+import Floskell.Types
 
 -- | Line breaking mode for syntactical constructs.
 data LineBreak
@@ -180,11 +180,11 @@ lineDelta prev next = nextLine - prevLine
 maybeM_ :: Maybe a -> (a -> Printer s ()) -> Printer s ()
 maybeM_ = forM_
 
--- | Simplified HIndent.Pretty.inter that does not modify the indent level.
+-- | Simplified Floskell.Pretty.inter that does not modify the indent level.
 inter :: Printer s () -> [Printer s ()] -> Printer s ()
 inter sep = sequence_ . intersperse sep
 
--- | Simplified HIndent.Pretty.spaced that does not modify the indent level.
+-- | Simplified Floskell.Pretty.spaced that does not modify the indent level.
 spaced :: [Printer s ()] -> Printer s ()
 spaced = inter space
 
@@ -487,7 +487,7 @@ typeSig ty =
 
 typeInfixExpr
   :: Type NodeInfo -> Printer State ()
--- As HIndent does not know about operator precedence, preserve
+-- As Floskell does not know about operator precedence, preserve
 -- existing line breaks, but do not add new ones.
 typeInfixExpr (TyInfix _ arg1 op arg2)
   | deltaBefore /= 0 && deltaAfter /= 0 =

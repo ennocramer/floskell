@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings, RecordWildCards, RankNTypes #-}
 {-# OPTIONS_GHC  -fno-warn-name-shadowing  #-}
 
-module HIndent.Styles.Gibiansky where
+module Floskell.Styles.Gibiansky where
 
 import           Data.Foldable
 -- import           Control.Applicative ((<$>))
@@ -10,8 +10,8 @@ import           Data.List (unfoldr, isPrefixOf)
 import           Control.Monad.State.Strict hiding (state, State, forM_, sequence_)
 import           Data.Typeable
 
-import           HIndent.Pretty
-import           HIndent.Types
+import           Floskell.Pretty
+import           Floskell.Types
 
 import           Language.Haskell.Exts.Syntax
 import           Language.Haskell.Exts.SrcLoc

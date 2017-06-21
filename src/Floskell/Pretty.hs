@@ -8,7 +8,7 @@
 
 -- | Pretty printing.
 
-module HIndent.Pretty
+module Floskell.Pretty
   (
   -- * Printing
     Pretty
@@ -65,7 +65,7 @@ module HIndent.Pretty
   )
   where
 
-import           HIndent.Types
+import           Floskell.Types
 
 import           Language.Haskell.Exts.Comments
 import           Control.Applicative (empty)

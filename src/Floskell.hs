@@ -5,7 +5,7 @@
 
 -- | Haskell indenter.
 
-module HIndent
+module Floskell
   (-- * Formatting functions.
    reformat
   ,prettyPrint
@@ -23,14 +23,14 @@ module HIndent
   )
   where
 
-import           HIndent.Comments
-import           HIndent.Pretty
-import           HIndent.Styles.ChrisDone (chrisDone)
-import           HIndent.Styles.Cramer (cramer)
-import           HIndent.Styles.Fundamental (fundamental)
-import           HIndent.Styles.Gibiansky (gibiansky)
-import           HIndent.Styles.JohanTibell (johanTibell)
-import           HIndent.Types
+import           Floskell.Comments
+import           Floskell.Pretty
+import           Floskell.Styles.ChrisDone (chrisDone)
+import           Floskell.Styles.Cramer (cramer)
+import           Floskell.Styles.Fundamental (fundamental)
+import           Floskell.Styles.Gibiansky (gibiansky)
+import           Floskell.Styles.JohanTibell (johanTibell)
+import           Floskell.Types
 
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as S

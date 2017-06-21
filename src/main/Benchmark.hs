@@ -13,7 +13,7 @@ import qualified Data.ByteString.Char8 as S8
 import qualified Data.ByteString.Lazy.Builder as L
 import qualified Data.ByteString.UTF8 as UTF8
 import qualified Data.Text as T
-import           HIndent
+import           Floskell
 import           Markdone
 
 -- | Main benchmarks.

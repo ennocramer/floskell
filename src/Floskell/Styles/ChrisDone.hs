@@ -7,11 +7,11 @@
 --
 -- Documented here: <https://github.com/chrisdone/haskell-style-guide>
 
-module HIndent.Styles.ChrisDone where
+module Floskell.Styles.ChrisDone where
 
-import HIndent.Pretty
-import HIndent.Comments
-import HIndent.Types
+import Floskell.Pretty
+import Floskell.Comments
+import Floskell.Types
 
 import Control.Monad
 import Control.Monad.Loops

@@ -7,7 +7,7 @@
 
 -- | All types.
 
-module HIndent.Types
+module Floskell.Types
   (Penalty(..)
   ,defaultLinePenalty
   ,Printer(..)

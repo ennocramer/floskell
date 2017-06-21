@@ -3,9 +3,9 @@
 -- | Fundamental built-in style. Defines no additional extensions or
 -- configurations beyond the default printer.
 
-module HIndent.Styles.Fundamental where
+module Floskell.Styles.Fundamental where
 
-import HIndent.Types
+import Floskell.Types
 
 
 -- | Empty state.
