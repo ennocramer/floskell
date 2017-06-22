@@ -73,7 +73,7 @@ commentSrcSpan (Comment _ srcSpan _) = srcSpan
 commentPreprocessor :: [Comment] -> Printer s [Comment]
 commentPreprocessor cs = do
   config <- gets psConfig
-  col <- getColumn
+  col <- getNextColumn
   return $ go (fromIntegral col) config cs
 
   where
@@ -311,7 +311,7 @@ imp ImportDecl{..} = do
 -- So you probably only want to use this for single-line printers.
 prettyColLength :: (Integral a, Pretty ast) => ast NodeInfo -> Printer State a
 prettyColLength x = fst <$> sandbox (do
-  col <- getColumn
+  col <- getNextColumn
   pretty x
   col' <- getColumn
   return $ fromIntegral $ max (col' - col) 0)
@@ -349,7 +349,7 @@ typ (TyForall _ mforall (Just ctx) rest) = do
       write " => "
       pretty rest
     else do
-      col <- getColumn
+      col <- getNextColumn
       pretty ctx
       column (col - 3) $ do
         newline
@@ -367,7 +367,7 @@ typ ty@(TyFun _ from to) =
     else do
       -- If the function argument types are on different lines,
       -- write one argument type per line.
-      col <- getColumn
+      col <- getNextColumn
       pretty from
       column (col - 3) $ do
         newline
@@ -436,7 +436,7 @@ multiIfExpr _ = error "Not a multi if"
 letExpr :: Exp NodeInfo -> Printer State ()
 letExpr (Let _ binds result) = do
   cols <- depend (write "let ") $ do
-            col <- getColumn
+            col <- getNextColumn
 
             oldLetBind <- userGets gibianskyLetBind
             userModify (\s -> s { gibianskyLetBind = True })
@@ -452,11 +452,8 @@ letExpr _ = error "Not a let"
 
 keepingColumn :: Printer State () -> Printer State ()
 keepingColumn printer = do
-  eol <- gets psEolComment
-  when eol newline
-  col <- getColumn
-  ind <- gets psIndentLevel
-  column (max col ind) printer
+  col <- getNextColumn
+  column col printer
 
 appExpr :: Exp NodeInfo -> Printer State ()
 appExpr app@(App _ f x) = do
@@ -550,9 +547,8 @@ dollarExpr (InfixApp _ left op right) = do
   if needsNewline right
     then do
       newline
-      col <- getColumn
-      ind <- gets psIndentLevel
-      column (max col ind + indentSpaces) $ pretty right
+      col <- getNextColumn
+      column (col + indentSpaces) $ pretty right
     else do
       space
       pretty right
@@ -757,9 +753,9 @@ writeCaseAlts alts = do
     patternLen :: Pat NodeInfo -> Printer State Int
     patternLen pat = fromIntegral <$> fst <$> sandbox
                                                 (do
-                                                   col <- getColumn
+                                                   col <- getNextColumn
                                                    pretty pat
-                                                   col' <- getColumn
+                                                   col' <- getNextColumn
                                                    return $ col' - col)
 
     prettyCase :: Maybe Int -> Alt NodeInfo -> Printer State ()
@@ -767,9 +763,9 @@ writeCaseAlts alts = do
       -- Padded pattern
       case mpatlen of
         Just patlen -> do
-          col <- getColumn
+          col <- getNextColumn
           pretty p
-          col' <- getColumn
+          col' <- getNextColumn
           replicateM_ (patlen - fromIntegral (col' - col)) space
         Nothing -> pretty p
 

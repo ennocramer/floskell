@@ -276,8 +276,7 @@ guardedalt (GuardedRhs _ stmts e) =
 -- is two invalid statements, not one valid infix op.
 stmt :: Stmt NodeInfo -> Printer t ()
 stmt (Qualifier _ e@(InfixApp _ a op b)) =
-  do col <- fmap (psColumn . snd)
-                 (sandbox (write ""))
+  do col <- getNextColumn
      infixApp e a op b (Just col)
 stmt (Generator _ p e) =
   do pretty p
@@ -451,8 +450,7 @@ isShort :: (Pretty ast)
         => ast NodeInfo -> Printer t (Bool,PrintState t)
 isShort p =
   do line <- gets psLine
-     orig <- fmap (psColumn . snd)
-                  (sandbox (write ""))
+     orig <- getNextColumn
      (_,st) <- sandbox (pretty p)
      return (psLine st == line &&
              (psColumn st < orig + shortName)

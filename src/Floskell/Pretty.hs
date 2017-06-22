@@ -49,6 +49,7 @@ module Floskell.Pretty
   , indentedBlock
   , column
   , getColumn
+  , getNextColumn
   , getLineNum
   , depend
   , dependBind
@@ -255,9 +256,19 @@ column i p =
      modify (\s -> s {psIndentLevel = level})
      return m
 
--- | Get the current indent level.
+-- | Get the column directly after the last printed character.
 getColumn :: Printer s Int64
 getColumn = gets psColumn
+
+-- | Get the column for the next printed character.
+getNextColumn :: Printer s Int64
+getNextColumn =
+  do st <- get
+     return $
+       if psEolComment st
+          then psIndentLevel st
+          else max (psColumn st)
+                   (psIndentLevel st)
 
 -- | Get the current line number.
 getLineNum :: Printer s Int64

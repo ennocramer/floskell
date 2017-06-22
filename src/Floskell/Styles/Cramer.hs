@@ -199,12 +199,7 @@ indentHalf p = getIndentSpaces >>= flip indented p . (`div` 2)
 -- | Set indentation level to current column.
 align :: Printer s a -> Printer s a
 align p =
-  do st <- get
-     let col =
-           if psEolComment st
-              then psIndentLevel st
-              else max (psColumn st)
-                       (psIndentLevel st)
+  do col <- getNextColumn
      column col p
 
 -- | Update the line breaking mode and restore afterwards.
