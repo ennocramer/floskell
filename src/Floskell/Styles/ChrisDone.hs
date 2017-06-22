@@ -71,11 +71,9 @@ types (TyTuple _ boxed tys) =
         depend (write (case boxed of
                          Unboxed -> "(#"
                          Boxed -> "("))
-               (do (fits,_) <- fitsOnOneLine p
-                   if fits
-                      then p
-                      else prefixedLined ","
-                                         (map pretty tys)
+               (do p `fitsOnOneLineOr`
+                     prefixedLined ","
+                                   (map pretty tys)
                    write (case boxed of
                             Unboxed -> "#)"
                             Boxed -> ")"))
@@ -95,11 +93,9 @@ decl (TypeDecl _ head ty) =
   do write "type "
      pretty head
      write " = "
-     (fits,st) <- fitsOnOneLine (pretty ty)
-     if fits
-        then put st
-        else do newline
-                indented 2 (pretty ty)
+     pretty ty `fitsOnOneLineOr`
+       do newline
+          indented 2 (pretty ty)
 decl (TypeSig _ names ty') =
   do (fitting,st) <- isSmallFitting dependent
      if fitting
@@ -137,14 +133,12 @@ decl (TypeSig _ names ty') =
         collapseFaps (TyFun _ arg result) = arg : collapseFaps result
         collapseFaps e = [e]
         prettyTy ty =
-          do (fits,st) <- fitsOnOneLine (pretty ty)
-             if fits
-                then put st
-                else case collapseFaps ty of
-                       [] -> pretty ty
-                       tys ->
-                         prefixedLined "-> "
-                                       (map pretty tys)
+          pretty ty `fitsOnOneLineOr`
+          case collapseFaps ty of
+            [] -> pretty ty
+            tys ->
+              prefixedLined "-> "
+                            (map pretty tys)
 decl e = prettyNoExt e
 
 -- | Patterns of function declarations
@@ -163,10 +157,7 @@ match (Match _ name pats rhs mbinds) =
                    2
              if (headIsShort && flatish) ||
                 all id flats
-                then do ((singleLiner,overflow),st) <- sandboxNonOverflowing pats
-                        if singleLiner && not overflow
-                           then put st
-                           else multi orig pats headIsShort
+                then spaced (map pretty pats) `fitsOnOneLineOr` multi orig pats headIsShort
                 else multi orig pats headIsShort)
      withCaseContext False (pretty rhs)
      case mbinds of
@@ -322,10 +313,7 @@ exp (App _ op a) =
                    2
              if (headIsShort && flatish) ||
                 all id flats
-                then do ((singleLiner,overflow),st) <- sandboxNonOverflowing args
-                        if singleLiner && not overflow
-                           then put st
-                           else multi orig args headIsShort
+                then spaced (map pretty args) `fitsOnOneLineOr` multi orig args headIsShort
                 else multi orig args headIsShort)
   where (f,args) = flatten op [a]
         flatten :: Exp NodeInfo
@@ -351,44 +339,23 @@ exp (Tuple _ boxed exps) =
   depend (write (case boxed of
                    Unboxed -> "(#"
                    Boxed -> "("))
-         (do (fits,_) <- fitsOnOneLine p
-             if fits
-                then p
-                else prefixedLined ","
-                                   (map pretty exps)
+         (do p `fitsOnOneLineOr`
+               prefixedLined ","
+                             (map pretty exps)
              write (case boxed of
                       Unboxed -> "#)"
                       Boxed -> ")"))
   where p = commas (map pretty exps)
 exp (List _ es) =
-  do (ok,st) <- sandbox renderFlat
-     if ok
-        then put st
-        else brackets (prefixedLined ","
-                                     (map pretty es))
-  where renderFlat =
-          do line <- gets psLine
-             brackets (commas (map pretty es))
-             st <- get
-             columnLimit <- getColumnLimit
-             let overflow = psColumn st > columnLimit
-                 single = psLine st == line
-             return (not overflow && single)
+  brackets (commas (map pretty es)) `fitsOnOneLineOr`
+  brackets (prefixedLined ","
+                          (map pretty es))
 exp (ListComp _ e qstmt) =
   brackets (do pretty e
-               unless (null qstmt) (do (ok,st) <- sandbox oneLiner
-                                       if ok
-                                          then put st
-                                          else lined))
-  where oneLiner = do line <- gets psLine
-                      write " | "
-                      commas (map pretty qstmt)
-                      st <- get
-                      columnLimit <- getColumnLimit
-                      let overflow = psColumn st > columnLimit
-                          single = psLine st == line
-                      return (not overflow && single)
-        lined =
+               unless (null qstmt)
+                      ((write " | " >> commas (map pretty qstmt)) `fitsOnOneLineOr`
+                       lined))
+  where lined =
           do newline
              indented (-1)
                       (write "|")
@@ -428,19 +395,6 @@ multi orig args headIsShort =
                         indentSpaces <- getIndentSpaces
                         column (orig + indentSpaces)
                                (lined (map pretty args))
-
--- | Sandbox and render the node on a single line, return whether it's
--- on a single line and whether it's overflowing.
-sandboxNonOverflowing :: Pretty ast
-                      => [ast NodeInfo] -> Printer t ((Bool,Bool),PrintState t)
-sandboxNonOverflowing args =
-  sandbox (do line <- gets psLine
-              columnLimit <- getColumnLimit
-              singleLineRender
-              st <- get
-              return (psLine st == line,psColumn st > columnLimit + 20))
-  where singleLineRender =
-          spaced (map pretty args)
 
 --------------------------------------------------------------------------------
 -- Predicates
@@ -498,21 +452,6 @@ isFlatExp (LeftSection _ e _) = isFlatExp e
 isFlatExp (RightSection _ _ e) = isFlatExp e
 isFlatExp _ = False
 
--- | Does printing the given thing overflow column limit? (e.g. 80)
-fitsOnOneLine :: Printer s a -> Printer s (Bool,PrintState s)
-fitsOnOneLine p =
-  do line <- gets psLine
-     (_,st) <- sandbox p
-     columnLimit <- getColumnLimit
-     return (psLine st == line && psColumn st < columnLimit,st)
-
--- | Does printing the given thing overflow column limit? (e.g. 80)
-fitsInColumnLimit :: Printer t a -> Printer t (Bool,PrintState t)
-fitsInColumnLimit p =
-  do (_,st) <- sandbox p
-     columnLimit <- getColumnLimit
-     return (psColumn st < columnLimit,st)
-
 --------------------------------------------------------------------------------
 -- Helpers
 
@@ -523,25 +462,21 @@ infixApp :: Exp NodeInfo
          -> Maybe Int64
          -> Printer s ()
 infixApp e a op b indent =
-  do (fits,st) <-
-       fitsOnOneLine
-         (spaced (map (\link ->
-                         case link of
-                           OpChainExp e' -> pretty e'
-                           OpChainLink qop -> pretty qop)
-                      (flattenOpChain e)))
-     if fits
-        then put st
-        else do prettyWithIndent a
-                space
-                pretty op
-                newline
-                case indent of
-                  Nothing -> prettyWithIndent b
-                  Just col ->
-                    do indentSpaces <- getIndentSpaces
-                       column (col + indentSpaces)
-                              (prettyWithIndent b)
+  (spaced (map (\link ->
+                  case link of
+                    OpChainExp e' -> pretty e'
+                    OpChainLink qop -> pretty qop)
+               (flattenOpChain e))) `fitsOnOneLineOr`
+  do prettyWithIndent a
+     space
+     pretty op
+     newline
+     case indent of
+       Nothing -> prettyWithIndent b
+       Just col ->
+         do indentSpaces <- getIndentSpaces
+            column (col + indentSpaces)
+                   (prettyWithIndent b)
   where prettyWithIndent e' =
           case e' of
             (InfixApp _ a' op' b') ->
@@ -571,9 +506,7 @@ dependOrNewline
   -> (ast NodeInfo -> Printer t ())
   -> Printer t ()
 dependOrNewline left right f =
-  do (fits,st) <- fitsOnOneLine (depend left (f right))
-     if fits
-        then put st
-        else do left
-                newline
-                (f right)
+  depend left (f right) `fitsOnOneLineOr`
+  do left
+     newline
+     (f right)

@@ -6,8 +6,8 @@
 
 module Floskell.Styles.Cramer (cramer) where
 
-import Control.Applicative ((<|>), empty)
-import Control.Monad (forM_, guard, replicateM_, unless, when)
+import Control.Applicative ((<|>))
+import Control.Monad (forM_, replicateM_, unless, when)
 import Control.Monad.State.Strict (get, gets)
 
 import Data.Int (Int64)
@@ -89,9 +89,7 @@ linePenalty
   :: Bool -> Int64 -> Printer State Penalty
 linePenalty eol col =
   do state <- get
-     let linebreak = cramerLineBreak (psUserState state)
-         maxcol = configMaxColumns (psConfig state)
-     when (linebreak == Single && (eol || col > maxcol)) empty
+     let maxcol = configMaxColumns (psConfig state)
      return $ linebreakPenalty + overfullPenalty (col - maxcol)
   where linebreakPenalty =
           if eol
@@ -230,7 +228,7 @@ attemptSingleLine single multi =
      case linebreak of
        Single -> single
        Multi -> multi
-       Free -> withLineBreak Single single <|> multi
+       Free -> withLineBreak Single single `fitsOnOneLineOr` multi
 
 -- | Same as attemptSingleLine, but execute the second printer in Multi
 -- mode.  Used in type signatures to force either a single line or
@@ -306,12 +304,7 @@ listAutoWrap open close sep ps =
           space
      string close
   where maybeNewline p = cut $
-          (do p
-              col <- gets psColumn
-              maxCol <- gets (configMaxColumns . psConfig)
-              guard $ col < maxCol) <|>
-          (do newline
-              p)
+          (withOutputRestriction NoOverflow p) <|> (newline >> p)
 
 -- | Like `inter newline . map pretty`, but preserve empty lines
 -- between elements.

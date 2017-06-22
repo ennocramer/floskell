@@ -188,7 +188,7 @@ runPrinterStyle mode' (Style _name _author _desc st extenders config preprocesso
         psOutput
         (snd <$> execPrinter
            m
-           (PrintState 0 mempty False 0 1 st extenders config False False mode' preprocessor penalty))
+           (PrintState 0 mempty False 0 1 st extenders config False False mode' preprocessor penalty Anything))
 
 -- | Parse mode, includes all extensions, doesn't assume any fixities.
 parseMode :: ParseMode

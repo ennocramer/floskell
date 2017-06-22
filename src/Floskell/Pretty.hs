@@ -15,6 +15,8 @@ module Floskell.Pretty
   , pretty
   , prettyNoExt
   , cut
+  , withOutputRestriction
+  , fitsOnOneLineOr
   -- * User state
   ,getState
   ,putState
@@ -69,7 +71,7 @@ module Floskell.Pretty
 import           Floskell.Types
 
 import           Language.Haskell.Exts.Comments
-import           Control.Applicative (empty)
+import           Control.Applicative ((<|>), empty)
 import           Control.Monad.State.Strict hiding (state)
 import           Control.Monad.Search (cost,cost')
 import qualified Data.ByteString as S
@@ -123,10 +125,25 @@ prettyNoExt = prettyInternal
 -- the formatting of an AST node has no effect on the penalty of any
 -- following AST node, such as top-level declarations or case
 -- branches.
-cut :: Printer s () -> Printer s ()
+cut :: Printer s a -> Printer s a
 cut p =
   do s <- get
-     maybe empty (\(c,s') -> cost' c >> put s') $ execPrinter p s
+     maybe empty (\(c,(x,s')) -> cost' c >> put s' >> return x) $
+       runPrinter p s
+
+withOutputRestriction
+  :: OutputRestriction -> Printer s a -> Printer s a
+withOutputRestriction r p =
+  do orig <- gets psOutputRestriction
+     modify $ \s -> s {psOutputRestriction = max orig r}
+     result <- p
+     modify $ \s -> s {psOutputRestriction = orig}
+     return result
+
+fitsOnOneLineOr
+  :: Printer s a -> Printer s a -> Printer s a
+fitsOnOneLineOr single multi =
+  cut $ withOutputRestriction NoOverflowOrLinebreak single <|> multi
 
 -- | Print comments of a node.
 printComments :: Pretty ast
@@ -284,6 +301,7 @@ newline =
               then fromIntegral (psIndentLevel state)
               else 0
          out = S.replicate indent 32
+     guard $ psOutputRestriction state /= NoOverflowOrLinebreak
      penalty <- psLinePenalty state True (psColumn state)
      when (penalty /= mempty) $ cost penalty mempty
      modify (\s ->
@@ -384,6 +402,7 @@ write x =
                       then S.replicate indent 32 <> x'
                       else x'
                  newCol = psColumn state + fromIntegral (S.length out)
+             guard $ psOutputRestriction state == Anything || newCol < configMaxColumns (psConfig state)
              penalty <- psLinePenalty state False newCol
              when (penalty /= mempty) $ cost mempty penalty
              modify (\s ->

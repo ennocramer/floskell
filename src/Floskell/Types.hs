@@ -8,10 +8,12 @@
 -- | All types.
 
 module Floskell.Types
-  (Penalty(..)
+  (OutputRestriction(..)
+  ,Penalty(..)
   ,defaultLinePenalty
   ,Printer(..)
   ,execPrinter
+  ,runPrinter
   ,PrintState(..)
   ,Extender(..)
   ,Style(..)
@@ -24,7 +26,7 @@ module Floskell.Types
 
 import Control.Applicative
 import Control.Monad
-import Control.Monad.State.Strict (MonadState(..),StateT,execStateT,gets)
+import Control.Monad.State.Strict (MonadState(..),StateT,execStateT,gets,runStateT)
 import Control.Monad.Search (MonadSearch,Search,runSearch)
 import Data.ByteString.Builder (Builder)
 import Data.Data
@@ -34,6 +36,9 @@ import Data.Text (Text)
 import Language.Haskell.Exts.Comments
 import Language.Haskell.Exts.Parser
 import Language.Haskell.Exts.SrcLoc
+
+data OutputRestriction = Anything | NoOverflow | NoOverflowOrLinebreak
+  deriving (Eq,Ord,Show)
 
 newtype Penalty = Penalty Int
   deriving (Eq,Ord,Num,Show)
@@ -52,11 +57,14 @@ defaultLinePenalty eol col =
 
 -- | A pretty printing monad.
 newtype Printer s a =
-  Printer {runPrinter :: StateT (PrintState s) (Search Penalty) a}
+  Printer {unPrinter :: StateT (PrintState s) (Search Penalty) a}
   deriving (Applicative,Monad,Functor,MonadState (PrintState s),MonadSearch Penalty,MonadPlus,Alternative)
 
 execPrinter :: Printer s a -> PrintState s -> Maybe (Penalty, PrintState s)
-execPrinter m s = listToMaybe . runSearch $ execStateT (runPrinter m) s
+execPrinter m s = listToMaybe . runSearch $ execStateT (unPrinter m) s
+
+runPrinter :: Printer s a -> PrintState s -> Maybe (Penalty, (a, PrintState s))
+runPrinter m s = listToMaybe . runSearch $ runStateT (unPrinter m) s
 
 -- | The state of the pretty printer.
 data PrintState s =
@@ -73,6 +81,7 @@ data PrintState s =
              ,psParseMode :: !ParseMode -- ^ Mode used to parse the original AST.
              ,psCommentPreprocessor :: forall t. [Comment] -> Printer t [Comment] -- ^ Preprocessor applied to comments on an AST before printing.
              ,psLinePenalty :: Bool -> Int64 -> Printer s Penalty
+             ,psOutputRestriction :: OutputRestriction
              }
 
 -- | A printer extender. Takes as argument the user state that the

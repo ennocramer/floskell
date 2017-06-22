@@ -88,12 +88,10 @@ dependOrNewline :: Printer t ()
                 -> (Exp NodeInfo -> Printer t ())
                 -> Printer t ()
 dependOrNewline left right f =
-  do (fits,st) <- fitsOnOneLine renderDependent
-     if fits
-        then put st
-        else do left
-                newline
-                (f right)
+  do renderDependent `fitsOnOneLineOr`
+       do left
+          newline
+          (f right)
   where renderDependent = depend left (f right)
 
 -- | Handle do and case specially and also space out guards more.
@@ -108,16 +106,12 @@ rhs (UnGuardedRhs _ (Do _ dos)) =
              (write "do")
              (lined (map pretty dos))
 rhs (UnGuardedRhs _ e) =
-  do (fits,st) <-
-       fitsOnOneLine
-         (do write " "
-             rhsSeparator
-             write " "
-             pretty e)
-     if fits
-        then put st
-        else swing (write " " >> rhsSeparator >> write " ")
-                   (pretty e)
+  (do write " "
+      rhsSeparator
+      write " "
+      pretty e) `fitsOnOneLineOr`
+  swing (write " " >> rhsSeparator >> write " ")
+        (pretty e)
 rhs (GuardedRhss _ gas) =
   do newline
      indented 2
@@ -143,27 +137,18 @@ guardedRhs (GuardedRhs _ stmts (Do _ dos)) =
      swing (write "do")
            (lined (map pretty dos))
 guardedRhs (GuardedRhs _ stmts e) =
-  do (fits,st) <-
-       fitsOnOneLine
-         (indented 1
-                   (do prefixedLined
-                         ","
-                         (map (\p ->
-                                 do space
-                                    pretty p)
-                              stmts)))
-     put st
-     if fits
-        then do (fits',st') <-
-                  fitsOnOneLine
-                    (do write " "
-                        rhsSeparator
-                        write " "
-                        pretty e)
-                if fits'
-                   then put st'
-                   else swingIt
-        else swingIt
+  do (indented 1
+               (do prefixedLined
+                     ","
+                     (map (\p ->
+                             do space
+                                pretty p)
+                          stmts)))
+     (do write " "
+         rhsSeparator
+         write " "
+         pretty e) `fitsOnOneLineOr`
+       swingIt
   where swingIt =
           swing (write " " >> rhsSeparator >> write " ")
                 (pretty e)
@@ -173,30 +158,22 @@ guardedRhs (GuardedRhs _ stmts e) =
 exp :: Exp NodeInfo -> Printer s ()
 -- | Do after lambda should swing.
 exp (Lambda _ pats (Do l stmts)) =
-  do
-     (fits,st) <-
-       fitsOnOneLine
-         (do write "\\"
-             spaced (map pretty pats)
-             write " -> "
-             pretty (Do l stmts))
-     if fits
-        then put st
-        else swing (do write "\\"
-                       spaced (map pretty pats)
-                       write " -> do")
-                   (lined (map pretty stmts))
+  do (do write "\\"
+         spaced (map pretty pats)
+         write " -> "
+         pretty (Do l stmts)) `fitsOnOneLineOr`
+       swing (do write "\\"
+                 spaced (map pretty pats)
+                 write " -> do")
+             (lined (map pretty stmts))
 -- | Space out tuples.
 exp (Tuple _ boxed exps) =
   depend (write (case boxed of
                    Unboxed -> "(#"
                    Boxed -> "("))
-         (do single <- isSingleLiner p
-             underflow <- fmap not (isOverflow p)
-             if single && underflow
-                then p
-                else prefixedLined ","
-                                   (map (depend space . pretty) exps)
+         (do p `fitsOnOneLineOr`
+                 prefixedLined ","
+                               (map (depend space . pretty) exps)
              write (case boxed of
                       Unboxed -> "#)"
                       Boxed -> ")"))
@@ -236,13 +213,10 @@ exp (If _ if' then' else') =
 -- | App algorithm similar to ChrisDone algorithm, but with no
 -- parent-child alignment.
 exp (App _ op a) =
-  do (fits,st) <-
-       fitsOnOneLine (spaced (map pretty (f : args)))
-     if fits
-        then put st
-        else do pretty f
-                newline
-                indentedBlock (lined (map pretty args))
+  do (spaced (map pretty (f : args))) `fitsOnOneLineOr`
+       do pretty f
+          newline
+          indentedBlock (lined (map pretty args))
   where (f,args) = flatten op [a]
         flatten :: Exp NodeInfo
                 -> [Exp NodeInfo]
@@ -252,12 +226,9 @@ exp (App _ op a) =
         flatten f' as = (f',as)
 -- | Space out commas in list.
 exp (List _ es) =
-  do single <- isSingleLiner p
-     underflow <- fmap not (isOverflow p)
-     if single && underflow
-        then p
-        else brackets (prefixedLined ","
-                                     (map (depend space . pretty) es))
+  p `fitsOnOneLineOr`
+  brackets (prefixedLined ","
+                          (map (depend space . pretty) es))
   where p =
           brackets (inter (write ", ")
                           (map pretty es))
@@ -305,13 +276,9 @@ match (InfixMatch _ pat1 name pats rhs' mbinds) =
 -- | Format contexts with spaces and commas between class constraints.
 context :: Context NodeInfo -> Printer s ()
 context ctx@(CxTuple _ asserts) =
-  do (fits,st) <-
-       fitsOnOneLine
-         (parens (inter (comma >> space)
-                        (map pretty asserts)))
-     if fits
-        then put st
-        else prettyNoExt ctx
+  (parens (inter (comma >> space)
+                 (map pretty asserts))) `fitsOnOneLineOr`
+  prettyNoExt ctx
 context ctx = prettyNoExt ctx
 
 unboxParens :: Printer s a -> Printer s a
@@ -470,14 +437,6 @@ isOverflow p =
   do (_,st) <- sandbox p
      columnLimit <- getColumnLimit
      return (psColumn st > columnLimit)
-
--- | Does printing the given thing overflow column limit? (e.g. 80)
-fitsOnOneLine :: Printer s a -> Printer s (Bool,PrintState s)
-fitsOnOneLine p =
-  do line <- gets psLine
-     (_,st) <- sandbox p
-     columnLimit <- getColumnLimit
-     return (psLine st == line && psColumn st < columnLimit,st)
 
 -- | Is the given expression a single-liner when printed?
 isSingleLiner :: Printer s a -> Printer s Bool

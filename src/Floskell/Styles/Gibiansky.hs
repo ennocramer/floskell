@@ -3,6 +3,8 @@
 
 module Floskell.Styles.Gibiansky where
 
+import           Control.Applicative ((<|>))
+
 import           Data.Foldable
 -- import           Control.Applicative ((<$>))
 import           Data.Maybe
@@ -195,26 +197,18 @@ indentOnce = replicateM_ indentSpaces space
 maxSingleLineExports :: Integral a => a
 maxSingleLineExports = 4
 
-attemptSingleLine :: Printer State a -> Printer State a -> Printer State a
-attemptSingleLine single multiple = do
-  prevState <- get
-  if gibianskyForceSingleLine $ psUserState prevState
-    then single
-    else do
-      -- Try printing on one line.
-      modifyState $ \st -> st { gibianskyForceSingleLine = True }
-      result <- single
-      modifyState $ \st -> st { gibianskyForceSingleLine = False }
-
-      --  If it doesn't fit, reprint on multiple lines.
-      col <- getColumn
-      line <- getLineNum
-      maxColumns <- configMaxColumns <$> gets psConfig
-      if col > maxColumns || line > psLine prevState
-        then do
-          put prevState
-          multiple
-        else return result
+attemptSingleLine
+  :: Printer State a -> Printer State a -> Printer State a
+attemptSingleLine single multiple =
+  do forceSingleLine <- gets (gibianskyForceSingleLine . psUserState)
+     if forceSingleLine
+        then single
+        else cut (trySingle <|> multiple)
+  where trySingle =
+          do modifyState $ \st -> st {gibianskyForceSingleLine = True}
+             result <- withOutputRestriction NoOverflowOrLinebreak single
+             modifyState $ \st -> st {gibianskyForceSingleLine = False}
+             return result
 
 --------------------------------------------------------------------------------
 -- Extenders
