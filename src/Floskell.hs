@@ -136,7 +136,16 @@ cppSplitBlocks inp = modifyLast (inBlock (<> trailing)) .
   where
     cppLine :: ByteString -> Bool
     cppLine src = any (`S8.isPrefixOf` src)
-                      [ "#if", "#end", "#else", "#define", "#undef", "#elif" ]
+                      [ "#if"
+                      , "#end"
+                      , "#else"
+                      , "#define"
+                      , "#undef"
+                      , "#elif"
+                      , "#include"
+                      , "#error"
+                      , "#warning"
+                      ]
     classify :: ByteString -> CodeBlock
     classify text =
         if cppLine text then CPPDirectives text else HaskellSource text
