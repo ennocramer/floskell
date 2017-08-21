@@ -53,6 +53,13 @@ module Main
 module Main where
 ```
 
+``` haskell
+{-# LANGUAGE OverloadedStrings, RecordWildCards, FlexibleContexts
+  #-}
+
+module Main where
+```
+
 ## Module Imports
 
 ``` haskell

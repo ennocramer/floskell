@@ -537,11 +537,12 @@ extModule other = prettyNoExt other
 extModulePragma :: Extend ModulePragma
 extModulePragma (LanguagePragma _ names) =
   do namelen <- gets (cramerLangPragmaLength . psUserState)
-     forM_ names $
-       \name ->
-         do write "{-# LANGUAGE "
-            string $ padRight namelen $ nameStr name
-            write " #-}"
+     lined $ map (fmt namelen) names
+  where
+    fmt len name =
+        do write "{-# LANGUAGE "
+           string $ padRight len $ nameStr name
+           write " #-}"
 -- Avoid increasing whitespace after OPTIONS string
 extModulePragma (OptionsPragma _ mtool opt) =
   do write "{-# OPTIONS"
