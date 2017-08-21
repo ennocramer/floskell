@@ -65,8 +65,16 @@ reformat style mexts x = mconcat . intersperse "\n" <$> mapM processBlock
         let ls = S8.lines text
             prefix = findPrefix ls
             code = unlines' (map (stripPrefix prefix) ls)
+            exts = readExtensions (UTF8.toString code)
+            mode'' = case exts of
+                       Nothing -> mode'
+                       Just (Nothing, exts') ->
+                         mode' { extensions = exts' ++ extensions mode' }
+                       Just (Just lang, exts') ->
+                         mode' { baseLanguage = lang
+                               , extensions = exts' ++ extensions mode' }
         in
-            case parseModuleWithComments mode' (UTF8.toString code) of
+            case parseModuleWithComments mode'' (UTF8.toString code) of
                 ParseOk (m, comments) ->
                     fmap (S.lazyByteString .
                               addPrefix prefix .
