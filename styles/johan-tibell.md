@@ -623,16 +623,60 @@ main = putStrLn "Hello, World!"{- This is another random comment. -}
 
 # Behaviour checks
 
-## Infix Operators
+## Symbols and Identifiers
 
 ``` haskell
-symbol = 1 : 2 : 3 : 4 : []
+{-# NOINLINE (<>) #-}
 
-indentifier = left `or` right
+type API = api1 :<|> api2
 
-qualSym = left V.++ right
+type API = api1 S.:<|> api2
 
-qualIdent = left `L.or` right
+type API = (:<|>) api1 api2
+
+type API = (S.:<|>) api1 api2
+
+data T a =
+    (:<|>) a
+           a
+
+data T a =
+    (:<|>) a
+           a
+
+(++) a b = append a b
+
+a ++ b = append a b
+
+val = a ++ b
+
+val = a V.++ b
+
+val = (++) a b
+
+val = (V.++) a b
+
+val = a `or` b
+
+val = a `L.or` b
+
+f (a :+: b) = a
+f (a C.:+: b) = a
+f ((:+:) a b) = a
+f ((C.:+:) a b) = a
+f (a `C` b) = a
+f (a `M.C` b) = a
+```
+
+``` haskell
+data T =
+    (-)
+
+q = '(-)
+
+data (-)
+
+q = ''(-)
 ```
 
 ## Lazy Patterns in a Lambda
