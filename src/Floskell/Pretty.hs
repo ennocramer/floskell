@@ -673,8 +673,11 @@ exp (Case _ e alts) = do
            (do
                 pretty e
                 write " of")
-    newline
-    indentedBlock (lined (map (withCaseContext True . pretty) alts))
+    if null alts
+        then write " {}"
+        else do
+            newline
+            indentedBlock (lined (map (withCaseContext True . pretty) alts))
 exp (Do _ stmts) = depend (write "do ") (lined (map pretty stmts))
 exp (MDo _ stmts) = depend (write "mdo ") (lined (map pretty stmts))
 exp (Tuple _ boxed exps) = depend (write (case boxed of
@@ -757,8 +760,11 @@ exp (QuasiQuote _ n s) = brackets (depend (do
                                                write "|"))
 exp (LCase _ alts) = do
     write "\\case"
-    newline
-    indentedBlock (lined (map (withCaseContext True . pretty) alts))
+    if null alts
+        then write " {}"
+        else do
+            newline
+            indentedBlock (lined (map (withCaseContext True . pretty) alts))
 exp (MultiIf _ alts) = withCaseContext True
                                        (depend (write "if ")
                                                (lined (map (\p -> do

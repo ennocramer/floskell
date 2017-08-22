@@ -713,16 +713,21 @@ caseExpr (Case _ exp alts) = do
     depend (write "case ") $ do
         pretty exp
         write " of"
-    newline
-
-    writeCaseAlts alts
+    if null alts
+        then write " {}"
+        else do
+            newline
+            writeCaseAlts alts
 caseExpr _ = error "Not a case"
 
 lambdaCaseExpr :: Exp NodeInfo -> Printer State ()
 lambdaCaseExpr (LCase _ alts) = do
     write "\\case"
-    newline
-    writeCaseAlts alts
+    if null alts
+        then write " {}"
+        else do
+            newline
+            writeCaseAlts alts
 lambdaCaseExpr _ = error "Not a lambda case"
 
 ifExpr :: Exp NodeInfo -> Printer State ()

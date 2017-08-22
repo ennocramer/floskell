@@ -672,3 +672,14 @@ f = let ?x = 42
 ``` haskell
 
 ```
+
+## Empty Case
+
+``` haskell
+{-# LANGUAGE EmptyCase  #-}
+{-# LANGUAGE LambdaCase #-}
+
+f1 = case () of {}
+
+f2 = \case {}
+```

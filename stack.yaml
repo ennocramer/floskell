@@ -2,5 +2,5 @@ resolver: lts-8.19
 packages:
 - '.'
 extra-deps:
-- haskell-src-exts-1.18.2
+- haskell-src-exts-1.19.0
 - monad-dijkstra-0.1.0.0

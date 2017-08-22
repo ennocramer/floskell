@@ -825,8 +825,11 @@ extExp (Case _ expr alts) = do
     write "case "
     cut $ pretty expr
     write " of"
-    newline
-    withCaseContext True $ indentFull $ preserveLineSpacing alts
+    if null alts
+        then write " {}"
+        else do
+            newline
+            withCaseContext True $ indentFull $ preserveLineSpacing alts
 -- Line break and indent after do
 extExp (Do _ stmts) = do
     write "do"
