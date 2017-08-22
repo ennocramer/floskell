@@ -400,13 +400,13 @@ typ t = prettyNoExt t
 
 writeTuple :: Pretty ast => Boxed -> [ast NodeInfo] -> Printer State ()
 writeTuple boxed vals = parens $ do
-    boxed'
+    writeIfUnboxed "# "
     inter (write ", ") $ map pretty vals
-    boxed'
+    writeIfUnboxed " #"
   where
-    boxed' = case boxed of
+    writeIfUnboxed arg = case boxed of
         Boxed -> return ()
-        Unboxed -> write "#"
+        Unboxed -> write arg
 
 sameLine :: (Annotated ast, Annotated ast')
          => ast NodeInfo
@@ -438,7 +438,7 @@ exprs (RecUpdate _ exp updates) =
     recUpdateExpr updates (pretty exp) (map prettyCommentCallbacks updates)
 exprs (RecConstr _ qname updates) =
     recUpdateExpr updates (pretty qname) (map prettyCommentCallbacks updates)
-exprs (Tuple _ _ exps) = parens $ inter (write ", ") $ map pretty exps
+exprs (Tuple _ boxed exps) = writeTuple boxed exps
 exprs (ListComp _ e qstmt) =
     brackets (do
                   space

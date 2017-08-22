@@ -162,25 +162,25 @@ exp (Lambda _ pats (Do l stmts)) = do
 -- | Space out tuples.
 exp (Tuple _ boxed exps) =
     depend (write (case boxed of
-                       Unboxed -> "(#"
+                       Unboxed -> "(# "
                        Boxed -> "("))
            (do
                 p `fitsOnOneLineOr`
                     prefixedLined "," (map (depend space . pretty) exps)
                 write (case boxed of
-                           Unboxed -> "#)"
+                           Unboxed -> " #)"
                            Boxed -> ")"))
   where
     p = inter (write ", ") (map pretty exps)
 -- | Space out tuples.
 exp (TupleSection _ boxed mexps) =
     depend (write (case boxed of
-                       Unboxed -> "(#"
+                       Unboxed -> "(# "
                        Boxed -> "("))
            (do
                 inter (write ", ") (map (maybe (return ()) pretty) mexps)
                 write (case boxed of
-                           Unboxed -> "#)"
+                           Unboxed -> " #)"
                            Boxed -> ")"))
 -- | Infix apps, same algorithm as ChrisDone at the moment.
 exp e@(InfixApp _ a op b) = infixApp e a op b Nothing

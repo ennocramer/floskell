@@ -71,14 +71,14 @@ chrisDone =
 -- Extenders
 types :: Type NodeInfo -> Printer s ()
 types (TyTuple _ boxed tys) = depend (write (case boxed of
-                                                 Unboxed -> "(#"
+                                                 Unboxed -> "(# "
                                                  Boxed -> "("))
                                      (do
                                           p `fitsOnOneLineOr`
                                               prefixedLined ","
                                                             (map pretty tys)
                                           write (case boxed of
-                                                     Unboxed -> "#)"
+                                                     Unboxed -> " #)"
                                                      Boxed -> ")"))
   where
     p = commas (map pretty tys)
@@ -311,13 +311,13 @@ exp (Lambda _ ps b) = depend (write "\\" >> maybeSpace)
         (PIrrPat{}) : _ -> space
         _ -> return ()
 exp (Tuple _ boxed exps) = depend (write (case boxed of
-                                              Unboxed -> "(#"
+                                              Unboxed -> "(# "
                                               Boxed -> "("))
                                   (do
                                        p `fitsOnOneLineOr`
                                            prefixedLined "," (map pretty exps)
                                        write (case boxed of
-                                                  Unboxed -> "#)"
+                                                  Unboxed -> " #)"
                                                   Boxed -> ")"))
   where
     p = commas (map pretty exps)

@@ -379,7 +379,7 @@ tupleExpr boxed exprs = attemptSingleLine single multi
         string close
     multi = listMultiLine open close "," exprs
     (open, close) = case boxed of
-        Unboxed -> ("(#", "#)")
+        Unboxed -> ("(# ", " #)")
         Boxed -> ("(", ")")
 
 listExpr :: Pretty ast => [ast NodeInfo] -> Printer State ()

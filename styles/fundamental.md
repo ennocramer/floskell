@@ -785,6 +785,30 @@ q =
   ''(-)
 ```
 
+## Unboxed Tuples
+
+``` haskell
+{-# LANGUAGE UnboxedTuples #-}
+
+f :: Int -> Int -> (# Int,Int #)
+f x y = 
+  (# x + 1
+    ,y - 1 #)
+
+g x = 
+  case f
+         x
+         x of
+    (# a,b #) -> 
+      a + b
+
+h x = 
+  let (# p,q #) = 
+        h
+          x
+  in undefined
+```
+
 ## Lazy Patterns in a Lambda
 
 ``` haskell
