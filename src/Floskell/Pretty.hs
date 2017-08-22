@@ -145,7 +145,7 @@ fitsOnOneLineOr single multi = cut $ withOutputRestriction NoOverflowOrLinebreak
                                                            single <|> multi
 
 -- | Print comments of a node.
-printComments :: Pretty ast => ComInfoLocation -> ast NodeInfo -> Printer s ()
+printComments :: Annotated ast => ComInfoLocation -> ast NodeInfo -> Printer s ()
 printComments loc' ast = do
     preprocessor <- gets psCommentPreprocessor
 

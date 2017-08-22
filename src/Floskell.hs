@@ -19,6 +19,7 @@ module Floskell
     , fundamental
     , gibiansky
     , cramer
+    , flex
       -- * Testing
     , defaultExtensions
     ) where
@@ -41,6 +42,7 @@ import           Floskell.Comments
 import           Floskell.Pretty
 import           Floskell.Styles.ChrisDone   ( chrisDone )
 import           Floskell.Styles.Cramer      ( cramer )
+import           Floskell.Styles.Flex        ( flex )
 import           Floskell.Styles.Fundamental ( fundamental )
 import           Floskell.Styles.Gibiansky   ( gibiansky )
 import           Floskell.Styles.JohanTibell ( johanTibell )
@@ -228,7 +230,7 @@ parseMode = defaultParseMode { extensions = allExtensions, fixities = Nothing }
 
 -- | Styles list, useful for programmatically choosing.
 styles :: [Style]
-styles = [ fundamental, chrisDone, johanTibell, gibiansky, cramer ]
+styles = [ fundamental, chrisDone, johanTibell, gibiansky, cramer, flex ]
 
 -- | Default extensions.
 defaultExtensions :: [Extension]

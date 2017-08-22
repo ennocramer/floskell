@@ -59,6 +59,8 @@ module.exports = Floskell =
           prettifyFile 'gibiansky', target.getModel()
         'floskell:prettify-cramer': ({target}) =>
           prettifyFile 'cramer', target.getModel()
+        'floskell:prettify-flex': ({target}) =>
+          prettifyFile 'flex', target.getModel()
 
     @menu.add atom.menu.add [
       label: 'floskell'
@@ -68,6 +70,7 @@ module.exports = Floskell =
         {label: 'Johan Tibell', command: 'floskell:prettify-johan-tibell'}
         {label: 'Gibiansky', command: 'floskell:prettify-gibiansky'}
         {label: 'Cramer', command: 'floskell:prettify-cramer'}
+        {label: 'Flex', command: 'floskell:prettify-flex'}
       ]
     ]
 

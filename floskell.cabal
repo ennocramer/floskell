@@ -34,11 +34,15 @@ library
                      Floskell.Types
                      Floskell.Pretty
                      Floskell.Comments
+                     Floskell.Flex.Config
+                     Floskell.Flex.Printers
+                     Floskell.Flex.Pretty
                      Floskell.Styles.Fundamental
                      Floskell.Styles.ChrisDone
                      Floskell.Styles.JohanTibell
                      Floskell.Styles.Gibiansky
                      Floskell.Styles.Cramer
+                     Floskell.Styles.Flex
   build-depends:     base >= 4.7 && <5
                    , containers
                    , haskell-src-exts >= 1.19
