@@ -56,8 +56,8 @@ data CodeBlock = HaskellSource ByteString
 
 -- | Format the given source.
 reformat :: Style -> Maybe [Extension] -> ByteString -> Either String Builder
-reformat style mexts x = mconcat . intersperse "\n" <$> mapM processBlock
-                                                             (cppSplitBlocks x)
+reformat style mexts x = preserveTrailingNewline x .
+    mconcat . intersperse "\n" <$> mapM processBlock (cppSplitBlocks x)
   where
     processBlock :: CodeBlock -> Either String Builder
     processBlock (CPPDirectives text) = Right $ S.byteString text
@@ -123,6 +123,13 @@ reformat style mexts x = mconcat . intersperse "\n" <$> mapM processBlock
     mode' = case mexts of
         Just exts -> parseMode { extensions = exts }
         Nothing -> parseMode
+
+    preserveTrailingNewline x x' = if not (S8.null x) && S8.last x == '\n' &&
+                                       not (L8.null x'') && L8.last x'' /= '\n'
+                                   then x' <> "\n"
+                                   else x'
+      where
+        x'' = S.toLazyByteString x'
 
 -- | Break a Haskell code string into chunks, using CPP as a delimiter.
 -- Lines that start with '#if', '#end', or '#else' are their own chunks, and

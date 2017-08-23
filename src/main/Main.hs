@@ -47,10 +47,10 @@ main = do
                 text <- S.readFile filepath
                 tmpDir <- getTemporaryDirectory
                 (fp, h) <- openTempFile tmpDir "floskell.hs"
-                L8.hPutStrLn h
-                             (either error
-                                     S.toLazyByteString
-                                     (reformat style (Just exts) text))
+                L8.hPutStr h
+                           (either error
+                                   S.toLazyByteString
+                                   (reformat style (Just exts) text))
                 hFlush h
                 hClose h
                 let exdev e = if ioe_errno e == Just ((\(Errno a) -> a) eXDEV)
