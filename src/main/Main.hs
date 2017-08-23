@@ -56,6 +56,7 @@ main = do
                 let exdev e = if ioe_errno e == Just ((\(Errno a) -> a) eXDEV)
                               then copyFile fp filepath >> removeFile fp
                               else throw e
+                copyPermissions filepath fp
                 renameFile fp filepath `catch` exdev
             Nothing -> L8.interact (either error S.toLazyByteString .
                                         reformat style (Just exts) .
