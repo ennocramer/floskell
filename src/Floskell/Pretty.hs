@@ -71,7 +71,6 @@ import           Control.Monad.Search           ( cost, cost' )
 import           Control.Monad.State.Strict     hiding ( state )
 
 import qualified Data.ByteString                as S
-
 import qualified Data.ByteString.Builder        as S
 import qualified Data.ByteString.Lazy           as S ( toStrict )
 
@@ -83,6 +82,7 @@ import           Data.Maybe
 import           Data.Monoid                    hiding ( Alt )
 import           Data.Typeable
 
+import qualified Floskell.Buffer                as Buffer
 import           Floskell.Types
 
 import qualified Language.Haskell.Exts          as P
@@ -192,7 +192,7 @@ printComment mayNodespan (Comment inline cspan str) = do
 pretty' :: (Pretty ast, P.Pretty (ast SrcSpanInfo))
         => ast NodeInfo
         -> Printer s ()
-pretty' = write . S.stringUtf8 . P.prettyPrint . fmap nodeInfoSpan
+pretty' = string . P.prettyPrint . fmap nodeInfoSpan
 
 --------------------------------------------------------------------------------
 -- * Combinators
@@ -255,7 +255,7 @@ prefixedLined pref ps' = case ps' of
                                     (-1)))
                  (mapM_ (\p' -> do
                              newline
-                             depend (write (S.byteString pref)) p')
+                             depend (write pref) p')
                         ps)
 
 -- | Set the (newline-) indent level to the given column for the given
@@ -297,11 +297,9 @@ newline = do
     guard $ psOutputRestriction state /= NoOverflowOrLinebreak
     penalty <- psLinePenalty state True (psColumn state)
     when (penalty /= mempty) $ cost penalty mempty
-    modify (\s -> s { psOutput = psOutput state <> S.byteString out <> "\n"
-                    , psNewline = True
+    modify (\s -> s { psBuffer = Buffer.newline $ Buffer.write out
+                                                               (psBuffer state)
                     , psEolComment = False
-                    , psLine = psLine state + 1
-                    , psColumn = 0
                     })
 
 -- | Set the context to a case context, where RHS is printed with -> .
@@ -377,32 +375,31 @@ comma = write ","
 
 -- | Write an integral.
 int :: Integer -> Printer s ()
-int = write . S.stringUtf8 . show
+int = string . show
 
 -- | Write out a string, updating the current position information.
-write :: S.Builder -> Printer s ()
+write :: S.ByteString -> Printer s ()
 write x = do
     eol <- gets psEolComment
     when eol newline
-    write' $ S.toStrict $ S.toLazyByteString x
+    write' x
   where
     write' x' = do
         state <- get
         let indent = fromIntegral (psIndentLevel state)
             out = if psNewline state then S.replicate indent 32 <> x' else x'
-            newCol = psColumn state + fromIntegral (S.length out)
+            buffer = psBuffer state
+            newCol = Buffer.column buffer + fromIntegral (S.length out)
         guard $ psOutputRestriction state == Anything || newCol < configMaxColumns (psConfig state)
         penalty <- psLinePenalty state False newCol
         when (penalty /= mempty) $ cost mempty penalty
-        modify (\s -> s { psOutput = psOutput state <> S.byteString out
-                        , psNewline = False
+        modify (\s -> s { psBuffer = Buffer.write out buffer
                         , psEolComment = False
-                        , psColumn = newCol
                         })
 
 -- | Write a string.
 string :: String -> Printer s ()
-string = write . S.stringUtf8
+string = write . S.toStrict . S.toLazyByteString . S.stringUtf8
 
 -- | Indent spaces, e.g. 2.
 getIndentSpaces :: Printer s Int64

@@ -14,6 +14,9 @@ module Floskell.Types
     , execPrinter
     , runPrinter
     , PrintState(..)
+    , psLine
+    , psColumn
+    , psNewline
     , Extender(..)
     , Style(..)
     , Config(..)
@@ -31,11 +34,13 @@ import           Control.Monad.Search           ( MonadSearch, Search
 import           Control.Monad.State.Strict     ( MonadState(..), StateT
                                                 , execStateT, gets, runStateT )
 
-import           Data.ByteString.Builder        ( Builder )
 import           Data.Data
 import           Data.Int                       ( Int64 )
 import           Data.Maybe                     ( listToMaybe )
 import           Data.Text                      ( Text )
+
+import           Floskell.Buffer                ( Buffer )
+import qualified Floskell.Buffer                as Buffer
 
 import           Language.Haskell.Exts.Comments
 import           Language.Haskell.Exts.Parser
@@ -72,11 +77,8 @@ runPrinter m s = listToMaybe . runSearch $ runStateT (unPrinter m) s
 
 -- | The state of the pretty printer.
 data PrintState s =
-    PrintState { psIndentLevel         :: !Int64 -- ^ Current indentation level.
-               , psOutput              :: !Builder -- ^ The current output.
-               , psNewline             :: !Bool -- ^ Just outputted a newline?
-               , psColumn              :: !Int64 -- ^ Current column.
-               , psLine                :: !Int64 -- ^ Current line number.
+    PrintState { psBuffer              :: !Buffer -- ^ Output buffer
+               , psIndentLevel         :: !Int64 -- ^ Current indentation level.
                , psUserState           :: !s -- ^ User state.
                , psExtenders           :: ![Extender s] -- ^ Extenders.
                , psConfig              :: !Config -- ^ Config which styles may or may not pay attention to.
@@ -89,6 +91,15 @@ data PrintState s =
                , psLinePenalty         :: Bool -> Int64 -> Printer s Penalty
                , psOutputRestriction   :: OutputRestriction
                }
+
+psLine :: PrintState s -> Int64
+psLine = Buffer.line . psBuffer
+
+psColumn :: PrintState s -> Int64
+psColumn = Buffer.column . psBuffer
+
+psNewline :: PrintState s -> Bool
+psNewline = (== 0) . Buffer.column . psBuffer
 
 -- | A printer extender. Takes as argument the user state that the
 -- printer was run with, and the current node to print. Use

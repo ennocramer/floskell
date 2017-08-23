@@ -10,7 +10,6 @@ import           Control.Applicative
 import           Control.Exception
 
 import qualified Data.ByteString            as S
-import qualified Data.ByteString.Builder    as S
 import qualified Data.ByteString.Lazy.Char8 as L8
 import           Data.List
 import           Data.Text                  ( Text )
@@ -49,7 +48,7 @@ main = do
                 (fp, h) <- openTempFile tmpDir "floskell.hs"
                 L8.hPutStr h
                            (either error
-                                   S.toLazyByteString
+                                   id
                                    (reformat style
                                              (Just exts)
                                              (Just filepath)
@@ -61,7 +60,7 @@ main = do
                               else throw e
                 copyPermissions filepath fp
                 renameFile fp filepath `catch` exdev
-            Nothing -> L8.interact (either error S.toLazyByteString .
+            Nothing -> L8.interact (either error id .
                                         reformat style (Just exts) Nothing .
                                             L8.toStrict)
         Failed (Wrap (Stopped Version) _) -> putStrLn ("floskell " ++

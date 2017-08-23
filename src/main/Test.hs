@@ -108,8 +108,10 @@ testAll = do
         return (name, style, tree)
 
 reformatSnippet :: Style -> ByteString -> Either String ByteString
-reformatSnippet style code = L.toStrict . L.toLazyByteString <$>
-    reformat style (Just defaultExtensions) (Just "TEST.md") code
+reformatSnippet style code = L.toStrict <$> reformat style
+                                                     (Just defaultExtensions)
+                                                     (Just "TEST.md")
+                                                     code
 
 regenerate :: Style -> [Markdone] -> [Markdone]
 regenerate style = map fmt

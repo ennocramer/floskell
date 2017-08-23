@@ -25,8 +25,6 @@ module Floskell
 
 import           Data.ByteString             ( ByteString )
 import qualified Data.ByteString             as S
-import           Data.ByteString.Builder     ( Builder )
-import qualified Data.ByteString.Builder     as S
 import qualified Data.ByteString.Char8       as S8
 import qualified Data.ByteString.Internal    as S
 import qualified Data.ByteString.Lazy        as L
@@ -38,6 +36,7 @@ import           Data.List
 import           Data.Maybe
 import           Data.Monoid
 
+import qualified Floskell.Buffer             as Buffer
 import           Floskell.Comments
 import           Floskell.Pretty
 import           Floskell.Styles.ChrisDone   ( chrisDone )
@@ -60,12 +59,12 @@ reformat :: Style
          -> Maybe [Extension]
          -> Maybe FilePath
          -> ByteString
-         -> Either String Builder
+         -> Either String L.ByteString
 reformat style mexts mfilepath x = preserveTrailingNewline x .
     mconcat . intersperse "\n" <$> mapM processBlock (cppSplitBlocks x)
   where
-    processBlock :: CodeBlock -> Either String Builder
-    processBlock (CPPDirectives text) = Right $ S.byteString text
+    processBlock :: CodeBlock -> Either String L.ByteString
+    processBlock (CPPDirectives text) = Right $ L.fromStrict text
     processBlock (HaskellSource offset text) =
         let ls = S8.lines text
             prefix = findPrefix ls
@@ -82,9 +81,7 @@ reformat style mexts mfilepath x = preserveTrailingNewline x .
         in
             case parseModuleWithComments mode'' (UTF8.toString code) of
                 ParseOk (m, comments) ->
-                    fmap (S.lazyByteString .
-                              addPrefix prefix .
-                                  S.toLazyByteString)
+                    fmap (addPrefix prefix)
                          (prettyPrint mode' style m comments)
                 ParseFailed loc e -> Left $
                     Exts.prettyPrint (loc { srcLine = srcLine loc + offset }) ++
@@ -135,11 +132,9 @@ reformat style mexts mfilepath x = preserveTrailingNewline x .
                 m { parseFilename = fromMaybe "<stdin>" mfilepath }
 
     preserveTrailingNewline x x' = if not (S8.null x) && S8.last x == '\n' &&
-                                       not (L8.null x'') && L8.last x'' /= '\n'
+                                       not (L8.null x') && L8.last x' /= '\n'
                                    then x' <> "\n"
                                    else x'
-      where
-        x'' = S.toLazyByteString x'
 
 -- | Break a Haskell code string into chunks, using CPP as a delimiter.
 -- Lines that start with '#if', '#end', or '#else' are their own chunks, and
@@ -182,7 +177,7 @@ prettyPrint :: ParseMode
             -> Style
             -> Module SrcSpanInfo
             -> [Comment]
-            -> Either a Builder
+            -> Either a L.ByteString
 prettyPrint mode' style m comments =
     let (cs, ast) = annotateComments (fromMaybe m $ applyFixities baseFixities
                                                                   m)
@@ -203,16 +198,16 @@ prettyPrint mode' style m comments =
                                             pretty ast))
 
 -- | Pretty print the given printable thing.
-runPrinterStyle :: ParseMode -> Style -> (forall s. Printer s ()) -> Builder
+runPrinterStyle :: ParseMode
+                -> Style
+                -> (forall s. Printer s ())
+                -> L.ByteString
 runPrinterStyle mode' (Style _name _author _desc st extenders config preprocessor penalty) m =
     maybe (error "Printer failed with mzero call.")
-          psOutput
+          (Buffer.toLazyByteString . psBuffer)
           (snd <$> execPrinter m
-                               (PrintState 0
-                                           mempty
-                                           False
+                               (PrintState Buffer.empty
                                            0
-                                           1
                                            st
                                            extenders
                                            config

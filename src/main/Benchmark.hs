@@ -9,11 +9,10 @@ import           Control.DeepSeq
 import           Criterion
 import           Criterion.Main
 
-import qualified Data.ByteString              as S
-import qualified Data.ByteString.Char8        as S8
-import qualified Data.ByteString.Lazy.Builder as L
-import qualified Data.ByteString.UTF8         as UTF8
-import qualified Data.Text                    as T
+import qualified Data.ByteString       as S
+import qualified Data.ByteString.Char8 as S8
+import qualified Data.ByteString.UTF8  as UTF8
+import qualified Data.Text             as T
 
 import           Floskell
 
@@ -36,7 +35,7 @@ toCriterion style = go
     go (PlainText desc : CodeFence lang code : next) =
         if lang == "haskell"
         then (bench (UTF8.toString desc)
-                    (nf (either error L.toLazyByteString .
+                    (nf (either error id .
                              reformat style
                                       (Just defaultExtensions)
                                       (Just "BENCHMARK.md"))
