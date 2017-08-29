@@ -326,6 +326,8 @@ instance Pretty ImportSpecList where
 
 instance Pretty ImportSpec
 
+instance Pretty Assoc
+
 instance Pretty Decl where
     prettyPrint (TypeDecl _ declhead ty) = depend "type" $ do
         pretty declhead
@@ -387,13 +389,21 @@ instance Pretty Decl where
             newline
             indented $ prettyDecls (\d _ -> skipBlankInstDecl d) decls
 
-    -- prettyPrint (DerivDecl _ moverlap instrule) = undefined
+    prettyPrint (DerivDecl _ moverlap instrule) = depend "deriving instance" $ do
+        mayM_ moverlap $ withPostfix space pretty
+        pretty instrule
 
-    -- prettyPrint (InfixDecl _ assoc mint ops) = undefined
+    prettyPrint (InfixDecl _ assoc mint ops) = do
+        pretty assoc
+        mayM_ mint $ withPrefix space (int . fromIntegral)
+        space
+        inter comma $ map prettyHSE ops
 
-    -- prettyPrint (DefaultDecl _ types) = undefined
+    prettyPrint (DefaultDecl _ types) = do
+        write "default "
+        listAutoWrap "(" ")" "," types
 
-    -- prettyPrint (SpliceDecl _ exp) = undefined
+    prettyPrint (SpliceDecl _ expr) = pretty expr
 
     -- prettyPrint (TypeSig _ names ty) = undefined
 
@@ -696,6 +706,8 @@ instance Pretty ResultSig
 instance Pretty Context
 
 instance Pretty TypeEqn
+
+instance Pretty Exp
 
 instance Pretty Splice
 
