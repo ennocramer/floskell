@@ -10,6 +10,8 @@ import           Control.Monad.State.Strict   ( gets )
 
 import           Data.ByteString              ( ByteString )
 import qualified Data.ByteString              as BS
+import qualified Data.ByteString.Char8        as BS8
+
 import           Data.List                    ( groupBy, sortBy, sortOn )
 import           Data.Maybe                   ( catMaybes )
 
@@ -21,7 +23,7 @@ import           Floskell.Pretty              ( column, getNextColumn
 import           Floskell.Types
 
 import qualified Language.Haskell.Exts.Pretty as HSE
-import           Language.Haskell.Exts.SrcLoc ( srcInfoSpan )
+import           Language.Haskell.Exts.SrcLoc ( noSrcSpan, srcInfoSpan )
 import           Language.Haskell.Exts.Syntax
 
 -- | Like `span`, but comparing adjacent items.
@@ -60,6 +62,10 @@ pretty ast = do
     printComments Before ast
     prettyPrint ast
     printComments After ast
+
+-- | Empty NodeInfo
+noNodeInfo :: NodeInfo
+noNodeInfo = NodeInfo noSrcSpan []
 
 -- | Compare two AST nodes ignoring the annotation
 compareAST :: (Functor ast, Ord (ast ()))
@@ -248,6 +254,15 @@ prettyDecls :: (Annotated ast, Pretty ast)
             -> Printer FlexConfig ()
 prettyDecls fn = inter blankline . map lined . runs fn
 
+prettyForall :: (Annotated ast, Pretty ast)
+             => [ast NodeInfo]
+             -> Printer FlexConfig ()
+prettyForall vars = do
+    write "forall "
+    inter space $ map pretty vars
+    write "."
+    sepSpace
+
 instance Pretty Module where
     prettyPrint (Module _ mhead pragmas imports decls) = inter blankline $
         catMaybes [ ifNotEmpty prettyPragmas pragmas
@@ -301,8 +316,227 @@ instance Pretty ImportSpecList where
 
 instance Pretty ImportSpec
 
+instance Pretty Decl where
+    prettyPrint (TypeDecl _ declhead ty) = depend "type" $ do
+        pretty declhead
+        operator "="
+        pretty ty
+
+    -- prettyPrint (TypeFamDecl _ declhead mresultsig minjectivity) =
+    --     undefined
+
+    -- prettyPrint (ClosedTypeFamDecl _ declhead mresultsig minjectivityinfo typeeqns) =
+    --     undefined
+
+    -- prettyPrint (DataDecl _ dataornew mcontext declhead qualcondecls mderiving) =
+    --     undefined
+
+    -- prettyPrint (GDataDecl _ dataornew mcontext declhead mkind gadtdecls mderiving) =
+    --     undefined
+
+    -- prettyPrint (DataFamDecl _ mcontext declhead mresultsig) =
+    --     undefined
+
+    -- prettyPrint (TypeInsDecl _ ty ty') = undefined
+
+    -- prettyPrint (DataInsDecl _ dataornew ty qualcondecls mderiving) =
+    --     undefined
+
+    -- prettyPrint (GDataInsDecl _ dataornew ty mkind gadtdecls mderiving) =
+    --     undefined
+
+    -- prettyPrint (ClassDecl _ mcontext declhead fundeps mclassdecls) =
+    --     undefined
+
+    -- prettyPrint (InstDecl _ moverlap instrule minstdecls) =
+    --     undefined
+
+    -- prettyPrint (DerivDecl _ moverlap instrule) = undefined
+
+    -- prettyPrint (InfixDecl _ assoc mint ops) = undefined
+
+    -- prettyPrint (DefaultDecl _ types) = undefined
+
+    -- prettyPrint (SpliceDecl _ exp) = undefined
+
+    -- prettyPrint (TypeSig _ names ty) = undefined
+
+    -- prettyPrint (PatSynSig _ name mtyvarbinds mcontext mcontext' ty) =
+    --     undefined
+
+    -- prettyPrint (FunBind _ matches) = undefined
+
+    -- prettyPrint (PatBind _ pat rhs mbinds) = undefined
+
+    -- prettyPrint (PatSyn _ pat pat' patternsyndirection) = undefined
+
+    -- prettyPrint (ForImp _ callconv msafety mstring name ty) =
+    --     undefined
+
+    -- prettyPrint (ForExp _ callconv mstring name ty) =
+    --     undefined
+
+    -- prettyPrint (RulePragmaDecl _ rules) = undefined
+
+    -- prettyPrint (DeprPragmaDecl _ deprecations) = undefined
+
+    -- prettyPrint (WarnPragmaDecl _ warnings) = undefined
+
+    -- prettyPrint (InlineSig _ bool mactivation qname) = undefined
+
+    -- prettyPrint (InlineConlikeSig _ mactivation qname) =
+    --     undefined
+
+    -- prettyPrint (SpecSig _ mactivation qname types) =
+    --     undefined
+
+    -- prettyPrint (SpecInlineSig _ bool mactivation qname types) =
+    --     undefined
+
+    -- prettyPrint (InstSig _ instrule) = undefined
+
+    -- prettyPrint (AnnPragma _ annotation) = undefined
+
+    -- prettyPrint (MinimalPragma _ mbooleanformula) = undefined
+
+    -- prettyPrint (RoleAnnotDecl _ qname roles) = undefined
+
+    prettyPrint decl = prettyHSE decl
+
+instance Pretty DeclHead where
+    prettyPrint (DHead _ name) = pretty name
+
+    prettyPrint (DHInfix _ tyvarbind name) = do
+        pretty tyvarbind
+        pretty $ VarOp noNodeInfo name
+
+    prettyPrint (DHParen _ declhead) = parens $ pretty declhead
+
+    prettyPrint (DHApp _ declhead tyvarbind) = depend' (pretty declhead) $ pretty tyvarbind
+
+instance Pretty Type where
+    prettyPrint (TyForall _ mtyvarbinds mcontext ty) = do
+        mapM_ prettyForall mtyvarbinds
+        mapM_ pretty mcontext
+        pretty ty
+
+    prettyPrint (TyFun _ ty ty') = do
+        pretty ty
+        operator "->"
+        pretty ty'
+
+    prettyPrint (TyTuple _ boxed tys) = case boxed of
+        Unboxed -> list "(#" "#)" "," tys
+        Boxed -> list "(" ")" "," tys
+
+    prettyPrint (TyList _ ty) = group "[" "]" $ pretty ty
+
+    prettyPrint (TyParArray _ ty) = group "[:" ":]" $ pretty ty
+
+    prettyPrint (TyApp _ ty ty') = do
+        pretty ty
+        space
+        pretty ty'
+
+    prettyPrint (TyVar _ name) = pretty name
+
+    prettyPrint (TyCon _ qname) = pretty qname
+
+    prettyPrint (TyParen _ ty) = parens $ pretty ty
+
+    prettyPrint (TyInfix _ ty qname ty') = do
+        pretty ty
+        pretty $ QVarOp noNodeInfo qname
+        pretty ty'
+
+    prettyPrint (TyKind _ ty kind) = do
+        pretty ty
+        operator "::"
+        pretty kind
+
+    prettyPrint t@(TyPromoted _ _promoted) = prettyHSE t
+
+    prettyPrint (TyEquals _ ty ty') = do
+        pretty ty
+        operator "~"
+        pretty ty'
+
+    prettyPrint (TySplice _ splice) = pretty splice
+
+    prettyPrint (TyBang _ bangtype unpackedness ty) = do
+        pretty unpackedness
+        pretty bangtype
+        pretty ty
+
+    prettyPrint t@(TyWildCard _ _mname) = prettyHSE t
+
+    prettyPrint (TyQuasiQuote _ str str') = do
+        write "["
+        string str
+        write "|"
+        string str'
+        write "|]"
+
+instance Pretty Kind where
+    prettyPrint (KindStar _) = write "*"
+
+    prettyPrint (KindFn _ kind kind') = do
+        pretty kind
+        operator "->"
+        pretty kind'
+
+    prettyPrint (KindParen _ kind) = parens $ pretty kind
+
+    prettyPrint (KindVar _ qname) = pretty qname
+
+    prettyPrint (KindApp _ kind kind') = do
+        pretty kind
+        space
+        pretty kind'
+
+    prettyPrint (KindTuple _ kinds) = list "'(" ")" "," kinds
+
+    prettyPrint (KindList _ kind) = group "'[" "]" $ pretty kind
+
+instance Pretty TyVarBind where
+    prettyPrint (KindedVar _ name kind) = parens $ do
+        pretty name
+        operator "::"
+        pretty kind
+
+    prettyPrint (UnkindedVar _ name) = pretty name
+
+instance Pretty QOp where
+    prettyPrint qop = withOperatorFormatting (opName qop) (prettyHSE qop) (return ())
+      where
+        opName (QVarOp _ qname) = opName' qname
+        opName (QConOp _ qname) = opName' qname
+
+        opName' (Qual _ _ (Ident _ _)) = "``"
+        opName' (Qual _ _ (Symbol _ _)) = ""
+        opName' (UnQual _ (Ident _ _)) = "``"
+        opName' (UnQual _ (Symbol _ str)) = BS8.pack str
+        opName' (Special _ (FunCon _)) = "->"
+        opName' (Special _ (Cons _)) = ":"
+        opName' (Special _ _) = ""
+
+instance Pretty Op where
+    prettyPrint (VarOp l name) = prettyPrint (QVarOp l (UnQual noNodeInfo name))
+    prettyPrint (ConOp l name) = prettyPrint (QConOp l (UnQual noNodeInfo name))
+
+instance Pretty Context
+
+instance Pretty Splice
+
 instance Pretty ModulePragma
+
+-- Stick with HSE
+instance Pretty BangType
+
+instance Pretty Unpackedness
 
 instance Pretty ModuleName
 
-instance Pretty Decl
+instance Pretty QName
+
+instance Pretty Name

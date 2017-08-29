@@ -68,7 +68,7 @@ import Control.Monad hiding ( forM )
 ## Types
 
 ``` haskell
-type EventSource a = (AddHandler a, a -> IO ())
+type EventSource a = ( AddHandler a, a -> IO () )
 ```
 
 ## Data and Newtypes
