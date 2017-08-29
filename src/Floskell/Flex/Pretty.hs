@@ -248,6 +248,16 @@ skipBlankDecl InstSig{} = True
 skipBlankDecl PatSynSig{} = True
 skipBlankDecl _ = False
 
+skipBlankClassDecl :: ClassDecl a -> Bool
+skipBlankClassDecl (ClsDecl _ decl) = skipBlankDecl decl
+skipBlankClassDecl ClsTyDef{} = True
+skipBlankClassDecl ClsDefSig{} = True
+skipBlankClassDecl _ = False
+
+skipBlankInstDecl :: InstDecl a -> Bool
+skipBlankInstDecl (InsDecl _ decl) = skipBlankDecl decl
+skipBlankInstDecl _ = False
+
 prettyDecls :: (Annotated ast, Pretty ast)
             => (ast NodeInfo -> ast NodeInfo -> Bool)
             -> [ast NodeInfo]
@@ -358,11 +368,24 @@ instance Pretty Decl where
     -- prettyPrint (GDataInsDecl _ dataornew ty mkind gadtdecls mderiving) =
     --     undefined
 
-    -- prettyPrint (ClassDecl _ mcontext declhead fundeps mclassdecls) =
-    --     undefined
+    prettyPrint (ClassDecl _ mcontext declhead fundeps mclassdecls) = do
+        depend "class" $ do
+            mapM_ pretty mcontext
+            pretty declhead
+            unless (null fundeps) $ list' "|" "," fundeps
+        mayM_ mclassdecls $ \decls -> do
+            write " where"
+            newline
+            indented $ prettyDecls (\d _ -> skipBlankClassDecl d) decls
 
-    -- prettyPrint (InstDecl _ moverlap instrule minstdecls) =
-    --     undefined
+    prettyPrint (InstDecl _ moverlap instrule minstdecls) = do
+        depend "instance" $ do
+            mapM_ pretty moverlap
+            pretty instrule
+        mayM_ minstdecls $ \decls -> do
+            write " where"
+            newline
+            indented $ prettyDecls (\d _ -> skipBlankInstDecl d) decls
 
     -- prettyPrint (DerivDecl _ moverlap instrule) = undefined
 
@@ -427,6 +450,68 @@ instance Pretty DeclHead where
 
     prettyPrint (DHApp _ declhead tyvarbind) = depend' (pretty declhead) $ pretty tyvarbind
 
+instance Pretty InstRule where
+    prettyPrint (IRule _ mtyvarbinds mcontext insthead) = do
+        mapM_ prettyForall mtyvarbinds
+        mapM_ pretty mcontext
+        pretty insthead
+
+    prettyPrint (IParen _ instrule) = parens $ pretty instrule
+
+instance Pretty InstHead where
+    prettyPrint (IHCon _ qname) = pretty qname
+
+    prettyPrint (IHInfix _ ty qname) = do
+        pretty ty
+        space
+        pretty qname
+
+    prettyPrint (IHParen _ insthead) = parens $ pretty insthead
+
+    prettyPrint (IHApp _ insthead ty) = depend' (pretty insthead) $ pretty ty
+
+instance Pretty ClassDecl where
+    prettyPrint (ClsDecl _ decl) = pretty decl
+
+    prettyPrint (ClsDataFam _ mcontext declhead mresultsig) = depend "data" $ do
+        mapM_ pretty mcontext
+        pretty declhead
+        mayM_ mresultsig pretty
+
+    prettyPrint (ClsTyFam _ declhead mresultsig minjectivityinfo) =
+        depend "type" $ do
+            pretty declhead
+            mayM_ mresultsig pretty
+            mapM_ pretty minjectivityinfo
+
+    prettyPrint (ClsTyDef _ typeeqn) = depend "type" $ pretty typeeqn
+
+    prettyPrint (ClsDefSig _ name ty) = depend "default" $ do
+        pretty name
+        operator "::"
+        pretty ty
+
+instance Pretty InstDecl where
+    prettyPrint (InsDecl _ decl) = pretty decl
+
+    prettyPrint (InsType _ ty ty') = depend "type" $ do
+        pretty ty
+        operator "="
+        pretty ty'
+
+    prettyPrint (InsData _ dataornew ty qualcondecls mderiving) =
+        depend' (pretty dataornew) $ do
+            pretty ty
+            unless (null qualcondecls) $ list' "=" "|" qualcondecls
+            mapM_ pretty mderiving
+
+    prettyPrint (InsGData _ dataornew ty mkind gadtdecls mderiving) =
+        depend' (pretty dataornew) $ do
+            pretty ty
+            mayM_ mkind $ withPrefix space pretty
+            unless (null gadtdecls) $ list' "=" "|" gadtdecls
+            mapM_ pretty mderiving
+
 instance Pretty Deriving where
     prettyPrint (Deriving _ instrules) = do
         newline
@@ -487,6 +572,12 @@ instance Pretty GadtDecl where
       where
         flex = listH "{" "}" ","
         vertical = listV "{" "}" ","
+
+instance Pretty FunDep where
+    prettyPrint (FunDep _ names names') = do
+        inter space $ map pretty names
+        operator "->"
+        inter space $ map pretty names'
 
 instance Pretty Type where
     prettyPrint (TyForall _ mtyvarbinds mcontext ty) = do
@@ -598,15 +689,19 @@ instance Pretty Op where
     prettyPrint (VarOp l name) = prettyPrint (QVarOp l (UnQual noNodeInfo name))
     prettyPrint (ConOp l name) = prettyPrint (QConOp l (UnQual noNodeInfo name))
 
+instance Pretty InjectivityInfo
+
+instance Pretty ResultSig
+
 instance Pretty Context
+
+instance Pretty TypeEqn
 
 instance Pretty Splice
 
 instance Pretty ModulePragma
 
 -- Stick with HSE
-instance Pretty InstRule
-
 instance Pretty DataOrNew
 
 instance Pretty BangType
@@ -618,3 +713,5 @@ instance Pretty ModuleName
 instance Pretty QName
 
 instance Pretty Name
+
+instance Pretty Overlap

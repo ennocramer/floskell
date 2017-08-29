@@ -118,29 +118,23 @@ data LongTypeSig
 
 ``` haskell
 class Monoid a where
-        mempty :: a
-        
-        mappend :: a -> a -> a
+    mempty :: a
+    mappend :: a -> a -> a
 
-class Applicative m => Monad m where
-        fail :: m a
-        
-        return :: a -> m a
-        
-        (>>=) :: a -> (a -> m b) -> m b
+class Applicative m =>Monad m where
+    fail :: m a
+    return :: a -> m a
+    (>>=) :: a -> (a -> m b) -> m b
 
-class Monad m => MonadState s m | m -> s where
-        get :: m s
-        
-        put :: s -> m ()
-        
-        state :: (s -> (a, s)) -> m a
+class Monad m =>MonadState s m | m -> s where
+    get :: m s
+    put :: s -> m ()
+    state :: (s -> (a, s)) -> m a
 
 class ToJSON a where
-        toJSON :: a -> Value
-        
-        default toJSON :: (Generic a, GToJSON (Rep a)) => a -> Value
-        toJSON = genericToJSON defaultOptions
+    toJSON :: a -> Value
+    default toJSON :: (Generic a, GToJSON (Rep a)) =>a -> Value
+    toJSON = genericToJSON defaultOptions
 ```
 
 ## Instance Declarations
@@ -149,14 +143,16 @@ class ToJSON a where
 instance ToJSON ()
 
 instance Bounded Bool where
-        minBound = False
-        maxBound = True
+    minBound = False
 
-instance Semigroup a => Monoid (Maybe a) where
-        mempty = Nothing
-        Nothing `mappend` m = m
-        m `mappend` Nothing = m
-        Just m1 `mappend` Just m2 = Just (m1 `mappend` m2)
+    maxBound = True
+
+instance Semigroup a =>Monoid (Maybe a) where
+    mempty = Nothing
+
+    Nothing `mappend` m = m
+m `mappend` Nothing = m
+Just m1 `mappend` Just m2 = Just (m1 `mappend` m2)
 ```
 
 ## Type families
