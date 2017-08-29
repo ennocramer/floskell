@@ -129,7 +129,7 @@ class Applicative m =>Monad m where
 class Monad m =>MonadState s m | m -> s where
     get :: m s
     put :: s -> m ()
-    state :: (s -> (a, s)) -> m a
+    state :: (s -> ( a, s )) -> m a
 
 class ToJSON a where
     toJSON :: a -> Value
@@ -171,21 +171,21 @@ type instance Id Int = Int
 
 ``` haskell
 id :: a -> a
-sort :: Ord a => [a] -> [a]
-long ::
-       (IsString a, Monad m) =>
-       ByteString ->
-         ByteString -> ByteString -> ByteString -> ByteString -> a -> m ()
-mkEncoderData ::
-              DocumentType -> (Text -> Except String ByteString) -> EncoderData
-codepageReference ::
-                  (ParserState -> Word8) ->
-                    AP.Parser Word8 -> Parser CodepageReference
-mktime :: Int -> Int -> Int -> Time
-transform :: forall a . St -> State St a -> EitherT ServantErr IO a
+sort :: Ord a =>[ a ] -> [ a ]
+long :: (IsString a, Monad m) =>ByteString
+    -> ByteString -> ByteString -> ByteString -> ByteString -> a -> m ()
+mkEncoderData
+    :: DocumentType -> (Text -> Except String ByteString) -> EncoderData
+codepageReference
+    :: (ParserState -> Word8) -> AP.Parser Word8 -> Parser CodepageReference
+mktime :: Int -- hours
+     -> Int -- minutes
+     -> Int -- seconds
+     -> Time
+transform :: forall a. St -> State St a -> EitherT ServantErr IO a
 Implicit parameters
 
-f :: (?x :: Int) => Int
+f :: (?x :: Int) =>Int
 ```
 
 # Expressions
@@ -199,15 +199,15 @@ empty = ()
 singleton :: (Int)
 singleton = (1)
 
-pair :: (Int, String)
+pair :: ( Int, String )
 pair = (0, "Zero")
 
-lorem :: (String, String)
+lorem :: ( String, String )
 lorem
   = ("Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
      "Curabitur nec ante nec mauris ornare suscipit.")
 
-comment :: (Int, Int, Int)
+comment :: ( Int, Int, Int )
 comment = (0, 1, 2)
 
 match () = undefined
@@ -218,16 +218,16 @@ match (x, y) = undefined
 ## Lists
 
 ``` haskell
-empty :: [a]
+empty :: [ a ]
 empty = []
 
-singleton :: [String]
+singleton :: [ String ]
 singleton = ["lorem"]
 
-short :: [Int]
+short :: [ Int ]
 short = [1, 2, 3, 4, 5]
 
-lorem :: [String]
+lorem :: [ String ]
 lorem
   = ["Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
      "Curabitur nec ante nec mauris ornare suscipit.",
@@ -235,7 +235,7 @@ lorem
      "Duis eget magna non purus imperdiet molestie nec quis mauris.",
      "Praesent blandit quam vel arcu pellentesque, id aliquet turpis faucibus."]
 
-comment :: [Int]
+comment :: [ Int ]
 comment = [1, 2, 3]
 
 match [] = undefined

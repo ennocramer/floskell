@@ -43,6 +43,16 @@ runs eq xs = let (ys, zs) = run eq xs
              in
                  ys : runs eq zs
 
+flattenl :: (a -> Maybe (a, b)) -> a -> (a, [b])
+flattenl fn x = case fn x of
+    Just (lhs, rhs) -> let (first, rest) = flattenl fn lhs in (first, rest ++ [rhs])
+    Nothing -> (x, [])
+
+flattenr :: (a -> Maybe (b, a)) -> a -> ([b], a)
+flattenr fn x = case fn x of
+    Just (lhs, rhs) -> let (rest, lst) = flattenr fn rhs in (lhs : rest, lst)
+    Nothing -> ([], x)
+
 -- | Syntax shortcut for Pretty Printers.
 type PrettyPrinter f = f NodeInfo -> Printer FlexConfig ()
 
@@ -405,7 +415,11 @@ instance Pretty Decl where
 
     prettyPrint (SpliceDecl _ expr) = pretty expr
 
-    -- prettyPrint (TypeSig _ names ty) = undefined
+    prettyPrint (TypeSig _ names ty) = do
+        inter comma $ map pretty names
+        indented $ do
+            operator "::"
+            pretty ty
 
     -- prettyPrint (PatSynSig _ name mtyvarbinds mcontext mcontext' ty) =
     --     undefined
