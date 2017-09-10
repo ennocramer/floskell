@@ -344,11 +344,20 @@ instance Pretty Decl where
         operator "="
         pretty ty
 
-    -- prettyPrint (TypeFamDecl _ declhead mresultsig minjectivity) =
-    --     undefined
+    prettyPrint (TypeFamDecl _ declhead mresultsig minjectivityinfo) =
+        depend "type family" $ do
+            pretty declhead
+            mayM_ mresultsig pretty
+            mayM_ minjectivityinfo pretty
 
-    -- prettyPrint (ClosedTypeFamDecl _ declhead mresultsig minjectivityinfo typeeqns) =
-    --     undefined
+    prettyPrint (ClosedTypeFamDecl _ declhead mresultsig minjectivityinfo typeeqns) =
+        depend "type family" $ do
+            pretty declhead
+            mayM_ mresultsig pretty
+            mayM_ minjectivityinfo pretty
+            write " where"
+            newline
+            lined typeeqns
 
     prettyPrint (DataDecl _ dataornew mcontext declhead qualcondecls mderiving) = do
         depend' (pretty dataornew) $ do
@@ -515,6 +524,22 @@ instance Pretty IPBind where
         pretty ipname
         operator "="
         pretty expr
+
+instance Pretty InjectivityInfo where
+    prettyPrint (InjectivityInfo _ name names) = do
+        operator "|"
+        pretty name
+        operator "->"
+        inter space $ map pretty names
+
+instance Pretty ResultSig where
+    prettyPrint (KindSig _ kind) = do
+        operator "::"
+        pretty kind
+
+    prettyPrint (TyVarSig _ tyvarbind) = do
+        operator "="
+        pretty tyvarbind
 
 instance Pretty ClassDecl where
     prettyPrint (ClsDecl _ decl) = pretty decl
@@ -793,6 +818,12 @@ instance Pretty TyVarBind where
 
     prettyPrint (UnkindedVar _ name) = pretty name
 
+instance Pretty TypeEqn where
+    prettyPrint (TypeEqn _ ty ty') = do
+        pretty ty
+        operator "="
+        pretty ty'
+
 instance Pretty QOp where
     prettyPrint qop = withOperatorFormatting (opName qop) (prettyHSE qop) (return ())
       where
@@ -810,12 +841,6 @@ instance Pretty QOp where
 instance Pretty Op where
     prettyPrint (VarOp l name) = prettyPrint (QVarOp l (UnQual noNodeInfo name))
     prettyPrint (ConOp l name) = prettyPrint (QConOp l (UnQual noNodeInfo name))
-
-instance Pretty InjectivityInfo
-
-instance Pretty ResultSig
-
-instance Pretty TypeEqn
 
 instance Pretty Exp
 
