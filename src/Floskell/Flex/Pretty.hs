@@ -384,13 +384,27 @@ instance Pretty Decl where
             pretty declhead
             mapM_ pretty mresultsig
 
-    -- prettyPrint (TypeInsDecl _ ty ty') = undefined
+    prettyPrint (TypeInsDecl _ ty ty') = depend "type instance" $ do
+        pretty ty
+        operator "="
+        pretty ty'
 
-    -- prettyPrint (DataInsDecl _ dataornew ty qualcondecls mderiving) =
-    --     undefined
+    prettyPrint (DataInsDecl _ dataornew ty qualcondecls mderiving) = do
+        depend' (pretty dataornew >> write " instance") $ do
+            pretty ty
+            list' "=" "|" qualcondecls
+        mapM_ pretty mderiving
 
-    -- prettyPrint (GDataInsDecl _ dataornew ty mkind gadtdecls mderiving) =
-    --     undefined
+    prettyPrint (GDataInsDecl _ dataornew ty mkind gadtdecls mderiving) = do
+        depend' (pretty dataornew >> write " instance") $ do
+            pretty ty
+            mayM_ mkind $ \kind -> do
+                operator "::"
+                pretty kind
+            write " where"
+            newline
+            lined gadtdecls
+        mapM_ pretty mderiving
 
     prettyPrint (ClassDecl _ mcontext declhead fundeps mclassdecls) = do
         depend "class" $ do
