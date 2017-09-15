@@ -378,8 +378,11 @@ instance Pretty Decl where
             lined gadtdecls
         mapM_ pretty mderiving
 
-    -- prettyPrint (DataFamDecl _ mcontext declhead mresultsig) =
-    --     undefined
+    prettyPrint (DataFamDecl _ mcontext declhead mresultsig) =
+        depend "data family" $ do
+            mapM_ pretty mcontext
+            pretty declhead
+            mapM_ pretty mresultsig
 
     -- prettyPrint (TypeInsDecl _ ty ty') = undefined
 
