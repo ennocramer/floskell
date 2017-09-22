@@ -447,8 +447,13 @@ instance Pretty Decl where
             operator "::"
             pretty ty
 
-    -- prettyPrint (PatSynSig _ name mtyvarbinds mcontext mcontext' ty) =
-    --     undefined
+    prettyPrint (PatSynSig _ name mtyvarbinds mcontext mcontext' ty) = depend "pattern" $ do
+        pretty name
+        operator "::"
+        mapM_ prettyForall mtyvarbinds
+        mayM_ mcontext pretty
+        mayM_ mcontext' pretty
+        pretty ty
 
     prettyPrint (FunBind _ matches) = lined matches
 
@@ -457,7 +462,20 @@ instance Pretty Decl where
         pretty rhs
         mapM_ pretty mbinds
 
-    -- prettyPrint (PatSyn _ pat pat' patternsyndirection) = undefined
+    prettyPrint (PatSyn _ pat pat' patternsyndirection) = do
+        depend "pattern" $ do
+            pretty pat
+            operator sep
+            pretty pat'
+        case patternsyndirection of
+            ExplicitBidirectional _ decls ->
+                pretty (BDecls noNodeInfo decls)
+            _ -> return ()
+      where
+        sep = case patternsyndirection of
+            ImplicitBidirectional -> "="
+            ExplicitBidirectional _ _ -> "<-"
+            Unidirectional -> "<-"
 
     -- prettyPrint (ForImp _ callconv msafety mstring name ty) =
     --     undefined
