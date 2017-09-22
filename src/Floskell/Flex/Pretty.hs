@@ -477,11 +477,23 @@ instance Pretty Decl where
             ExplicitBidirectional _ _ -> "<-"
             Unidirectional -> "<-"
 
-    -- prettyPrint (ForImp _ callconv msafety mstring name ty) =
-    --     undefined
+    prettyPrint (ForImp _ callconv msafety mstring name ty) =
+        depend "foreign import" $ do
+            pretty callconv
+            mayM_ msafety $ withPrefix space pretty
+            mayM_ mstring $ withPrefix space (string . show)
+            space
+            pretty name
+            operator "::"
+            pretty ty
 
-    -- prettyPrint (ForExp _ callconv mstring name ty) =
-    --     undefined
+    prettyPrint (ForExp _ callconv mstring name ty) = depend "foreign export" $ do
+        pretty callconv
+        mayM_ mstring $ withPrefix space (string . show)
+        space
+        pretty name
+        operator "::"
+        pretty ty
 
     -- prettyPrint (RulePragmaDecl _ rules) = undefined
 
@@ -902,4 +914,9 @@ instance Pretty Name
 
 instance Pretty IPName
 
+instance Pretty Safety
+
+instance Pretty CallConv
+
 instance Pretty Overlap
+
