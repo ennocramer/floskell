@@ -328,11 +328,24 @@ instance Pretty Decl where
     -- prettyPrint (ClosedTypeFamDecl _ declhead mresultsig minjectivityinfo typeeqns) =
     --     undefined
 
-    -- prettyPrint (DataDecl _ dataornew mcontext declhead qualcondecls mderiving) =
-    --     undefined
+    prettyPrint (DataDecl _ dataornew mcontext declhead qualcondecls mderiving) = do
+        depend' (pretty dataornew) $ do
+            mapM_ pretty mcontext
+            pretty declhead
+            unless (null qualcondecls) $ list' "=" "|" qualcondecls
+        mapM_ pretty mderiving
 
-    -- prettyPrint (GDataDecl _ dataornew mcontext declhead mkind gadtdecls mderiving) =
-    --     undefined
+    prettyPrint (GDataDecl _ dataornew mcontext declhead mkind gadtdecls mderiving) = do
+        depend' (pretty dataornew) $ do
+            mapM_ pretty mcontext
+            pretty declhead
+            mayM_ mkind $ \kind -> do
+                operator "::"
+                pretty kind
+            write " where"
+            newline
+            lined gadtdecls
+        mapM_ pretty mderiving
 
     -- prettyPrint (DataFamDecl _ mcontext declhead mresultsig) =
     --     undefined
@@ -413,6 +426,67 @@ instance Pretty DeclHead where
     prettyPrint (DHParen _ declhead) = parens $ pretty declhead
 
     prettyPrint (DHApp _ declhead tyvarbind) = depend' (pretty declhead) $ pretty tyvarbind
+
+instance Pretty Deriving where
+    prettyPrint (Deriving _ instrules) = do
+        newline
+        indented $ do
+            write "deriving "
+            case instrules of
+                [ i@IRule{} ] -> pretty i
+                _ -> listAutoWrap "(" ")" "," instrules'
+      where
+        instrules' = case instrules of
+            [ IParen _ i ] -> [ i ]
+            _ -> instrules
+
+instance Pretty ConDecl where
+    prettyPrint (ConDecl _ name types) = do
+        pretty name
+        unless (null types) $ do
+            space
+            oneline flex <|> vertical
+      where
+        flex = inter space $ map pretty types
+        vertical = aligned $ lined types
+
+    prettyPrint (InfixConDecl _ ty name ty') = do
+        pretty ty
+        pretty $ ConOp noNodeInfo name
+        pretty ty'
+
+    prettyPrint (RecDecl _ name fielddecls) = do
+        pretty name
+        sepSpace
+        oneline flex <|> vertical
+      where
+        flex = listH "{" "}" "," fielddecls
+        vertical = listV "{" "}" "," fielddecls
+
+instance Pretty FieldDecl where
+    prettyPrint (FieldDecl _ names ty) = do
+        inter comma $ map pretty names
+        indented $ do
+            operator "::"
+            pretty ty
+
+instance Pretty QualConDecl where
+    prettyPrint (QualConDecl _ mtyvarbinds mcontext condecl) = do
+        mapM_ prettyForall mtyvarbinds
+        mapM_ pretty mcontext
+        pretty condecl
+
+instance Pretty GadtDecl where
+    prettyPrint (GadtDecl _ name mfielddecls ty) = do
+        pretty name
+        operator "::"
+        mayM_ mfielddecls $ \decls -> do
+            oneline (flex decls) <|> vertical decls
+            operator "->"
+        pretty ty
+      where
+        flex = listH "{" "}" ","
+        vertical = listV "{" "}" ","
 
 instance Pretty Type where
     prettyPrint (TyForall _ mtyvarbinds mcontext ty) = do
@@ -531,6 +605,10 @@ instance Pretty Splice
 instance Pretty ModulePragma
 
 -- Stick with HSE
+instance Pretty InstRule
+
+instance Pretty DataOrNew
+
 instance Pretty BangType
 
 instance Pretty Unpackedness

@@ -76,42 +76,40 @@ type EventSource a = ( AddHandler a, a -> IO () )
 ``` haskell
 data Void
 
-data Void = Void{absurd :: forall a . a}
+data Void = Void { absurd :: forall a. a }
 
 data Empty = Empty
 
-data Maybe a = Nothing
-             | Just a
+data Maybe a = Nothing | Just a
 
-data Either a b = Left a
-                | Right b
+data Either a b = Left a | Right b
 
 data Op a b = Op (b -> a)
 
-data Enum = Foo
-          | Bar
-          | Baz
+data Enum = Foo | Bar | Baz
 
-data Enum = Foo
-          | Bar
+data Enum = Foo -- first
+          | Bar -- second
           | Baz -- third
 ```
 
 ## Records
 
 ``` haskell
-data Empty = Empty{}
+data Empty = Empty {}
 
-data Op = Op{getOp :: b -> a}
+data Op = Op { getOp :: b -> a }
 
-data Point = Point{x :: Int, y :: Int, label :: String}
-           deriving (Eq, Show)
+data Point = Point { x :: Int, y :: Int, label :: String }
+    deriving ( Eq, Show )
 
-data Commented = Commented{singleField :: Int}
+data Commented = Commented { singleField :: Int -- with a comment
+                           }
 
-data LongTypeSig = LongTypeSig{field ::
-                                 (IsString a, Monad m) =>
-                                 (ByteString -> ByteString) -> ByteString -> a -> m ()}
+data LongTypeSig
+    = LongTypeSig { field :: (IsString a, Monad m) =>(ByteString -> ByteString)
+                        -> ByteString -> a -> m ()
+                  }
 ```
 
 # Type Classes
@@ -476,11 +474,19 @@ module X where
 main :: IO ()
 main = return ()
 
-data X = X
+data X = X -- ^ X is for xylophone.
        | Y -- ^ Y is for why did I eat that pizza.
 
-data X = X{field1 :: Int, field11 :: Char, field2 :: Int,
-           field3 :: Char, field4 :: Char}
+data X = X { field1 :: Int -- ^ Field1 is the first field.
+           , field11 :: Char
+             -- ^ This field comment is on its own line.
+           , field2 :: Int -- ^ Field2 is the second field.
+           , field3 :: Char -- ^ This is a long comment which starts next to
+             -- the field but continues onto the next line, it aligns exactly
+             -- with the field name.
+           , field4 :: Char-- ^ This is a long comment which starts on the following line
+             -- from from the field, lines continue at the sme column.
+           }
 ```
 
 Comments around regular declarations
