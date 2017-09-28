@@ -424,9 +424,12 @@ instance Pretty Decl where
     -- prettyPrint (PatSynSig _ name mtyvarbinds mcontext mcontext' ty) =
     --     undefined
 
-    -- prettyPrint (FunBind _ matches) = undefined
+    prettyPrint (FunBind _ matches) = lined matches
 
-    -- prettyPrint (PatBind _ pat rhs mbinds) = undefined
+    prettyPrint (PatBind _ pat rhs mbinds) = do
+        pretty pat
+        pretty rhs
+        mapM_ pretty mbinds
 
     -- prettyPrint (PatSyn _ pat pat' patternsyndirection) = undefined
 
@@ -493,6 +496,25 @@ instance Pretty InstHead where
     prettyPrint (IHParen _ insthead) = parens $ pretty insthead
 
     prettyPrint (IHApp _ insthead ty) = depend' (pretty insthead) $ pretty ty
+
+instance Pretty Binds where
+    prettyPrint (BDecls _ decls) = do
+        newline
+        write "  where"
+        newline
+        indented $ prettyDecls (\d _ -> skipBlankDecl d) decls
+
+    prettyPrint (IPBinds _ ipbinds) = do
+        newline
+        write "  where"
+        newline
+        indented $ lined ipbinds
+
+instance Pretty IPBind where
+    prettyPrint (IPBind _ ipname expr) = do
+        pretty ipname
+        operator "="
+        pretty expr
 
 instance Pretty ClassDecl where
     prettyPrint (ClsDecl _ decl) = pretty decl
@@ -596,6 +618,37 @@ instance Pretty GadtDecl where
       where
         flex = listH "{" "}" ","
         vertical = listV "{" "}" ","
+
+instance Pretty Match where
+    prettyPrint (Match _ name pats rhs mbinds) = do
+        pretty name
+        unless (null pats) $ do
+            space
+            inter space $ map pretty pats
+        pretty rhs
+        mapM_ pretty mbinds
+
+    prettyPrint (InfixMatch _ pat name pats rhs mbinds) = do
+        pretty pat
+        pretty $ VarOp noNodeInfo name
+        inter space $ map pretty pats
+        pretty rhs
+        mapM_ pretty mbinds
+
+instance Pretty Rhs where
+    prettyPrint (UnGuardedRhs _ expr) = cut . indented $ do
+        operator "="
+        pretty expr
+
+    prettyPrint (GuardedRhss _ guardedrhss) = aligned $ lined guardedrhss
+
+instance Pretty GuardedRhs where
+    prettyPrint (GuardedRhs _ stmts expr) = do
+        operator "|"
+        inter comma $ map pretty stmts
+        indented $ do
+            operator "="
+            pretty expr
 
 instance Pretty FunDep where
     prettyPrint (FunDep _ names names') = do
@@ -723,6 +776,10 @@ instance Pretty TypeEqn
 
 instance Pretty Exp
 
+instance Pretty Stmt
+
+instance Pretty Pat
+
 instance Pretty Splice
 
 instance Pretty ModulePragma
@@ -739,5 +796,7 @@ instance Pretty ModuleName
 instance Pretty QName
 
 instance Pretty Name
+
+instance Pretty IPName
 
 instance Pretty Overlap
