@@ -260,8 +260,7 @@ commented = config{configBasePath = "/"}
 foo = let x = x in x
 
 foo = let x = 1
-    y = 2
-  in x + y
+          y = 2 in x + y
 
 foo = let expr = do return () in expr
 
@@ -273,10 +272,11 @@ foo = let x = if True then False else True in x
 ``` haskell
 if True then False else True
 
-if the condition evaluates to true then execute the first branch
-  else execute the second branch
+if the condition evaluates
+    to true then execute the first branch else execute the second branch
 
-if cond then true else false
+if cond -- comment
+ then true else false
 
 if cond then do return () else return ()
 
@@ -288,11 +288,11 @@ do if cond then true else false
 Multi-way if
 
 ``` haskell
-x = if | x <- Just x, x <- Just x ->
-     case x of
-         Just x -> e
-         Nothing -> p
-   | otherwise -> e
+x = if
+         | x <- Just x, x <- Just x -> case x of
+            Just x -> e
+            Nothing -> p
+         | otherwise -> e
 ```
 
 ## Case
@@ -300,9 +300,9 @@ x = if | x <- Just x, x <- Just x ->
 ``` haskell
 strToMonth :: String -> Int
 strToMonth month = case month of
-    "Jan" -> 1
-    "Feb" -> 2
-    _ -> error $ "Unknown month " ++ month
+        "Jan" -> 1
+        "Feb" -> 2
+        _ -> error $ "Unknown month " ++ month
 ```
 
 ## Do-Notation
@@ -343,8 +343,8 @@ defaultExtensions = [e |
  let a = b, let c = d]
 
 -- comment
-defaultExtensions = [e | e@EnableExtension{} <- knownExtensions] \\
-  map EnableExtension badExtensions
+defaultExtensions = [e | e@EnableExtension{} <- knownExtensions]
+    \\ map EnableExtension badExtensions
 ```
 
 Parallel list comprehension
@@ -372,10 +372,8 @@ list = [(x, y, map the v) | x <- [1 .. 10], y <- [1 .. 10], let v = x + y,
 Applicative-style operators
 
 ``` haskell
-x = Value <$> thing <*> secondThing <*> thirdThing <*> fourthThing <*>
-  Just thisissolong
-  <*> Just stilllonger
-  <*> evenlonger
+x = Value <$> thing <*> secondThing <*> thirdThing
+    <*> fourthThing <*> Just thisissolong <*> Just stilllonger <*> evenlonger
 ```
 
 # Function declarations
@@ -395,7 +393,7 @@ sayHello = do name <- getLine
 ``` haskell
 f :: Int
 f x | x <- Just x, x <- Just x = case x of
-    Just x -> e
+           Just x -> e
     | otherwise = do e
   where
     x = y
@@ -405,10 +403,10 @@ f x | x <- Just x, x <- Just x = case x of
 
 ``` haskell
 g x = case x of
-    a -> x
+        a -> x
   where
     foo = case x of
-    _ -> do launchMissiles
+            _ -> do launchMissiles
       where
         y = 2
 ```
@@ -419,8 +417,7 @@ g x = case x of
 g x = let x = 1 in x
   where
     foo = let y = 2
-    z = 3
-  in y
+              z = 3 in y
 ```
 # Template Haskell
 
@@ -553,7 +550,7 @@ f :: Int -> Int -> (# Int, Int #)
 f x y = (# x + 1, y - 1 #)
 
 g x = case f x x of
-    (# a, b #) -> a + b
+        (# a, b #) -> a + b
 
 h x = let (# p, q #) = h x in undefined
 ```

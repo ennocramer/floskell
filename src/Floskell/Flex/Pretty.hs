@@ -1,6 +1,7 @@
-{-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE DefaultSignatures          #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE RecordWildCards            #-}
 
 module Floskell.Flex.Pretty where
 
@@ -919,6 +920,168 @@ instance Pretty TypeEqn where
         operator "="
         pretty ty'
 
+instance Pretty Exp where
+    -- prettyPrint (Var _ qname) = undefined
+
+    -- prettyPrint (OverloadedLabel _ str) = undefined
+
+    -- prettyPrint (IPVar _ ipname) = undefined
+
+    -- prettyPrint (Con _ qname) = undefined
+
+    -- prettyPrint (Lit _ literal) = undefined
+
+    prettyPrint (InfixApp _ expr qop expr') = do
+        pretty expr
+        pretty qop
+        pretty expr'
+
+    prettyPrint (App _ expr expr') = do
+        pretty expr
+        spaceOrNewline
+        pretty expr'
+
+    prettyPrint (NegApp _ expr) = do
+        write "-"
+        pretty expr
+
+    prettyPrint (Lambda _ pats expr) = do
+        write "\\"
+        space
+        inter space $ map pretty pats
+        operator "->"
+        pretty expr
+
+    prettyPrint (Let _ binds expr) = aligned $ do
+        write "let "
+        aligned $ pretty (CompactBinds binds)
+        spaceOrNewline
+        write "in "
+        pretty expr
+
+    prettyPrint (If _ expr expr' expr'') = do
+        write "if "
+        indented $ pretty expr
+        spaceOrNewline
+        write "then "
+        indented $ pretty expr'
+        spaceOrNewline
+        write "else "
+        indented $ pretty expr''
+
+    prettyPrint (MultiIf _ guardedrhss) = do
+        write "if"
+        newline
+        indented . lined $ map GuardedAlt guardedrhss
+
+    prettyPrint (Case _ expr alts) = do
+        write "case "
+        pretty expr
+        write " of"
+        if null alts
+            then write " { }"
+            else do
+                newline
+                indented $ lined alts
+
+    -- prettyPrint (Do _ stmts) = undefined
+
+    -- prettyPrint (MDo _ stmts) = undefined
+
+    -- prettyPrint (Tuple _ boxed exprs) = undefined
+
+    -- prettyPrint (TupleSection _ boxed mexprs) = undefined
+
+    -- prettyPrint (List _ exprs) = undefined
+
+    -- prettyPrint (ParArray _ exprs) = undefined
+
+    -- prettyPrint (Paren _ expr) = undefined
+
+    -- prettyPrint (LeftSection _ expr qop) = undefined
+
+    -- prettyPrint (RightSection _ qop expr) = undefined
+
+    -- prettyPrint (RecConstr _ qname fieldupdates) = undefined
+
+    -- prettyPrint (RecUpdate _ expr fieldupdates) = undefined
+
+    -- prettyPrint (EnumFrom _ expr) = undefined
+
+    -- prettyPrint (EnumFromTo _ expr expr') = undefined
+
+    -- prettyPrint (EnumFromThen _ expr expr') = undefined
+
+    -- prettyPrint (EnumFromThenTo _ expr expr' expr'') = undefined
+
+    -- prettyPrint (ParArrayFromTo _ expr expr') = undefined
+
+    -- prettyPrint (ParArrayFromThenTo _ expr expr' expr'') = undefined
+
+    -- prettyPrint (ListComp _ expr qualstmts) = undefined
+
+    -- prettyPrint (ParComp _ expr qualstmtss) = undefined
+
+    -- prettyPrint (ParArrayComp _ expr qualstmtss) = undefined
+
+    -- prettyPrint (ExpTypeSig _ expr typ) = undefined
+
+    -- prettyPrint (VarQuote _ qname) = undefined
+
+    -- prettyPrint (TypQuote _ qname) = undefined
+
+    -- prettyPrint (BracketExp _ bracket) = undefined
+
+    -- prettyPrint (SpliceExp _ splice) = undefined
+
+    -- prettyPrint (QuasiQuote _ str str') = undefined
+
+    -- prettyPrint (TypeApp _ typ) = undefined
+
+    -- prettyPrint (XTag _ xname xattrs mexpr exprs) = undefined
+
+    -- prettyPrint (XETag _ xname xattrs mexpr) = undefined
+
+    -- prettyPrint (XPcdata _ str) = undefined
+
+    -- prettyPrint (XExpTag _ expr) = undefined
+
+    -- prettyPrint (XChildTag _ exprs) = undefined
+
+    -- prettyPrint (CorePragma _ str expr) = undefined
+
+    -- prettyPrint (SCCPragma _ str expr) = undefined
+
+    -- prettyPrint (GenPragma _ str intp intp' expr) = undefined
+
+    -- prettyPrint (Proc _ pat expr) = undefined
+
+    -- prettyPrint (LeftArrApp _ expr expr') = undefined
+
+    -- prettyPrint (RightArrApp _ expr expr') = undefined
+
+    -- prettyPrint (LeftArrHighApp _ expr expr') = undefined
+
+    -- prettyPrint (RightArrHighApp _ expr expr') = undefined
+
+    prettyPrint (LCase _ alts) = do
+        write "\\case"
+        if null alts
+            then write " { }"
+            else do
+                newline
+                indented $ lined alts
+
+    -- prettyPrint (ExprHole _) = undefined
+
+    prettyPrint e = prettyHSE e
+
+instance Pretty Alt where
+    prettyPrint (Alt _ pat rhs mbinds) = do
+        pretty pat
+        pretty $ GuardedAlts rhs
+        mapM_ pretty mbinds
+
 instance Pretty QOp where
     prettyPrint qop = withOperatorFormatting (opName qop) (prettyHSE qop) (return ())
       where
@@ -1001,8 +1164,6 @@ instance Pretty BooleanFormula where
 
     prettyPrint (ParenFormula _ booleanformula) = parens $ pretty booleanformula
 
-instance Pretty Exp
-
 instance Pretty Stmt
 
 instance Pretty Pat
@@ -1030,3 +1191,31 @@ instance Pretty CallConv
 
 instance Pretty Overlap
 
+-- Helpers
+newtype GuardedAlt l = GuardedAlt (GuardedRhs l)
+    deriving (Functor, Annotated)
+
+instance Pretty GuardedAlt where
+    prettyPrint (GuardedAlt (GuardedRhs _ stmts expr)) = do
+        operator "|"
+        inter comma $ map pretty stmts
+        operator "->"
+        indented $ pretty expr
+
+newtype GuardedAlts l = GuardedAlts (Rhs l)
+    deriving (Functor, Annotated)
+
+instance Pretty GuardedAlts where
+    prettyPrint (GuardedAlts (UnGuardedRhs _ expr)) = cut . indented $ do
+        operator "->"
+        pretty expr
+
+    prettyPrint (GuardedAlts (GuardedRhss _ guardedrhss)) =
+        aligned . lined $ map GuardedAlt guardedrhss
+
+newtype CompactBinds l = CompactBinds (Binds l)
+    deriving (Functor, Annotated)
+
+instance Pretty CompactBinds where
+    prettyPrint (CompactBinds (BDecls _ decls)) = aligned $ lined decls
+    prettyPrint (CompactBinds (IPBinds _ ipbinds)) = aligned $ lined ipbinds
