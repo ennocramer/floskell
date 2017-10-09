@@ -1018,9 +1018,15 @@ instance Pretty Exp where
         space
         pretty expr
 
-    -- prettyPrint (RecConstr _ qname fieldupdates) = undefined
+    prettyPrint (RecConstr _ qname fieldupdates) = do
+        pretty qname
+        sepSpace
+        list "{" "}" "," fieldupdates
 
-    -- prettyPrint (RecUpdate _ expr fieldupdates) = undefined
+    prettyPrint (RecUpdate _ expr fieldupdates) = do
+        pretty expr
+        sepSpace
+        list "{" "}" "," fieldupdates
 
     prettyPrint (EnumFrom _ expr) = group "[" "]" $ do
         pretty expr
@@ -1135,6 +1141,16 @@ instance Pretty Stmt where
     prettyPrint (RecStmt _ stmts) = do
         write "rec "
         aligned $ lined stmts
+
+instance Pretty FieldUpdate where
+    prettyPrint (FieldUpdate _ qname expr) = do
+        pretty qname
+        operator "="
+        pretty expr
+
+    prettyPrint (FieldPun _ qname) = pretty qname
+
+    prettyPrint (FieldWildcard _) = write ".."
 
 instance Pretty QOp where
     prettyPrint qop = withOperatorFormatting (opName qop) (prettyHSE qop) (return ())

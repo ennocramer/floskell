@@ -251,15 +251,17 @@ match [x, y] = undefined
 ## Records
 
 ``` haskell
-origin = Point{x = 0, y = 0, label = "Origin"}
+origin = Point { x = 0, y = 0, label = "Origin" }
 
-translate dx dy p = p{x = x p + dx, y = y p + dy}
+translate dx dy p = p { x = x p + dx, y = y p + dy }
 
-config = config{configBasePath = defaultBasePath,
-       configFileRegex = defaultFileRegex,
-       configDelimiter = defaultDelimeter}
+config = config { configBasePath = defaultBasePath
+                , configFileRegex = defaultFileRegex
+                , configDelimiter = defaultDelimeter
+                }
 
-commented = config{configBasePath = "/"}
+commented = config { configBasePath = "/" -- use root
+                   }
 ```
 
 ## Let
