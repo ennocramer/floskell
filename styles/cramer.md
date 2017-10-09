@@ -424,6 +424,8 @@ fun xs ys =
 Transform list comprehensions
 
 ``` haskell
+{-# LANGUAGE TransformListComp #-}
+
 list = [ (x, y, map the v)
        | x <- [1 .. 10] 
        , y <- [1 .. 10] 

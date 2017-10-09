@@ -299,6 +299,7 @@ fun xs ys = [ (alphaBetaGamma, deltaEpsilonZeta) | x <- xs , z <- zs | y <- ys ,
 Transform list comprehensions
 
 ```haskell
+{-# LANGUAGE TransformListComp #-}
 list = [ (x, y, map the v) | x <- [1 .. 10] , y <- [1 .. 10] , let v = x + y , then group by v using groupWith , then take 10 , then group using permutations , t <- concat v , then takeWhile by t < 3 ]
 ```
 
