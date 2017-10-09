@@ -1002,9 +1002,9 @@ instance Pretty Exp where
         Boxed -> list "(" ")" "," $ map MayAst mexprs
         Unboxed -> list "(#" "#)" "," $ map MayAst mexprs
 
-    -- prettyPrint (List _ exprs) = undefined
+    prettyPrint (List _ exprs) = list "[" "]" "," exprs
 
-    -- prettyPrint (ParArray _ exprs) = undefined
+    prettyPrint (ParArray _ exprs) = list "[:" ":]" "," exprs
 
     prettyPrint (Paren _ expr) = parens $ pretty expr
 
@@ -1022,17 +1022,39 @@ instance Pretty Exp where
 
     -- prettyPrint (RecUpdate _ expr fieldupdates) = undefined
 
-    -- prettyPrint (EnumFrom _ expr) = undefined
+    prettyPrint (EnumFrom _ expr) = group "[" "]" $ do
+        pretty expr
+        operator ".."
 
-    -- prettyPrint (EnumFromTo _ expr expr') = undefined
+    prettyPrint (EnumFromTo _ expr expr') = group "[" "]" $ do
+        pretty expr
+        operator ".."
+        pretty expr'
 
-    -- prettyPrint (EnumFromThen _ expr expr') = undefined
+    prettyPrint (EnumFromThen _ expr expr') = group "[" "]" $ do
+        pretty expr
+        comma
+        pretty expr'
+        operator ".."
 
-    -- prettyPrint (EnumFromThenTo _ expr expr' expr'') = undefined
+    prettyPrint (EnumFromThenTo _ expr expr' expr'') = group "[" "]" $ do
+        pretty expr
+        comma
+        pretty expr'
+        operator ".."
+        pretty expr''
 
-    -- prettyPrint (ParArrayFromTo _ expr expr') = undefined
+    prettyPrint (ParArrayFromTo _ expr expr') = group "[:" ":]" $ do
+        pretty expr
+        operator ".."
+        pretty expr'
 
-    -- prettyPrint (ParArrayFromThenTo _ expr expr' expr'') = undefined
+    prettyPrint (ParArrayFromThenTo _ expr expr' expr'') = group "[:" ":]" $ do
+        pretty expr
+        comma
+        pretty expr'
+        operator ".."
+        pretty expr''
 
     -- prettyPrint (ListComp _ expr qualstmts) = undefined
 

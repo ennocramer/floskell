@@ -224,20 +224,24 @@ empty :: [ a ]
 empty = []
 
 singleton :: [ String ]
-singleton = ["lorem"]
+singleton = [ "lorem" ]
 
 short :: [ Int ]
-short = [1, 2, 3, 4, 5]
+short = [ 1, 2, 3, 4, 5 ]
 
 lorem :: [ String ]
-lorem = ["Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
- "Curabitur nec ante nec mauris ornare suscipit.",
- "In ac vulputate libero.",
- "Duis eget magna non purus imperdiet molestie nec quis mauris.",
- "Praesent blandit quam vel arcu pellentesque, id aliquet turpis faucibus."]
+lorem = [ "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+        , "Curabitur nec ante nec mauris ornare suscipit."
+        , "In ac vulputate libero."
+        , "Duis eget magna non purus imperdiet molestie nec quis mauris."
+        , "Praesent blandit quam vel arcu pellentesque, id aliquet turpis faucibus."
+        ]
 
 comment :: [ Int ]
-comment = [1, 2, 3]
+comment = [ 1 -- the first
+          , 2 -- the second
+          , 3
+          ]
 
 match [] = undefined
 match [_] = undefined
