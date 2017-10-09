@@ -1062,11 +1062,19 @@ instance Pretty Exp where
         operator ".."
         pretty expr''
 
-    -- prettyPrint (ListComp _ expr qualstmts) = undefined
+    prettyPrint (ListComp _ expr qualstmts) = group "[" "]" $ do
+        pretty expr
+        list' "|" "," qualstmts
 
-    -- prettyPrint (ParComp _ expr qualstmtss) = undefined
+    prettyPrint (ParComp _ expr qualstmtss) = group "[" "]" $ do
+        pretty expr
+        aligned . inter newline . flip map qualstmtss $ \qualstmts ->
+            cut $ list' "|" "," qualstmts
 
-    -- prettyPrint (ParArrayComp _ expr qualstmtss) = undefined
+    prettyPrint (ParArrayComp _ expr qualstmtss) = group "[:" ":]" $ do
+        pretty expr
+        aligned . inter newline . flip map qualstmtss $ \qualstmts ->
+            cut $ list' "|" "," qualstmts
 
     -- prettyPrint (ExpTypeSig _ expr typ) = undefined
 
@@ -1125,6 +1133,33 @@ instance Pretty Alt where
         pretty pat
         pretty $ GuardedAlts rhs
         mapM_ pretty mbinds
+
+instance Pretty QualStmt where
+    prettyPrint (QualStmt _ stmt) = pretty stmt
+
+    prettyPrint (ThenTrans _ expr) = do
+        write "then "
+        pretty expr
+
+    prettyPrint (ThenBy _ expr expr') = do
+        write "then "
+        pretty expr
+        write " by "
+        pretty expr'
+
+    prettyPrint (GroupBy _ expr) = do
+        write "then group by "
+        pretty expr
+
+    prettyPrint (GroupUsing _ expr) = do
+        write "then group using "
+        pretty expr
+
+    prettyPrint (GroupByUsing _ expr expr') = do
+        write "then group by "
+        pretty expr
+        write " using "
+        pretty expr'
 
 instance Pretty Stmt where
     prettyPrint (Generator _ pat expr) = do

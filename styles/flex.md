@@ -354,25 +354,30 @@ simple _ = False
 ## List comprehensions
 
 ``` haskell
-map f xs = [f x | x <- xs]
+map f xs = [ f x | x <- xs ]
 
-defaultExtensions = [e |
- EnableExtension{extensionField1 =
-                   extensionField1} <- knownExtensions knownExtensions,
- let a = b, let c = d]
+defaultExtensions = [ e | EnableExtension{extensionField1 = extensionField1}
+                          <- knownExtensions knownExtensions
+                        , let a = b
+                          -- comment
+                        , let c = d
+                    ]
 
 -- comment
-defaultExtensions = [e | e@EnableExtension{} <- knownExtensions]
-    \\ map EnableExtension badExtensions
+defaultExtensions = [ e | e@EnableExtension{} <- knownExtensions
+                    ] \\ map EnableExtension badExtensions
 ```
 
 Parallel list comprehension
 
 ``` haskell
-zip xs ys = [(x, y)| x <- xs| y <- ys]
+zip xs ys = [ ( x, y ) | x <- xs
+                       | y <- ys
+            ]
 
-fun xs ys = [(alphaBetaGamma, deltaEpsilonZeta)| x <- xs, z <- zs|
- y <- ys, cond, let t = t]
+fun xs ys = [ ( alphaBetaGamma, deltaEpsilonZeta ) | x <- xs, z <- zs
+                                                   | y <- ys, cond, let t = t
+            ]
 ```
 
 Transform list comprehensions
@@ -380,10 +385,15 @@ Transform list comprehensions
 ``` haskell
 {-# LANGUAGE TransformListComp #-}
 
-list = [(x, y, map the v) | x <- [1 .. 10], y <- [1 .. 10], let v = x + y,
- then group by v using groupWith, then take 10,
- then group using permutations, t <- concat v,
- then takeWhile by t < 3]
+list = [ ( x, y, map the v ) | x <- [ 1 .. 10 ]
+                             , y <- [ 1 .. 10 ]
+                             , let v = x + y
+                             , then group by v using groupWith
+                             , then take 10
+                             , then group using permutations
+                             , t <- concat v
+                             , then takeWhile by t < 3
+       ]
 ```
 
 ## Operators
