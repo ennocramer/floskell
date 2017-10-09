@@ -994,19 +994,29 @@ instance Pretty Exp where
         newline
         indented $ lined stmts
 
-    -- prettyPrint (Tuple _ boxed exprs) = undefined
+    prettyPrint (Tuple _ boxed exprs) = case boxed of
+        Boxed -> list "(" ")" "," exprs
+        Unboxed -> list "(#" "#)" "," exprs
 
-    -- prettyPrint (TupleSection _ boxed mexprs) = undefined
+    prettyPrint (TupleSection _ boxed mexprs) = case boxed of
+        Boxed -> list "(" ")" "," $ map MayAst mexprs
+        Unboxed -> list "(#" "#)" "," $ map MayAst mexprs
 
     -- prettyPrint (List _ exprs) = undefined
 
     -- prettyPrint (ParArray _ exprs) = undefined
 
-    -- prettyPrint (Paren _ expr) = undefined
+    prettyPrint (Paren _ expr) = parens $ pretty expr
 
-    -- prettyPrint (LeftSection _ expr qop) = undefined
+    prettyPrint (LeftSection _ expr qop) = parens $ do
+        pretty expr
+        space
+        prettyHSE qop
 
-    -- prettyPrint (RightSection _ qop expr) = undefined
+    prettyPrint (RightSection _ qop expr) = parens $ do
+        prettyHSE qop
+        space
+        pretty expr
 
     -- prettyPrint (RecConstr _ qname fieldupdates) = undefined
 
@@ -1239,3 +1249,18 @@ newtype CompactBinds l = CompactBinds (Binds l)
 instance Pretty CompactBinds where
     prettyPrint (CompactBinds (BDecls _ decls)) = aligned $ lined decls
     prettyPrint (CompactBinds (IPBinds _ ipbinds)) = aligned $ lined ipbinds
+
+newtype MayAst a l = MayAst (Maybe (a l))
+
+instance Functor a => Functor (MayAst a) where
+    fmap _ (MayAst Nothing) = MayAst Nothing
+    fmap f (MayAst (Just x)) = MayAst . Just $ fmap f x
+
+instance Annotated a => Annotated (MayAst a) where
+    ann (MayAst Nothing) = undefined
+    ann (MayAst (Just x)) = ann x
+    amap _ (MayAst Nothing) = MayAst Nothing
+    amap f (MayAst (Just x)) = MayAst . Just $ amap f x
+
+instance (Annotated a, Pretty a) => Pretty (MayAst a) where
+    prettyPrint (MayAst x) = mapM_ pretty x

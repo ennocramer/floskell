@@ -199,14 +199,18 @@ singleton :: (Int)
 singleton = (1)
 
 pair :: ( Int, String )
-pair = (0, "Zero")
+pair = ( 0, "Zero" )
 
 lorem :: ( String, String )
-lorem = ("Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
- "Curabitur nec ante nec mauris ornare suscipit.")
+lorem = ( "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+        , "Curabitur nec ante nec mauris ornare suscipit."
+        )
 
 comment :: ( Int, Int, Int )
-comment = (0, 1, 2)
+comment = ( 0 -- the first
+          , 1 -- the second
+          , 2
+          )
 
 match () = undefined
 match (_) = undefined
