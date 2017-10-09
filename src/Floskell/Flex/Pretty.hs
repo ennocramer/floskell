@@ -984,9 +984,15 @@ instance Pretty Exp where
                 newline
                 indented $ lined alts
 
-    -- prettyPrint (Do _ stmts) = undefined
+    prettyPrint (Do _ stmts) = do
+        write "do"
+        newline
+        indented $ lined stmts
 
-    -- prettyPrint (MDo _ stmts) = undefined
+    prettyPrint (MDo _ stmts) = do
+        write "mdo"
+        newline
+        indented $ lined stmts
 
     -- prettyPrint (Tuple _ boxed exprs) = undefined
 
@@ -1082,6 +1088,22 @@ instance Pretty Alt where
         pretty $ GuardedAlts rhs
         mapM_ pretty mbinds
 
+instance Pretty Stmt where
+    prettyPrint (Generator _ pat expr) = do
+        pretty pat
+        operator "<-"
+        pretty expr
+
+    prettyPrint (Qualifier _ expr) = pretty expr
+
+    prettyPrint (LetStmt _ binds) = do
+        write "let "
+        pretty $ CompactBinds binds
+
+    prettyPrint (RecStmt _ stmts) = do
+        write "rec "
+        aligned $ lined stmts
+
 instance Pretty QOp where
     prettyPrint qop = withOperatorFormatting (opName qop) (prettyHSE qop) (return ())
       where
@@ -1163,8 +1185,6 @@ instance Pretty BooleanFormula where
         inter (operator "|") $ map pretty booleanformulas
 
     prettyPrint (ParenFormula _ booleanformula) = parens $ pretty booleanformula
-
-instance Pretty Stmt
 
 instance Pretty Pat
 

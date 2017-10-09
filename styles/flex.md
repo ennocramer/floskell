@@ -262,7 +262,8 @@ foo = let x = x in x
 foo = let x = 1
           y = 2 in x + y
 
-foo = let expr = do return () in expr
+foo = let expr = do
+                  return () in expr
 
 foo = let x = if True then False else True in x
 ```
@@ -278,11 +279,15 @@ if the condition evaluates
 if cond -- comment
  then true else false
 
-if cond then do return () else return ()
+if cond then do
+        return () else return ()
 
-do if cond then true else false
+do
+    if cond then true else false
 
-do if cond then true else false
+do
+    if cond -- comment
+     then true else false
 ```
 
 Multi-way if
@@ -308,16 +313,20 @@ strToMonth month = case month of
 ## Do-Notation
 
 ``` haskell
-main = do name <- getLine
-   putStrLn $ "Hello " ++ name ++ "!"
+main = do
+        name <- getLine
+        putStrLn $ "Hello " ++ name ++ "!"
 
-main = repeatedly $ do getLine >>= putStrLn
+main = repeatedly $ do
+        getLine >>= putStrLn
 
-main = repeatedly $ getline >>= \ s -> do putStrLn s
+main = repeatedly $ getline >>= \ s -> do
+        putStrLn s
 
 main = 
     -- comment
-    do getLine >>= putStrLn
+    do
+        getLine >>= putStrLn
 ```
 
 ## Guards
@@ -382,8 +391,9 @@ x = Value <$> thing <*> secondThing <*> thirdThing
 
 ``` haskell
 sayHello :: IO ()
-sayHello = do name <- getLine
-   putStrLn $ greeting name
+sayHello = do
+        name <- getLine
+        putStrLn $ greeting name
   where
     greeting name = "Hello, " ++ name ++ "!"
 ```
@@ -394,7 +404,8 @@ sayHello = do name <- getLine
 f :: Int
 f x | x <- Just x, x <- Just x = case x of
            Just x -> e
-    | otherwise = do e
+    | otherwise = do
+           e
   where
     x = y
 ```
@@ -406,7 +417,8 @@ g x = case x of
         a -> x
   where
     foo = case x of
-            _ -> do launchMissiles
+            _ -> do
+                    launchMissiles
       where
         y = 2
 ```
