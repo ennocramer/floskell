@@ -1076,7 +1076,10 @@ instance Pretty Exp where
         aligned . inter newline . flip map qualstmtss $ \qualstmts ->
             cut $ list' "|" "," qualstmts
 
-    -- prettyPrint (ExpTypeSig _ expr typ) = undefined
+    prettyPrint (ExpTypeSig _ expr typ) = do
+        pretty expr
+        operator "::"
+        pretty typ
 
     prettyPrint (VarQuote _ qname) = do
         write "'"
@@ -1097,7 +1100,9 @@ instance Pretty Exp where
         string str'
         write "|]"
 
-    -- prettyPrint (TypeApp _ typ) = undefined
+    prettyPrint (TypeApp _ typ) = do
+        write "@"
+        pretty typ
 
     -- prettyPrint (XTag _ xname xattrs mexpr exprs) = undefined
 
