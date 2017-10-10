@@ -1078,15 +1078,24 @@ instance Pretty Exp where
 
     -- prettyPrint (ExpTypeSig _ expr typ) = undefined
 
-    -- prettyPrint (VarQuote _ qname) = undefined
+    prettyPrint (VarQuote _ qname) = do
+        write "'"
+        pretty qname
 
-    -- prettyPrint (TypQuote _ qname) = undefined
+    prettyPrint (TypQuote _ qname) = do
+        write "''"
+        pretty qname
 
-    -- prettyPrint (BracketExp _ bracket) = undefined
+    prettyPrint (BracketExp _ bracket) = pretty bracket
 
-    -- prettyPrint (SpliceExp _ splice) = undefined
+    prettyPrint (SpliceExp _ splice) = pretty splice
 
-    -- prettyPrint (QuasiQuote _ str str') = undefined
+    prettyPrint (QuasiQuote _ str str') = do
+        write "["
+        string str
+        write "|"
+        string str'
+        write "|]"
 
     -- prettyPrint (TypeApp _ typ) = undefined
 
@@ -1205,6 +1214,22 @@ instance Pretty Op where
     prettyPrint (VarOp l name) = prettyPrint (QVarOp l (UnQual noNodeInfo name))
     prettyPrint (ConOp l name) = prettyPrint (QConOp l (UnQual noNodeInfo name))
 
+instance Pretty Bracket where
+    prettyPrint (ExpBracket _ expr) = group "[|" "|]" $ pretty expr
+
+    prettyPrint (PatBracket _ pat) = group "[p|" "|]" $ pretty pat
+
+    prettyPrint (TypeBracket _ ty) = group "[t|" "|]" $ pretty ty
+
+    prettyPrint (DeclBracket _ decls) = group "[d|" "|]" . aligned $ lined decls
+
+instance Pretty Splice where
+    prettyPrint (IdSplice _ str) = do
+        write "$"
+        string str
+
+    prettyPrint (ParenSplice _ expr) = group "$(" ")" $ pretty expr
+
 instance Pretty ModulePragma where
     prettyPrint (LanguagePragma _ names) =
         prettyPragma "LANGUAGE" . inter comma $ map pretty names
@@ -1270,8 +1295,6 @@ instance Pretty BooleanFormula where
     prettyPrint (ParenFormula _ booleanformula) = parens $ pretty booleanformula
 
 instance Pretty Pat
-
-instance Pretty Splice
 
 -- Stick with HSE
 instance Pretty DataOrNew
