@@ -1,15 +1,45 @@
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 
 module Floskell.Flex.Pretty where
+
+import           Control.Applicative          ( (<|>) )
+import           Control.Monad                ( forM_, unless, void, when )
+import           Control.Monad.State.Strict   ( gets )
+
+import           Data.ByteString              ( ByteString )
+import qualified Data.ByteString              as BS
+import           Data.List                    ( groupBy, sortBy, sortOn )
+import           Data.Maybe                   ( catMaybes )
 
 import           Floskell.Flex.Config
 import           Floskell.Flex.Printers
 
-import           Floskell.Pretty              ( printComments )
+import           Floskell.Pretty              ( column, getNextColumn
+                                              , printComment, printComments )
 import           Floskell.Types
 
 import qualified Language.Haskell.Exts.Pretty as HSE
+import           Language.Haskell.Exts.SrcLoc ( srcInfoSpan )
 import           Language.Haskell.Exts.Syntax
+
+-- | Like `span`, but comparing adjacent items.
+run :: (a -> a -> Bool) -> [a] -> ([a], [a])
+run _ [] = ([], [])
+run _ [ x ] = ([ x ], [])
+run eq (x : y : xs)
+    | eq x y = let (ys, zs) = run eq (y : xs)
+               in
+                   (x : ys, zs)
+    | otherwise = ([ x ], y : xs)
+
+-- | Like `groupBy`, but comparing adjacent items.
+runs :: (a -> a -> Bool) -> [a] -> [[a]]
+runs _ [] = []
+runs eq xs = let (ys, zs) = run eq xs
+             in
+                 ys : runs eq zs
 
 -- | Syntax shortcut for Pretty Printers.
 type PrettyPrinter f = f NodeInfo -> Printer FlexConfig ()
@@ -31,4 +61,248 @@ pretty ast = do
     prettyPrint ast
     printComments After ast
 
-instance Pretty Module
+-- | Compare two AST nodes ignoring the annotation
+compareAST :: (Functor ast, Ord (ast ()))
+           => ast NodeInfo
+           -> ast NodeInfo
+           -> Ordering
+compareAST a b = void a `compare` void b
+
+lined :: (Annotated ast, Pretty ast) => [ast NodeInfo] -> Printer FlexConfig ()
+lined = inter newline . map (cut . pretty)
+
+listVinternal :: (Annotated ast, Pretty ast)
+              => ByteString
+              -> [ast NodeInfo]
+              -> Printer FlexConfig ()
+listVinternal sep xs = aligned $ do
+    ws <- getConfig (cfgOpWs sep . cfgOp)
+    nl <- gets psNewline
+    col <- getNextColumn
+    let correction = if wsLinebreak After ws
+                     then 0
+                     else BS.length sep + if wsSpace After ws then 1 else 0
+        extraIndent = if nl then correction else 0
+        itemCol = col + fromIntegral extraIndent
+        sepCol = itemCol - fromIntegral correction
+    case xs of
+        [] -> newline
+        (x : xs') -> column itemCol $ do
+            cut $ do
+                printCommentsSimple Before x
+                prettyPrint x
+                printCommentsSimple After x
+            forM_ xs' $ \x' -> do
+                printComments Before x'
+                column sepCol $ operatorV sep
+                cut $ prettyPrint x'
+                printComments After x'
+  where
+    printCommentsSimple loc ast = let comments = map comInfoComment .
+                                          filter ((== Just loc) . comInfoLocation) .
+                                              nodeInfoComments $ ann ast
+                                  in
+                                      forM_ comments $ \comment -> do
+                                          printComment (Just $ srcInfoSpan $
+                                                            nodeInfoSpan $ ann ast)
+                                                       comment
+
+listH :: (Annotated ast, Pretty ast)
+      => ByteString
+      -> ByteString
+      -> ByteString
+      -> [ast NodeInfo]
+      -> Printer FlexConfig ()
+listH open close _ [] = do
+    write open
+    write close
+
+listH open close sep xs =
+    groupH open close . inter (operatorH sep) $ map pretty xs
+
+listV :: (Annotated ast, Pretty ast)
+      => ByteString
+      -> ByteString
+      -> ByteString
+      -> [ast NodeInfo]
+      -> Printer FlexConfig ()
+listV open close sep xs = groupV open close $ do
+    ws <- getConfig (cfgOpWs sep . cfgOp)
+    ws' <- getConfig (cfgGroupWs open . cfgGroup)
+    unless ((wsLinebreak Before ws')
+            || (wsSpace After ws')
+            || (wsLinebreak After ws)
+            || not (wsSpace After ws))
+           space
+    listVinternal sep xs
+
+list :: (Annotated ast, Pretty ast)
+     => ByteString
+     -> ByteString
+     -> ByteString
+     -> [ast NodeInfo]
+     -> Printer FlexConfig ()
+list open close sep xs = oneline hor <|> ver
+  where
+    hor = listH open close sep xs
+    ver = listV open close sep xs
+
+listH' :: (Annotated ast, Pretty ast)
+       => ByteString
+       -> ByteString
+       -> [ast NodeInfo]
+       -> Printer FlexConfig ()
+listH' op sep xs = do
+    operator op
+    inter (operatorH sep) $ map pretty xs
+
+listV' :: (Annotated ast, Pretty ast)
+       => ByteString
+       -> ByteString
+       -> [ast NodeInfo]
+       -> Printer FlexConfig ()
+listV' op sep xs = do
+    operator op
+    listVinternal sep xs
+
+list' :: (Annotated ast, Pretty ast)
+      => ByteString
+      -> ByteString
+      -> [ast NodeInfo]
+      -> Printer FlexConfig ()
+list' op sep xs = oneline hor <|> ver
+  where
+    hor = listH' op sep xs
+    ver = listV' op sep xs
+
+listAutoWrap :: (Annotated ast, Pretty ast)
+             => ByteString
+             -> ByteString
+             -> ByteString
+             -> [ast NodeInfo]
+             -> Printer FlexConfig ()
+listAutoWrap open close _ [] = do
+    write open
+    write close
+
+listAutoWrap open close sep (x : xs) = groupH open close . aligned $ do
+    ws <- getConfig (cfgOpWs sep . cfgOp)
+    let correction = if wsLinebreak After ws
+                     then 0
+                     else BS.length sep + if wsSpace After ws then 1 else 0
+    col <- getNextColumn
+    pretty x
+    forM_ xs $ \x' -> do
+        printComments Before x'
+        cut $ do
+            column (col - fromIntegral correction) $ operator sep
+            prettyPrint x'
+            printComments After x'
+
+------------------------------------------------------------------------
+-- Module
+-- | Extract the name as a String from a ModuleName
+moduleName :: ModuleName a -> String
+moduleName (ModuleName _ s) = s
+
+prettyPragmas :: [ModulePragma NodeInfo] -> Printer FlexConfig ()
+prettyPragmas ps = do
+    splitP <- getConfig (cfgModuleSplitLanguagePragmas . cfgModule)
+    sortP <- getConfig (cfgModuleSortPragmas . cfgModule)
+    let ps' = if splitP then concatMap splitPragma ps else ps
+    let ps'' = if sortP then sortBy compareAST ps' else ps'
+    lined ps''
+  where
+    splitPragma (LanguagePragma anno langs) = map (LanguagePragma anno . (: []))
+                                                  langs
+    splitPragma p = [ p ]
+
+prettyImports :: [ImportDecl NodeInfo] -> Printer FlexConfig ()
+prettyImports is = do
+    sortP <- getConfig (cfgModuleSortImports . cfgModule)
+    if sortP
+        then inter blankline . map lined .
+            groupBy samePrefix $ sortOn (moduleName . importModule) is
+        else lined is
+  where
+    samePrefix left right = prefix left == prefix right
+    prefix = takeWhile (/= '.') . moduleName . importModule
+
+skipBlankDecl :: Decl a -> Bool
+skipBlankDecl TypeSig{} = True
+skipBlankDecl DeprPragmaDecl{} = True
+skipBlankDecl WarnPragmaDecl{} = True
+skipBlankDecl AnnPragma{} = True
+skipBlankDecl MinimalPragma{} = True
+skipBlankDecl InlineSig{} = True
+skipBlankDecl InlineConlikeSig{} = True
+skipBlankDecl SpecSig{} = True
+skipBlankDecl SpecInlineSig{} = True
+skipBlankDecl InstSig{} = True
+skipBlankDecl PatSynSig{} = True
+skipBlankDecl _ = False
+
+prettyDecls :: (Annotated ast, Pretty ast)
+            => (ast NodeInfo -> ast NodeInfo -> Bool)
+            -> [ast NodeInfo]
+            -> Printer FlexConfig ()
+prettyDecls fn = inter blankline . map lined . runs fn
+
+instance Pretty Module where
+    prettyPrint (Module _ mhead pragmas imports decls) = inter blankline $
+        catMaybes [ ifNotEmpty prettyPragmas pragmas
+                  , pretty <$> mhead
+                  , ifNotEmpty prettyImports imports
+                  , ifNotEmpty (prettyDecls (\d _ -> skipBlankDecl d)) decls
+                  ]
+      where
+        ifNotEmpty f xs = if null xs then Nothing else Just (f xs)
+
+    prettyPrint ast@XmlPage{} = prettyHSE ast
+    prettyPrint ast@XmlHybrid{} = prettyHSE ast
+
+instance Pretty ModuleHead where
+    prettyPrint (ModuleHead _ name mwarning mexports) = depend "module" $ do
+        pretty name
+        mayM_ mwarning $ withPrefix spaceOrNewline pretty
+        mayM_ mexports $ withPrefix spaceOrNewline pretty
+        write " where"
+
+instance Pretty WarningText where
+    prettyPrint (DeprText _ s) = write "{-# DEPRECATED " >> string (show s) >> write " #-}"
+    prettyPrint (WarnText _ s) = write "{-# WARNING " >> string (show s) >> write " #-}"
+
+instance Pretty ExportSpecList where
+    prettyPrint (ExportSpecList _ exports) = listAutoWrap "(" ")" "," exports
+
+instance Pretty ExportSpec
+
+instance Pretty ImportDecl where
+    prettyPrint ImportDecl{..} = do
+        alignP <- getConfig (cfgModuleAlignImports . cfgModule)
+        write "import "
+        when importSrc $ write "{-# SOURCE #-} "
+        when importSafe $ write "safe "
+        if importQualified
+            then write "qualified "
+            else when (alignP && not importSrc && not importSafe) $ write "          "
+        string $ moduleName importModule
+        mayM_ importAs $ \name -> do
+            write " as "
+            pretty name
+        mayM_ importSpecs $ withPrefix space pretty
+
+instance Pretty ImportSpecList where
+    prettyPrint (ImportSpecList _ hiding specs) = do
+        sortP <- getConfig (cfgModuleSortImportLists . cfgModule)
+        let specs' = if sortP then sortOn HSE.prettyPrint specs else specs
+        when hiding $ write "hiding "
+        listAutoWrap "(" ")" "," specs'
+
+instance Pretty ImportSpec
+
+instance Pretty ModulePragma
+
+instance Pretty ModuleName
+
+instance Pretty Decl

@@ -20,13 +20,19 @@ module Main where
 Without comments
 
 ``` haskell
-module Main (foo, bar, baz, main) where
+module Main ( foo, bar, baz, main ) where
 ```
 
 With comments
 
 ``` haskell
-module Main (main, foo, bar, baz) where
+module Main ( 
+              -- * Main Program
+              main
+              -- * Functions
+            , foo -- foo function
+            , bar -- bar function
+            , baz ) where
 ```
 
 ## LANGUAGE Pragmas
@@ -35,12 +41,14 @@ module Main (main, foo, bar, baz) where
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FlexibleContexts #-}
+
 module Main where
 ```
 
 ``` haskell
 {-# LANGUAGE OverloadedStrings, RecordWildCards, FlexibleContexts
   #-}
+
 module Main where
 ```
 
@@ -48,11 +56,11 @@ module Main where
 
 ``` haskell
 import Prelude
-import Data.Text (Text)
+import Data.Text ( Text )
 import qualified Data.Text as T
-import qualified Data.ByteString (ByteString, pack, unpack)
-import qualified Data.ByteString as BS (pack, unpack)
-import Control.Monad hiding (forM)
+import qualified Data.ByteString ( ByteString, pack, unpack )
+import qualified Data.ByteString as BS ( pack, unpack )
+import Control.Monad hiding ( forM )
 ```
 
 # Data Declarations
@@ -86,7 +94,7 @@ data Enum = Foo
 
 data Enum = Foo
           | Bar
-          | Baz
+          | Baz -- third
 ```
 
 ## Records
@@ -169,25 +177,18 @@ type instance Id Int = Int
 
 ``` haskell
 id :: a -> a
-
 sort :: Ord a => [a] -> [a]
-
 long ::
        (IsString a, Monad m) =>
        ByteString ->
          ByteString -> ByteString -> ByteString -> ByteString -> a -> m ()
-
 mkEncoderData ::
               DocumentType -> (Text -> Except String ByteString) -> EncoderData
-
 codepageReference ::
                   (ParserState -> Word8) ->
                     AP.Parser Word8 -> Parser CodepageReference
-
 mktime :: Int -> Int -> Int -> Time
-
 transform :: forall a . St -> State St a -> EitherT ServantErr IO a
-
 Implicit parameters
 
 f :: (?x :: Int) => Int
@@ -214,6 +215,7 @@ lorem
 
 comment :: (Int, Int, Int)
 comment = (0, 1, 2)
+
 match () = undefined
 match (_) = undefined
 match (x, y) = undefined
@@ -241,6 +243,7 @@ lorem
 
 comment :: [Int]
 comment = [1, 2, 3]
+
 match [] = undefined
 match [_] = undefined
 match [x, y] = undefined
@@ -250,11 +253,14 @@ match [x, y] = undefined
 
 ``` haskell
 origin = Point{x = 0, y = 0, label = "Origin"}
+
 translate dx dy p = p{x = x p + dx, y = y p + dy}
+
 config
   = config{configBasePath = defaultBasePath,
            configFileRegex = defaultFileRegex,
            configDelimiter = defaultDelimeter}
+
 commented = config{configBasePath = "/"}
 ```
 
@@ -262,11 +268,14 @@ commented = config{configBasePath = "/"}
 
 ``` haskell
 foo = let x = x in x
+
 foo
   = let x = 1
         y = 2
       in x + y
+
 foo = let expr = do return () in expr
+
 foo = let x = if True then False else True in x
 ```
 
@@ -314,8 +323,11 @@ strToMonth month
 main
   = do name <- getLine
        putStrLn $ "Hello " ++ name ++ "!"
+
 main = repeatedly $ do getLine >>= putStrLn
+
 main = repeatedly $ getline >>= \ s -> do putStrLn s
+
 main = do getLine >>= putStrLn
 ```
 
@@ -326,6 +338,7 @@ fib x
   | x == 1 = 1
   | x == 2 = 1
   | otherwise = fib (x - 1) + fib (x - 2)
+
 simple [] = True
 simple [e] | simple e = True
 simple _ = False
@@ -335,11 +348,14 @@ simple _ = False
 
 ``` haskell
 map f xs = [f x | x <- xs]
+
 defaultExtensions
   = [e |
      EnableExtension{extensionField1 =
                        extensionField1} <- knownExtensions knownExtensions,
      let a = b, let c = d]
+
+-- comment
 defaultExtensions
   = [e | e@EnableExtension{} <- knownExtensions] \\
       map EnableExtension badExtensions
@@ -349,6 +365,7 @@ Parallel list comprehension
 
 ``` haskell
 zip xs ys = [(x, y)| x <- xs| y <- ys]
+
 fun xs ys
   = [(alphaBetaGamma, deltaEpsilonZeta)| x <- xs, z <- zs|
      y <- ys, cond, let t = t]
@@ -358,6 +375,7 @@ Transform list comprehensions
 
 ``` haskell
 {-# LANGUAGE TransformListComp #-}
+
 list
   = [(x, y, map the v) | x <- [1 .. 10], y <- [1 .. 10],
      let v = x + y, then group by v using groupWith, then take 10,
@@ -454,11 +472,12 @@ Haddock comments
 -- | Module comment.
 module X where
 
+-- | Main doc.
 main :: IO ()
 main = return ()
 
 data X = X
-       | Y
+       | Y -- ^ Y is for why did I eat that pizza.
 
 data X = X{field1 :: Int, field11 :: Char, field2 :: Int,
            field3 :: Char, field4 :: Char}
@@ -469,7 +488,7 @@ Comments around regular declarations
 ``` haskell
 -- This is some random comment.
 -- | Main entry point.
-main = putStrLn "Hello, World!"
+main = putStrLn "Hello, World!"-- This is another random comment.
 ```
 
 Multi-line comments with multi-line contents
@@ -479,7 +498,7 @@ Multi-line comments with multi-line contents
 Here is more docs and such.
 Etc.
 -}
-main = putStrLn "Hello, World!"
+main = putStrLn "Hello, World!"{- This is another random comment. -}
 ```
 
 # Behaviour checks
@@ -488,7 +507,6 @@ main = putStrLn "Hello, World!"
 
 ``` haskell
 {-# NOINLINE (<>) #-}
-
 type API = api1 :<|> api2
 
 type API = api1 S.:<|> api2
@@ -500,14 +518,23 @@ type API = (S.:<|>) api1 api2
 data T a = a :<|> a
 
 data T a = (:<|>) a a
+
 (++) a b = append a b
+
 a ++ b = append a b
+
 val = a ++ b
+
 val = a V.++ b
+
 val = (++) a b
+
 val = (V.++) a b
+
 val = a `or` b
+
 val = a `L.or` b
+
 f (a :+: b) = a
 f (a C.:+: b) = a
 f ((:+:) a b) = a
@@ -518,9 +545,11 @@ f (a `M.C` b) = a
 
 ``` haskell
 data T = (-)
+
 q = '(-)
 
 data (-)
+
 q = ''(-)
 ```
 
@@ -531,22 +560,24 @@ q = ''(-)
 
 f :: Int -> Int -> (# Int, Int #)
 f x y = (# x + 1, y - 1 #)
+
 g x
   = case f x x of
         (# a, b #) -> a + b
+
 h x = let (# p, q #) = h x in undefined
 ```
 
 ## Lazy Patterns in a Lambda
 
 ``` haskell
-f = \ ~a -> undefined
+f = \ ~a -> undefined -- \~a yields parse error on input ‘\~’
 ```
 
 ## Bang Patterns in a Lambda
 
 ``` haskell
-f = \ !a -> undefined
+f = \ !a -> undefined -- \!a yields parse error on input ‘\!’
 ```
 
 ## Binding Implicit Parameters
@@ -558,7 +589,7 @@ f = let ?x = 42 in f
 ## Unicode
 
 ``` haskell
-α = γ * "\969"
+α = γ * "\969" -- υ
 ```
 
 ## Empty Module
@@ -572,6 +603,8 @@ f = let ?x = 42 in f
 ``` haskell
 {-# LANGUAGE EmptyCase #-}
 {-# LANGUAGE LambdaCase #-}
+
 f1 = case () of { }
+
 f2 = \case { }
 ```
