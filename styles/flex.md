@@ -106,10 +106,10 @@ data Point = Point { x :: Int, y :: Int, label :: String }
 data Commented = Commented { singleField :: Int -- with a comment
                            }
 
-data LongTypeSig
-    = LongTypeSig { field :: (IsString a, Monad m) =>(ByteString -> ByteString)
-                        -> ByteString -> a -> m ()
-                  }
+data LongTypeSig = LongTypeSig { field :: ( IsString a, Monad m )
+                                     => (ByteString -> ByteString)
+                                     -> ByteString -> a -> m ()
+                               }
 ```
 
 # Type Classes
@@ -121,19 +121,19 @@ class Monoid a where
     mempty :: a
     mappend :: a -> a -> a
 
-class Applicative m =>Monad m where
+class Applicative m => Monad m where
     fail :: m a
     return :: a -> m a
     (>>=) :: a -> (a -> m b) -> m b
 
-class Monad m =>MonadState s m | m -> s where
+class Monad m => MonadState s m | m -> s where
     get :: m s
     put :: s -> m ()
     state :: (s -> ( a, s )) -> m a
 
 class ToJSON a where
     toJSON :: a -> Value
-    default toJSON :: (Generic a, GToJSON (Rep a)) =>a -> Value
+    default toJSON :: ( Generic a, GToJSON (Rep a) ) => a -> Value
     toJSON = genericToJSON defaultOptions
 ```
 
@@ -171,8 +171,8 @@ type instance Id Int = Int
 
 ``` haskell
 id :: a -> a
-sort :: Ord a =>[ a ] -> [ a ]
-long :: (IsString a, Monad m) =>ByteString
+sort :: Ord a => [ a ] -> [ a ]
+long :: ( IsString a, Monad m ) => ByteString
     -> ByteString -> ByteString -> ByteString -> ByteString -> a -> m ()
 mkEncoderData
     :: DocumentType -> (Text -> Except String ByteString) -> EncoderData
@@ -185,7 +185,7 @@ mktime :: Int -- hours
 transform :: forall a. St -> State St a -> EitherT ServantErr IO a
 Implicit parameters
 
-f :: (?x :: Int) =>Int
+f :: (?x :: Int) => Int
 ```
 
 # Expressions

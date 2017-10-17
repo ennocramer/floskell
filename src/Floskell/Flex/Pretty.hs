@@ -650,11 +650,56 @@ instance Pretty GuardedRhs where
             operator "="
             pretty expr
 
+instance Pretty Context where
+    prettyPrint (CxSingle _ asst) = do
+        pretty asst
+        operator "=>"
+
+    prettyPrint (CxTuple _ assts) = do
+        list "(" ")" "," assts
+        operator "=>"
+
+    prettyPrint (CxEmpty _) = do
+        write "()"
+        operator "=>"
+
 instance Pretty FunDep where
     prettyPrint (FunDep _ names names') = do
         inter space $ map pretty names
         operator "->"
         inter space $ map pretty names'
+
+instance Pretty Asst where
+    prettyPrint (ClassA _ qname types) = do
+        pretty qname
+        space
+        inter space $ map pretty types
+
+    prettyPrint (AppA _ name types) = do
+        pretty name
+        space
+        inter space $ map pretty types
+
+    prettyPrint (InfixA _ ty qname ty') = do
+        pretty ty
+        pretty $ QVarOp noNodeInfo qname
+        pretty ty'
+
+    prettyPrint (IParam _ ipname ty) = do
+        pretty ipname
+        operator "::"
+        pretty ty
+
+    prettyPrint (EqualP _ ty ty') = do
+        pretty ty
+        operator "~"
+        pretty ty'
+
+    prettyPrint (ParenA _ asst) = parens $ pretty asst
+
+    prettyPrint (WildCardA _ mname) = do
+        write "_"
+        mapM_ pretty mname
 
 instance Pretty Type where
     prettyPrint (TyForall _ mtyvarbinds mcontext ty) = do
@@ -769,8 +814,6 @@ instance Pretty Op where
 instance Pretty InjectivityInfo
 
 instance Pretty ResultSig
-
-instance Pretty Context
 
 instance Pretty TypeEqn
 
