@@ -1106,15 +1106,35 @@ instance Pretty Exp where
         write "@"
         pretty typ
 
-    -- prettyPrint (XTag _ xname xattrs mexpr exprs) = undefined
+    prettyPrint (XTag _ xname xattrs mexpr exprs) = do
+        write "<"
+        pretty xname
+        forM_ xattrs $ withPrefix space pretty
+        mayM_ mexpr $ withPrefix space pretty
+        write ">"
+        mapM_ pretty exprs
+        write "</"
+        pretty xname
+        write ">"
 
-    -- prettyPrint (XETag _ xname xattrs mexpr) = undefined
+    prettyPrint (XETag _ xname xattrs mexpr) = do
+        write "<"
+        pretty xname
+        forM_ xattrs $ withPrefix space pretty
+        mayM_ mexpr $ withPrefix space pretty
+        write "/>"
 
-    -- prettyPrint (XPcdata _ str) = undefined
+    prettyPrint (XPcdata _ str) = string str
 
-    -- prettyPrint (XExpTag _ expr) = undefined
+    prettyPrint (XExpTag _ expr) = do
+        write "<% "
+        pretty expr
+        write " %>"
 
-    -- prettyPrint (XChildTag _ exprs) = undefined
+    prettyPrint (XChildTag _ exprs) = do
+        write "<%>"
+        inter space $ map pretty exprs
+        write "</%>"
 
     -- prettyPrint (CorePragma _ str expr) = undefined
 
@@ -1149,6 +1169,12 @@ instance Pretty Alt where
         pretty pat
         pretty $ GuardedAlts rhs
         mapM_ pretty mbinds
+
+instance Pretty XAttr where
+    prettyPrint (XAttr _ xname expr) = do
+        pretty xname
+        operator "="
+        pretty expr
 
 instance Pretty Literal where
     prettyPrint (Char _ _ str) = do
@@ -1358,6 +1384,8 @@ instance Pretty QName
 instance Pretty Name
 
 instance Pretty IPName
+
+instance Pretty XName
 
 instance Pretty Safety
 
