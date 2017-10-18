@@ -46,8 +46,7 @@ module Main where
 ```
 
 ``` haskell
-{-# LANGUAGE OverloadedStrings, RecordWildCards, FlexibleContexts
-  #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards, FlexibleContexts #-}
 
 module Main where
 ```

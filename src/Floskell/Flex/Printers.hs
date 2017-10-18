@@ -23,6 +23,7 @@ module Floskell.Flex.Printers
     , depend
     , depend'
     , parens
+    , brackets
       -- *
     , group
     , groupH
@@ -48,8 +49,8 @@ import           Data.ByteString      ( ByteString )
 import           Data.List            ( intersperse )
 
 import           Floskell.Flex.Config
-import           Floskell.Pretty      ( cut, int, newline, parens, space
-                                      , string, write )
+import           Floskell.Pretty      ( brackets, cut, int, newline, parens
+                                      , space, string, write )
 import qualified Floskell.Pretty      as P
 import           Floskell.Types
 

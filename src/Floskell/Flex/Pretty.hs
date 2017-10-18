@@ -283,6 +283,18 @@ prettyForall vars = do
     write "."
     sepSpace
 
+prettyPragma :: ByteString -> Printer FlexConfig () -> Printer FlexConfig ()
+prettyPragma name = prettyPragma' name . Just
+
+prettyPragma' :: ByteString
+              -> Maybe (Printer FlexConfig ())
+              -> Printer FlexConfig ()
+prettyPragma' name mp = do
+    write "{-# "
+    write name
+    mayM_ mp $ withPrefix space aligned
+    write " #-}"
+
 instance Pretty Module where
     prettyPrint (Module _ mhead pragmas imports decls) = inter blankline $
         catMaybes [ ifNotEmpty prettyPragmas pragmas
@@ -495,28 +507,64 @@ instance Pretty Decl where
         operator "::"
         pretty ty
 
-    -- prettyPrint (RulePragmaDecl _ rules) = undefined
+    prettyPrint (RulePragmaDecl _ rules) =
+        if null rules
+        then prettyPragma' "RULES" Nothing
+        else prettyPragma "RULES" $ mapM_ pretty rules
 
-    -- prettyPrint (DeprPragmaDecl _ deprecations) = undefined
+    prettyPrint (DeprPragmaDecl _ deprecations) =
+        if null deprecations
+        then prettyPragma' "DEPRECATED" Nothing
+        else prettyPragma "DEPRECATED" $
+            forM_ deprecations $ \(names, str) -> do
+                unless (null names) $ do
+                    inter comma $ map pretty names
+                    space
+                string (show str)
 
-    -- prettyPrint (WarnPragmaDecl _ warnings) = undefined
+    prettyPrint (WarnPragmaDecl _ warnings) =
+        if null warnings
+        then prettyPragma' "WARNING" Nothing
+        else prettyPragma "WARNING" $
+            forM_ warnings $ \(names, str) -> do
+                unless (null names) $ do
+                    inter comma $ map pretty names
+                    space
+                string (show str)
 
-    -- prettyPrint (InlineSig _ bool mactivation qname) = undefined
+    prettyPrint (InlineSig _ inline mactivation qname) = prettyPragma name $ do
+        mayM_ mactivation $ withPostfix space pretty
+        pretty qname
+      where
+        name = if inline then "INLINE" else "NOINLINE"
 
-    -- prettyPrint (InlineConlikeSig _ mactivation qname) =
-    --     undefined
+    prettyPrint (InlineConlikeSig _ mactivation qname) =
+        prettyPragma "INLINE CONLIKE" $ do
+            mayM_ mactivation $ withPostfix space pretty
+            pretty qname
 
-    -- prettyPrint (SpecSig _ mactivation qname types) =
-    --     undefined
+    prettyPrint (SpecSig _ mactivation qname types) =
+        prettyPragma "SPECIALISE" $ do
+            mayM_ mactivation $ withPostfix space pretty
+            pretty qname
+            operator "::"
+            inter comma $ map pretty types
 
-    -- prettyPrint (SpecInlineSig _ bool mactivation qname types) =
-    --     undefined
+    prettyPrint (SpecInlineSig _ inline mactivation qname types) =
+        prettyPragma name $ do
+            mayM_ mactivation $ withPostfix space pretty
+            pretty qname
+            operator "::"
+            inter comma $ map pretty types
+      where
+        name = if inline then "SPECIALISE INLINE" else "SPECIALISE NOINLINE"
 
-    -- prettyPrint (InstSig _ instrule) = undefined
+    prettyPrint (InstSig _ instrule) = prettyPragma "SPECIALISE instance" $ pretty instrule
 
-    -- prettyPrint (AnnPragma _ annotation) = undefined
+    prettyPrint (AnnPragma _ annotation) = prettyPragma "ANN" $ pretty annotation
 
-    -- prettyPrint (MinimalPragma _ mbooleanformula) = undefined
+    prettyPrint (MinimalPragma _ mbooleanformula) = prettyPragma "MINIMAL" $
+        mapM_ pretty mbooleanformula
 
     -- prettyPrint (RoleAnnotDecl _ qname roles) = undefined
 
@@ -889,6 +937,70 @@ instance Pretty Op where
     prettyPrint (VarOp l name) = prettyPrint (QVarOp l (UnQual noNodeInfo name))
     prettyPrint (ConOp l name) = prettyPrint (QConOp l (UnQual noNodeInfo name))
 
+instance Pretty ModulePragma where
+    prettyPrint (LanguagePragma _ names) =
+        prettyPragma "LANGUAGE" . inter comma $ map pretty names
+
+    prettyPrint (OptionsPragma _ mtool str) = prettyPragma name $ string str
+      where
+        name = case mtool of
+            Just tool -> "OPTIONS_" `mappend` BS8.pack (HSE.prettyPrint tool)
+            Nothing -> "OPTIONS"
+
+    prettyPrint (AnnModulePragma _ annotation) = prettyPragma "ANN" $ pretty annotation
+
+instance Pretty Rule where
+    prettyPrint (Rule _ str mactivation mrulevars expr expr') = do
+        string (show str)
+        space
+        mayM_ mactivation $ withPostfix space pretty
+        mapM_ prettyForall mrulevars
+        pretty expr
+        operator "="
+        pretty expr'
+
+instance Pretty RuleVar where
+    prettyPrint (RuleVar _ name) = pretty name
+
+    prettyPrint (TypedRuleVar _ name ty) = parens $ do
+        pretty name
+        operator "::"
+        pretty ty
+
+instance Pretty Activation where
+    prettyPrint (ActiveFrom _ pass) = brackets . int $ fromIntegral pass
+
+    prettyPrint (ActiveUntil _ pass) = brackets $ do
+        write "~"
+        int $ fromIntegral pass
+
+instance Pretty Annotation where
+    prettyPrint (Ann _ name expr) = do
+        pretty name
+        space
+        pretty expr
+
+    prettyPrint (TypeAnn _ name expr) = do
+        write "type "
+        pretty name
+        space
+        pretty expr
+
+    prettyPrint (ModuleAnn _ expr) = do
+        write "module "
+        pretty expr
+
+instance Pretty BooleanFormula where
+    prettyPrint (VarFormula _ name) = pretty name
+
+    prettyPrint (AndFormula _ booleanformulas) =
+        inter comma $ map pretty booleanformulas
+
+    prettyPrint (OrFormula _ booleanformulas) =
+        inter (operator "|") $ map pretty booleanformulas
+
+    prettyPrint (ParenFormula _ booleanformula) = parens $ pretty booleanformula
+
 instance Pretty Exp
 
 instance Pretty Stmt
@@ -896,8 +1008,6 @@ instance Pretty Stmt
 instance Pretty Pat
 
 instance Pretty Splice
-
-instance Pretty ModulePragma
 
 -- Stick with HSE
 instance Pretty DataOrNew
