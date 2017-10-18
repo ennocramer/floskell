@@ -1136,11 +1136,29 @@ instance Pretty Exp where
         inter space $ map pretty exprs
         write "</%>"
 
-    -- prettyPrint (CorePragma _ str expr) = undefined
+    prettyPrint (CorePragma _ str expr) = do
+        prettyPragma "CORE" . string $ show str
+        space
+        pretty expr
 
-    -- prettyPrint (SCCPragma _ str expr) = undefined
+    prettyPrint (SCCPragma _ str expr) = do
+        prettyPragma "SCC" . string $ show str
+        space
+        pretty expr
 
-    -- prettyPrint (GenPragma _ str intp intp' expr) = undefined
+    prettyPrint (GenPragma _ str (a, b) (c, d) expr) = do
+        prettyPragma "GENERATED" $ inter space
+                                         [ string $ show str
+                                         , int $ fromIntegral a
+                                         , write ":"
+                                         , int $ fromIntegral b
+                                         , write "-"
+                                         , int $ fromIntegral c
+                                         , write ":"
+                                         , int $ fromIntegral d
+                                         ]
+        space
+        pretty expr
 
     -- prettyPrint (Proc _ pat expr) = undefined
 
