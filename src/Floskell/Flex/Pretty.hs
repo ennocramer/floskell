@@ -1160,15 +1160,31 @@ instance Pretty Exp where
         space
         pretty expr
 
-    -- prettyPrint (Proc _ pat expr) = undefined
+    prettyPrint (Proc _ pat expr) = do
+        write "proc "
+        pretty pat
+        operator "->"
+        pretty expr
 
-    -- prettyPrint (LeftArrApp _ expr expr') = undefined
+    prettyPrint (LeftArrApp _ expr expr') = do
+        pretty expr
+        operator "-<"
+        pretty expr'
 
-    -- prettyPrint (RightArrApp _ expr expr') = undefined
+    prettyPrint (RightArrApp _ expr expr') = do
+        pretty expr
+        operator ">-"
+        pretty expr'
 
-    -- prettyPrint (LeftArrHighApp _ expr expr') = undefined
+    prettyPrint (LeftArrHighApp _ expr expr') = do
+        pretty expr
+        operator "-<<"
+        pretty expr'
 
-    -- prettyPrint (RightArrHighApp _ expr expr') = undefined
+    prettyPrint (RightArrHighApp _ expr expr') = do
+        pretty expr
+        operator ">>-"
+        pretty expr'
 
     prettyPrint (LCase _ alts) = do
         write "\\case"
@@ -1179,8 +1195,6 @@ instance Pretty Exp where
                 indented $ lined alts
 
     prettyPrint (ExprHole _) = write "_"
-
-    prettyPrint e = prettyHSE e
 
 instance Pretty Alt where
     prettyPrint (Alt _ pat rhs mbinds) = do
