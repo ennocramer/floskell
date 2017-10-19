@@ -214,7 +214,7 @@ comment = ( 0 -- the first
 
 match () = undefined
 match (_) = undefined
-match (x, y) = undefined
+match ( x, y ) = undefined
 ```
 
 ## Lists
@@ -244,8 +244,8 @@ comment = [ 1 -- the first
           ]
 
 match [] = undefined
-match [_] = undefined
-match [x, y] = undefined
+match [ _ ] = undefined
+match [ x, y ] = undefined
 ```
 
 ## Records
@@ -347,7 +347,7 @@ fib x | x == 1 = 1
       | otherwise = fib (x - 1) + fib (x - 2)
 
 simple [] = True
-simple [e] | simple e = True
+simple [ e ] | simple e = True
 simple _ = False
 ```
 
@@ -356,15 +356,15 @@ simple _ = False
 ``` haskell
 map f xs = [ f x | x <- xs ]
 
-defaultExtensions = [ e | EnableExtension{extensionField1 = extensionField1}
-                          <- knownExtensions knownExtensions
+defaultExtensions = [ e | EnableExtension { extensionField1 = extensionField1
+                                          } <- knownExtensions knownExtensions
                         , let a = b
                           -- comment
                         , let c = d
                     ]
 
 -- comment
-defaultExtensions = [ e | e@EnableExtension{} <- knownExtensions
+defaultExtensions = [ e | e @ EnableExtension {} <- knownExtensions
                     ] \\ map EnableExtension badExtensions
 ```
 
@@ -462,7 +462,7 @@ add1 x = [| x + 1 |]
 ## Pattern Brackets
 
 ``` haskell
-mkPat = [p| (x, y) |]
+mkPat = [p| ( x, y ) |]
 ```
 
 ## Type Brackets

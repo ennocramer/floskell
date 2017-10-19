@@ -1208,6 +1208,122 @@ instance Pretty XAttr where
         operator "="
         pretty expr
 
+instance Pretty Pat where
+    prettyPrint (PVar _ name) = pretty name
+
+    prettyPrint (PLit _ sign literal) = do
+        case sign of
+            Signless _ -> return ()
+            Negative _ -> write "-"
+        pretty literal
+
+    prettyPrint (PNPlusK _ name integer) = do
+        pretty name
+        operator "+"
+        int integer
+
+    prettyPrint (PInfixApp _ pat qname pat') = do
+        pretty pat
+        pretty $ QConOp noNodeInfo qname
+        pretty pat'
+
+    prettyPrint (PApp _ qname pats) = do
+        pretty qname
+        forM_ pats $ withPrefix space pretty
+
+    prettyPrint (PTuple _ boxed pats) = case boxed of
+        Boxed -> list "(" ")" "," pats
+        Unboxed -> list "(#" "#)" "," pats
+
+    prettyPrint (PList _ pats) = list "[" "]" "," pats
+
+    prettyPrint (PParen _ pat) = parens $ pretty pat
+
+    prettyPrint (PRec _ qname patfields) = do
+        pretty qname
+        sepSpace
+        list "{" "}" "," patfields
+
+    prettyPrint (PAsPat _ name pat) = do
+        pretty name
+        operator "@"
+        pretty pat
+
+    prettyPrint (PWildCard _) = write "_"
+
+    prettyPrint (PIrrPat _ pat) = do
+        write "~"
+        pretty pat
+
+    prettyPrint (PatTypeSig _ pat ty) = do
+        pretty pat
+        operator "::"
+        pretty ty
+
+    prettyPrint (PViewPat _ expr pat) = do
+        pretty expr
+        operator "->"
+        pretty pat
+
+    prettyPrint (PRPat _ rpats) = list "[" "]" "," rpats
+
+    prettyPrint (PXTag _ xname pxattrs mpat pats) = do
+        write "<"
+        pretty xname
+        forM_ pxattrs $ withPrefix space pretty
+        mayM_ mpat $ withPrefix space pretty
+        write ">"
+        mapM_ pretty pats
+        write "<"
+        pretty xname
+        write ">"
+
+    prettyPrint (PXETag _ xname pxattrs mpat) = do
+        write "<"
+        pretty xname
+        forM_ pxattrs $ withPrefix space pretty
+        mayM_ mpat $ withPrefix space pretty
+        write "/>"
+
+    prettyPrint (PXPcdata _ str) = string str
+
+    prettyPrint (PXPatTag _ pat) = do
+        write "<%"
+        pretty pat
+        write "%>"
+
+    prettyPrint (PXRPats _ rpats) = do
+        write "<["
+        inter space $ map pretty rpats
+        write "%>"
+
+    prettyPrint (PQuasiQuote _ str str') = do
+        write "[$"
+        string str
+        write "|"
+        string str'
+        write "|]"
+
+    prettyPrint (PBangPat _ pat) = do
+        write "!"
+        pretty pat
+
+instance Pretty PatField where
+    prettyPrint (PFieldPat _ qname pat) = do
+        pretty qname
+        operator "="
+        pretty pat
+
+    prettyPrint (PFieldPun _ qname) = pretty qname
+
+    prettyPrint (PFieldWildcard _) = write ".."
+
+instance Pretty PXAttr where
+    prettyPrint (PXAttr _ xname pat) = do
+        pretty xname
+        operator "="
+        pretty pat
+
 instance Pretty Literal where
     prettyPrint (Char _ _ str) = do
         write "'"
@@ -1400,14 +1516,14 @@ instance Pretty BooleanFormula where
 
     prettyPrint (ParenFormula _ booleanformula) = parens $ pretty booleanformula
 
-instance Pretty Pat
-
 -- Stick with HSE
 instance Pretty DataOrNew
 
 instance Pretty BangType
 
 instance Pretty Unpackedness
+
+instance Pretty RPat
 
 instance Pretty ModuleName
 
