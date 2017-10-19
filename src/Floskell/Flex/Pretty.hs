@@ -921,15 +921,17 @@ instance Pretty TypeEqn where
         pretty ty'
 
 instance Pretty Exp where
-    -- prettyPrint (Var _ qname) = undefined
+    prettyPrint (Var _ qname) = pretty qname
 
-    -- prettyPrint (OverloadedLabel _ str) = undefined
+    prettyPrint (OverloadedLabel _ str) = do
+        write "#"
+        string str
 
-    -- prettyPrint (IPVar _ ipname) = undefined
+    prettyPrint (IPVar _ ipname) = pretty ipname
 
-    -- prettyPrint (Con _ qname) = undefined
+    prettyPrint (Con _ qname) = pretty qname
 
-    -- prettyPrint (Lit _ literal) = undefined
+    prettyPrint (Lit _ literal) = pretty literal
 
     prettyPrint (InfixApp _ expr qop expr') = do
         pretty expr
@@ -1138,7 +1140,7 @@ instance Pretty Exp where
                 newline
                 indented $ lined alts
 
-    -- prettyPrint (ExprHole _) = undefined
+    prettyPrint (ExprHole _) = write "_"
 
     prettyPrint e = prettyHSE e
 
@@ -1147,6 +1149,47 @@ instance Pretty Alt where
         pretty pat
         pretty $ GuardedAlts rhs
         mapM_ pretty mbinds
+
+instance Pretty Literal where
+    prettyPrint (Char _ _ str) = do
+        write "'"
+        string str
+        write "'"
+
+    prettyPrint (String _ _ str) = do
+        write "\""
+        string str
+        write "\""
+
+    prettyPrint (Int _ _ str) = string str
+
+    prettyPrint (Frac _ _ str) = string str
+
+    prettyPrint (PrimInt _ _ str) = do
+        string str
+        write "#"
+
+    prettyPrint (PrimWord _ _ str) = do
+        string str
+        write "##"
+
+    prettyPrint (PrimFloat _ _ str) = do
+        string str
+        write "#"
+
+    prettyPrint (PrimDouble _ _ str) = do
+        string str
+        write "##"
+
+    prettyPrint (PrimChar _ _ str) = do
+        write "'"
+        string str
+        write "'#"
+
+    prettyPrint (PrimString _ _ str) = do
+        write "\""
+        string str
+        write "\"#"
 
 instance Pretty QualStmt where
     prettyPrint (QualStmt _ stmt) = pretty stmt

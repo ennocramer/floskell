@@ -608,7 +608,7 @@ f = let ?x = 42 in f
 ## Unicode
 
 ``` haskell
-α = γ * "\969" -- υ
+α = γ * "ω" -- υ
 ```
 
 ## Empty Module
