@@ -1165,9 +1165,11 @@ alt (Alt _ p rhs mbinds) = do
 
 moduleHead :: Extend ModuleHead
 moduleHead (ModuleHead _ name mwarn mexports) = do
-    forM_ mwarn pretty
     write "module "
     pretty name
+    forM_ mwarn $ \warn -> do
+        space
+        pretty warn
     forM_ mexports $ \exports -> do
         space
         pretty exports

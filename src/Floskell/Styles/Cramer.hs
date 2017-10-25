@@ -541,9 +541,9 @@ extModulePragma other = prettyNoExt other
 -- per line with parens and comma aligned
 extModuleHead :: Extend ModuleHead
 extModuleHead (ModuleHead _ name mwarn mexports) = do
-    mapM_ pretty mwarn
     write "module "
     pretty name
+    maybeM_ mwarn $ \warn -> space >> pretty warn
     maybeM_ mexports $ \exports -> pretty exports
     write " where"
 

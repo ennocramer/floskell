@@ -1331,7 +1331,11 @@ instance Pretty ModuleHead where
     prettyInternal (ModuleHead _ name mwarnings mexports) = do
         write "module "
         pretty name
-        maybe (return ()) pretty mwarnings
+        maybe (return ())
+              (\warnings -> do
+                   space
+                   pretty warnings)
+              mwarnings
         maybe (return ())
               (\exports -> do
                    newline
@@ -1357,8 +1361,8 @@ instance Pretty ImportSpec where
     prettyInternal = pretty'
 
 instance Pretty WarningText where
-    prettyInternal (DeprText _ s) = write "{-# DEPRECATED " >> string s >> write " #-}"
-    prettyInternal (WarnText _ s) = write "{-# WARNING " >> string s >> write " #-}"
+    prettyInternal (DeprText _ s) = write "{-# DEPRECATED " >> string (show s) >> write " #-}"
+    prettyInternal (WarnText _ s) = write "{-# WARNING " >> string (show s) >> write " #-}"
 
 instance Pretty ExportSpecList where
     prettyInternal (ExportSpecList _ es) = parens (prefixedLined ","
