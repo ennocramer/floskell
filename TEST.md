@@ -1,29 +1,127 @@
 # Introduction
 
-This file is a test suite. Each section maps to an HSpec test, and
-each line that is followed by a Haskell code fence is tested to make
-sure re-formatting that code snippet produces the same result.
+This file acts both as a presentation of the Floskell formatting
+styles, as well as a set of regression tests.
 
-You can browse through this document to see what Floskell's style is
-like, or contribute additional sections to it, or regression tests.
+You can see how a particular style will format Haskell source by
+reading the matching Markdown file in the styles/ directory.
 
-# Modules
+For regression testing, the canonical source, TEST.md in the root
+directory, is parsed and each Haskell code block formatted according
+to all predefined styles.  The formatted output is then compared with
+the corresponding, already formatted code block in the <style\>.md file
+in the styles/ subdirectory.
 
-## Module Header
+The regression test will also verify that repeated invocations of the
+pretty printer will not modify an already formatted piece of code.
+
+The following code block acts as a quick presentation for the
+different formatting styles, by presenting a mixture of common Haskell
+constructs.
+
+``` haskell
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+
+{- |
+Module: Style.Haskell.Example
+
+Haskell Code Style Example.
+-}
+module Style.Haskell.Example (
+ -- * Types
+ Enum(..)
+ ,Either(..)
+ ,Point(..)
+ -- * Functions
+ ,hello
+ ) where
+
+-- Module imports
+import qualified Control.Monad.Trans.State (State,evalState,execState,get,modify,put,runState)
+import qualified Data.Map as Map
+import qualified Data.Text as Text
+import Prelude hiding (map)
+
+-- Data declarations
+data Enum=CaseA|CaseB|CaseC deriving(Eq,Enum,Show)
+
+data Either a b=Left a|Right b deriving(Eq,Show)
+
+data Point=Point{pointX::Float,pointY::Float,pointLabel::String}deriving(Eq,Show)
+
+-- Type classes
+class Functor f=>Applicative a where
+    pure::b->a b
+    ap::a (b->c)->a b->a c
+
+class Fundep a b|a->b where
+    convert::a->b
+
+instance Functor f=>Functor(Wrap f)where
+    fmap f (Wrap x)=Wrap $ fmap f x
+
+-- Values
+origin::Point
+origin=Point{pointX=0,pointY=0,pointLabel="Origin"}
+
+lorem::[String]
+lorem=["Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+ "Curabitur nec ante nec mauris ornare suscipit.",
+ "In ac vulputate libero.",
+ "Duis eget magna non purus imperdiet molestie nec quis mauris.",
+ "Praesent blandit quam vel arcu pellentesque, id aliquet turpis faucibus."]
+
+-- Functions
+facs::[Int]
+facs=[1,1]++zipWith(+)(tailfacs)
+
+hello::MonadIO m=>m ()
+hello=do name<-liftIO getLine
+         liftIO . putStrLn $ greetings name
+  where
+    greetings n="Hello "++n++"!"
+
+letExpr::Point->String
+letExp x=let y=1
+             z=2
+  in if x>0 then y else z
+
+ifExpr::Bool->Bool
+ifExpr b=if b == True then False else True
+
+caseExpr::[a]->Maybe a
+caseExpr xs=case xs of
+    [] -> Nothing
+    (x:_) -> Just x
+
+guarded::Int->Int
+guarded x|x == 0=1
+         |x == 1=1
+         |otherwise=guarded (x - 2) + guarded (x - 1)
+
+someLongFunctionNameWithALotOfParameters::
+  (MonadIO m,MonadRandom m)=>String->(String->String)->m ()
+someLongFunctionNameWithALotOfParameters=undefined
+```
+
+# Unit Tests
+
+## ModuleHead and ExportSpecList
+
+Without exports
 
 ``` haskell
 module Main where
 ```
 
-## Export Lists
-
-Without comments
+With exports
 
 ``` haskell
 module Main (foo,bar,baz,main) where
 ```
 
-With comments
+With exports and comments
 
 ``` haskell
 module Main (
@@ -32,24 +130,23 @@ module Main (
   -- * Functions
   , foo -- foo function
   , bar -- bar function
-  , baz) where
+  , baz -- baz function
+  ) where
 ```
 
-## LANGUAGE Pragmas
+With deprecation
 
 ``` haskell
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE FlexibleContexts #-}
-module Main where
+module Main {-# DEPRECATED "no longer supported" #-} where
 ```
+
+With warnings
 
 ``` haskell
-{-# LANGUAGE OverloadedStrings, RecordWildCards, FlexibleContexts #-}
-module Main where
+module Main {-# WARNING "do not use" #-} where
 ```
 
-## Module Imports
+## ImportDecl
 
 ``` haskell
 import Prelude
@@ -60,69 +157,107 @@ import qualified Data.ByteString as BS (pack, unpack)
 import Control.Monad hiding (forM)
 ```
 
-# Data Declarations
+## Decl
 
-## Types
+### TypeDecl
 
 ``` haskell
-type EventSource a = (AddHandler a, a -> IO ())
+type Name = String
+type Pair a = (a, a)
+type Fun a b = a -> b
 ```
 
-## Data and Newtypes
+### DataDecl and GDataDecl
 
 ``` haskell
 data Void
-data Void = Void { absurd :: forall a. a }
-data Empty = Empty
+data Unit = Unit
 data Maybe a = Nothing | Just a
-data Either a b = Left a | Right b
-data Op a b = Op (b -> a)
-data Enum = Foo | Bar | Baz
-data Enum = Foo -- first
-  | Bar -- second
-  | Baz -- third
+data Num a => SomeNum = SomeNum a
+
+newtype RWS r w s = RWS (ReaderT r (WriterT w (StateT s Identity)))
+ deriving (Functor, Applicative, Monad)
+
+data Enum =
+    One   -- Foo
+  | Two   -- Bar
+  | Three -- Baz
+
+data Foo deriving ()
+data Foo deriving Show
+data Foo deriving (Show)
+data Foo deriving (Eq, Ord)
+
+data Expr :: * -> * where
+  Const :: Int -> Expr Int
+  Plus :: Expr Int -> Expr Int -> Expr Int
+  Eq :: Expr Int -> Expr Int -> Expr Bool
+  deriving (Show)
 ```
 
-## Records
+### TypeFamDecl, TypeInsDecl, and ClosedTypeFamDecl
 
 ``` haskell
-data Empty = Empty {}
-data Op = Op { getOp :: b -> a }
-data Point = Point { x :: Int, y :: Int, label :: String } deriving (Eq, Show)
-data Commented = Commented { singleField :: Int -- with a comment
-}
-data LongTypeSig = LongTypeSig { field :: (IsString a, Monad m) => (ByteString -> ByteString) -> ByteString -> a -> m () }
+type family Mutable v
+type family Mutable v = (r :: *)
+type family Mutable v = r | r -> v
+
+type instance Mutable Int = MIntVector
+
+type family Store a where
+  Store Bool = [Int]
+  Store a = [a]
+
+type family Store a = (r :: *) where
+  Store a = [a]
+
+type family Store a = r | r -> a where
+  Store a = [a]
 ```
 
-# Type Classes
+### DataFamDecl, DataInsDecl, and GDataInsDecl
 
-## Class Declarations
+``` haskell
+data family List a
+
+data instance List () = NilList Int
+data instance List Char = CharNil | CharCons Char (List Char)
+  deriving (Eq, Ord, Show)
+
+data instance List Int :: * where
+  IntNil :: List Int
+  IntCons :: Int -> List Int
+  deriving (Eq, Ord, Show)
+```
+
+### ClassDecl and InstDecl
 
 ``` haskell
 class Monoid a where
   mempty :: a
   mappend :: a -> a -> a
+
 class Applicative m => Monad m where
   fail :: m a
   return :: a -> m a
   (>>=) :: a -> (a -> m b) -> m b
+
 class Monad m => MonadState s m | m -> s where
   get :: m s
   put :: s -> m ()
   state :: (s -> (a, s)) -> m a
+
 class ToJSON a where
   toJSON :: a -> Value
   default toJSON :: (Generic a, GToJSON (Rep a)) => a -> Value
   toJSON = genericToJSON defaultOptions
-```
 
-## Instance Declarations
-
-``` haskell
 instance ToJSON ()
+
 instance Bounded Bool where
   minBound = False
   maxBound = True
+
 instance Semigroup a => Monoid (Maybe a) where
   mempty = Nothing
   Nothing `mappend` m = m
@@ -130,402 +265,376 @@ instance Semigroup a => Monoid (Maybe a) where
   Just m1 `mappend` Just m2 = Just (m1 `mappend` m2)
 ```
 
-## Type families
+### DerivDecl
 
-```haskell
-type family Id a
-type family Id a = r | r -> a
+``` haskell
+deriving instance Eq a => Eq (Sum a)
+deriving instance {-# OVERLAP #-} Eq a => Eq (Sum a)
 ```
 
-```haskell
-type instance Id Int = Int
+### InfixDecl
+
+``` haskell
+infix 4 ==, /=, <, <=, >, >=
+infixr 0 $
+infixl !!
 ```
 
-# Signatures
+### DefaultDecl
+
+``` haskell
+default ()
+default (Integer, Double)
+```
+
+### SpliceDecl
+
+``` haskell
+$foo
+$(bar baz)
+```
+
+### TypeSig
 
 ``` haskell
 id :: a -> a
 sort :: Ord a => [a] -> [a]
 long :: (IsString a, Monad m) => ByteString -> ByteString -> ByteString -> ByteString -> ByteString -> a -> m ()
-mkEncoderData :: DocumentType -> (Text -> Except String ByteString) -> EncoderData
-codepageReference :: (ParserState -> Word8) -> AP.Parser Word8 -> Parser CodepageReference
 mktime :: Int -- hours
        -> Int -- minutes
        -> Int -- seconds
        -> Time
 transform :: forall a. St -> State St a -> EitherT ServantErr IO a
-Implicit parameters
-f :: (?x :: Int) => Int
 ```
 
-# Expressions
-
-## Tuples
+### PatSyn and PatSynSig
 
 ``` haskell
-empty :: ()
-empty = ()
-singleton :: (Int)
-singleton = (1)
-pair :: (Int,String)
-pair = (0,"Zero")
-lorem :: (String,String)
-lorem = ("Lorem ipsum dolor sit amet, consectetur adipiscing elit.", "Curabitur nec ante nec mauris ornare suscipit.")
-comment :: (Int,Int,Int)
-comment = (0 -- the first
-  ,1 -- the second
-  ,2)
-match () = undefined
-match (_) = undefined
-match (x,y) = undefined
-```
+{-# LANGUAGE PatternSynonyms #-}
 
-## Lists
+pattern MyJust :: a -> Maybe a
+pattern MyJust a = Just a
 
-``` haskell
-empty :: [a]
-empty = []
-singleton :: [String]
-singleton = ["lorem"]
-short :: [Int]
-short = [1,2,3,4,5]
-lorem :: [String]
-lorem = ["Lorem ipsum dolor sit amet, consectetur adipiscing elit.","Curabitur nec ante nec mauris ornare suscipit.","In ac vulputate libero.","Duis eget magna non purus imperdiet molestie nec quis mauris.","Praesent blandit quam vel arcu pellentesque, id aliquet turpis faucibus."]
-comment :: [Int]
-comment = [1 -- the first
-  ,2 -- the second
-  ,3 ]
-match [] = undefined
-match [_] = undefined
-match [x,y] = undefined
-```
+pattern MyPoint :: Int -> Int -> (Int, Int)
+pattern MyPoint{x, y} = (x,y)
 
-## Records
-
-``` haskell
-origin = Point { x = 0, y = 0, label = "Origin" }
-translate dx dy p = p { x = x p + dx, y = y p + dy }
-config = config { configBasePath = defaultBasePath, configFileRegex = defaultFileRegex, configDelimiter = defaultDelimeter }
-commented = config { configBasePath = "/" -- use root
-}
-```
-
-## Let
-
-``` haskell
-foo = let x = x in x
-foo = let x = 1
-          y = 2 in x + y
-foo = let expr = do { return () } in expr
-foo = let x = if True then False else True in x
-```
-
-## If-Then-Else
-
-``` haskell
-if True then False else True
-if the condition evaluates to true then execute the first branch else execute the second branch
-if cond -- comment
-then true else false
-if cond then do { return () } else return ()
-do { if cond then true else false }
-do
- if cond -- comment
-  then true
-  else false
-```
-
-Multi-way if
-
-``` haskell
-x = if | x <- Just x, x <- Just x -> case x of
-         Just x -> e
-         Nothing -> p
-       | otherwise -> e
-```
-
-## Case
-
-``` haskell
-strToMonth :: String -> Int
-strToMonth month =
-  case month of
-    "Jan" -> 1
-    "Feb" -> 2
-    _ -> error $ "Unknown month " ++ month
-```
-
-## Do-Notation
-
-``` haskell
-main = do { name <- getLine; putStrLn $ "Hello " ++ name ++ "!" }
-main = repeatedly $ do { getLine >>= putStrLn }
-main = repeatedly $ getline >>= \s -> do { putStrLn s }
-main =
-  -- comment
-  do { getLine >>= putStrLn }
-```
-
-## Guards
-
-``` haskell
-fib x | x == 1 = 1
- | x == 2 = 1
- | otherwise = fib (x - 1) + fib (x - 2)
-simple [] = True
-simple [e] | simple e = True
-simple _ = False
-```
-
-## List comprehensions
-
-``` haskell
-map f xs = [f x | x <- xs]
-defaultExtensions = [ e | EnableExtension {extensionField1 = extensionField1} <- knownExtensions knownExtensions , let a = b
-    -- comment
-  , let c = d
-    -- comment
-  ]
-defaultExtensions = [e | e@EnableExtension {} <- knownExtensions] \\ map EnableExtension badExtensions
-```
-
-Parallel list comprehension
-
-```haskell
-zip xs ys = [(x, y) | x <- xs | y <- ys]
-fun xs ys = [ (alphaBetaGamma, deltaEpsilonZeta) | x <- xs , z <- zs | y <- ys , cond , let t = t ]
-```
-
-Transform list comprehensions
-
-```haskell
-{-# LANGUAGE TransformListComp #-}
-list = [ (x, y, map the v) | x <- [1 .. 10] , y <- [1 .. 10] , let v = x + y , then group by v using groupWith , then take 10 , then group using permutations , t <- concat v , then takeWhile by t < 3 ]
-```
-
-## Operators
-
-Applicative-style operators
-
-``` haskell
-x = Value <$> thing <*> secondThing <*> thirdThing <*> fourthThing <*> Just thisissolong <*> Just stilllonger <*> evenlonger
-```
-
-# Function declarations
-
-## Where Clause
-
-``` haskell
-sayHello :: IO ()
-sayHello = do
-  name <- getLine
-  putStrLn $ greeting name
+pattern ErrorCall :: String -> ErrorCall
+pattern ErrorCall s <- ErrorCallWithLocation s _
   where
-    greeting name = "Hello, " ++ name ++ "!"
+    ErrorCall s = ErrorCallWithLocation s ""
+
+pattern IsTrue :: Show a => a
+pattern IsTrue <- ((== "True") . show -> True)
+
+pattern ExNumPat :: () => Show b => b -> T
+pattern ExNumPat x = MkT x
 ```
 
-## Guards and pattern guards
+### FunBind and PatBind
 
 ``` haskell
-f :: Int
-f x
-  | x <- Just x
-  , x <- Just x =
-    case x of
-      Just x -> e
-  | otherwise = do e
+{-# LANGUAGE UnboxedTuples #-}
+{-# LANGUAGE RecordWildCards #-}
+
+pi = 3.14
+
+id x = x
+
+not False = True
+not _ = False
+
+head (x : _) = x
+
+maybe x _ Nothing = x
+maybe _ f (Some x) = f x
+
+fst (x, _) = x
+fst' (# x, _ #) = x
+
+empty [] = True
+empty _ = False
+
+unSum (Sum { getSum = s }) = s
+
+mag2 Point{x, y} = sqr x + sqr y
+mag2 Point{..} = sqr x + sqr y
+
+strict !x = x
+irrefutable ~x = x
+
+(//) a b = undefined
+a // b = undefined
+
+main = do
+    greet "World"
   where
-    x = y
+    greet who = putStrLn $ "Hello, " ++ who ++ "!"
 ```
 
-## Case inside a `where` and `do`
+### ForImp and ForExp
 
 ``` haskell
-g x =
-  case x of
-    a -> x
-  where
-    foo =
-      case x of
-        _ -> do
-          launchMissiles
-      where
-        y = 2
+{-# LANGUAGE ForeignFunctionInterface #-}
+foreign import ccall sin :: Double -> Double
+foreign import ccall "sin" sin :: Double -> Double
+foreign import ccall "sin" sin :: Double -> Double
+foreign import ccall unsafe exit :: Double -> Double
+
+foreign export ccall callback :: Int -> Int
 ```
 
-## Let inside a `where`
+### Pragmas
 
 ``` haskell
-g x =
-  let x = 1
-  in x
-  where
-    foo =
-      let y = 2
-          z = 3
-      in y
-```
-# Template Haskell
+{-# RULES #-}
+{-# RULES "map/map" forall f g xs. map f (map g xs) = map (f.g) xs #-}
+{-# RULES "map/append" [2] forall f xs ys. map f (xs ++ ys) = map f xs ++ map f ys #-}
 
-## Expression Brackets
+{-# DEPRECATED #-}
+{-# DEPRECATED foo "use bar instead" #-}
+{-# DEPRECATED foo, bar, baz "no longer supported" #-}
 
-```haskell
-add1 x = [|x + 1|]
-```
+{-# WARNING #-}
+{-# WARNING foo "use bar instead" #-}
+{-# WARNING foo, bar, baz "no longer supported" #-}
 
-## Pattern Brackets
+{-# INLINE foo #-}
+{-# INLINE [3] foo #-}
+{-# INLINE [~3] foo #-}
+{-# NOINLINE foo #-}
 
-```haskell
-mkPat = [p|(x, y)|]
-```
+{-# INLINE CONLIKE foo #-}
+{-# INLINE CONLIKE [3] foo #-}
 
-## Type Brackets
+{-# SPECIALISE foo :: Int -> Int #-}
+{-# SPECIALISE [3] foo :: Int -> Int, Float -> Float #-}
 
-```haskell
-foo :: $([t|Bool|]) -> a
-```
+{-# SPECIALISE INLINE foo :: Int -> Int #-}
+{-# SPECIALISE NOINLINE foo :: Int -> Int #-}
 
-## Quasiquotes in types
+{-# SPECIALISE instance Foo Int #-}
+{-# SPECIALISE instance forall a. (Ord a) => Foo a #-}
 
-```haskell
-fun :: [a|bc|]
-```
-# Comments
+{-# ANN foo (Just "Foo") #-}
+{-# ANN type Foo (Just "Foo") #-}
+{-# ANN module (Just "Foo") #-}
 
-Haddock comments
-
-``` haskell
--- | Module comment.
-module X where
-
--- | Main doc.
-main :: IO ()
-main = return ()
-
-data X
-  = X -- ^ X is for xylophone.
-  | Y -- ^ Y is for why did I eat that pizza.
-
-data X = X
-  { field1 :: Int -- ^ Field1 is the first field.
-  , field11 :: Char
-    -- ^ This field comment is on its own line.
-  , field2 :: Int -- ^ Field2 is the second field.
-  , field3 :: Char -- ^ This is a long comment which starts next to
-    -- the field but continues onto the next line, it aligns exactly
-    -- with the field name.
-  , field4 :: Char
-    -- ^ This is a long comment which starts on the following line
-    -- from from the field, lines continue at the sme column.
-  }
+{-# MINIMAL foo | bar, (baz | quux) #-}
 ```
 
-Comments around regular declarations
+## Exp
 
-``` haskell
--- This is some random comment.
--- | Main entry point.
-main = putStrLn "Hello, World!"
--- This is another random comment.
-```
-
-Multi-line comments with multi-line contents
-
-``` haskell
-{- | This is some random comment.
-Here is more docs and such.
-Etc.
--}
-main = putStrLn "Hello, World!"
-{- This is another random comment. -}
-```
-
-# Behaviour checks
-
-## Symbols and Identifiers
-
-``` haskell
-{-# NOINLINE (<>) #-}
-
-type API = api1 :<|> api2
-type API = api1 S.:<|> api2
-type API = (:<|>) api1 api2
-type API = (S.:<|>) api1 api2
-
-data T a = a :<|> a
-data T a = (:<|>) a a
-
-(++) a b = append a b
-a ++ b = append a b
-
-val = a ++ b
-val = a V.++ b
-val = (++) a b
-val = (V.++) a b
-val = a `or` b
-val = a `L.or` b
-
-f (a :+: b) = a
-f (a C.:+: b) = a
-f ((:+:) a b) = a
-f ((C.:+:) a b) = a
-f (a `C` b) = a
-f (a `M.C` b) = a
-```
-
-``` haskell
-data T = (-)
-q = '(-)
-
-data (-)
-q = ''(-)
-```
-
-## Unboxed Tuples
+### Var, Con, Lit, Tuple, List, and ExpTypeSig
 
 ``` haskell
 {-# LANGUAGE UnboxedTuples #-}
 
-f :: Int -> Int -> (# Int, Int #)
-f x y = (# x+1, y-1 #)
-g x = case f x x of { (# a, b #) -> a + b }
-h x = let (# p, q #) = h x in undefined
+foo = foo
+
+foo = Nothing
+
+foo = 123
+
+foo = 'x'
+
+foo = ""
+foo = "Lorem Ipsum Dolor Amet Sit"
+
+foo = ()
+foo = (1, 2)
+foo = (1 -- the one
+ , 2)
+
+foo = (# #)
+foo = (# 1, 2 #)
+foo = (# 1 -- the one
+ , 2 #)
+
+foo = []
+foo = [1]
+foo = [1,2]
+foo = [1 -- the one
+ , 2]
+
+foo = 1 :: Int
 ```
 
-## Lazy Patterns in a Lambda
+### App, InfixApp, NegApp, LeftSection, RightSection
 
 ``` haskell
-f = \ ~a -> undefined -- \~a yields parse error on input ‘\~’
+foo = foldl fn init list
+foo = foldl fn -- reducer
+  init -- initial value
+  list
+
+foo = 1 + 2
+foo = fn `map` list
+
+foo = -3
+
+foo = (+ arg)
+foo = (`op` arg)
+
+foo = (arg +)
+foo = (arg `op`)
 ```
 
-## Bang Patterns in a Lambda
+### EnumFrom, EnumFromTo, EnumFromThen, EnumFromThenTo, ParArrayFromTo, ParArrayFromThenTo
 
 ``` haskell
-f = \ !a -> undefined -- \!a yields parse error on input ‘\!’
+foo = [1..]
+foo = [1..10]
+foo = [1, 2..]
+foo = [1, 2..10]
+foo = [:1..10:]
+foo = [:1, 2..10:]
 ```
 
-## Binding Implicit Parameters
-
-```haskell
-f = let ?x = 42 in f
-```
-
-## Unicode
+### ListComp, ParComp, and ParArrayComp
 
 ``` haskell
-α = γ * "ω" -- υ
+{-# LANGUAGE TransformListComp #-}
+
+foo = [ (x, y) | x <- xs, y <- ys ]
+foo = [ (x, y) -- cartesian product
+      | x <- xs -- first list
+      , y <- ys -- second list
+      ]
+foo = [ (x,y) | x <- xs | y <- ys ]
+foo = [ (x,y) -- zip
+      | x <- xs -- first list
+      | y <- ys -- second list
+      ]
+foo = [: (x,y) | x <- xs | y <- ys :]
+foo = [: (x,y) -- zip
+      | x <- xs -- first list
+      | y <- ys -- second list
+      :]
+
+foo = [ (x, y)
+      | x <- xs
+      , y <- ys
+      , then reverse
+      , then sortWith by (x+y)
+      , then group using permutations
+      , then group by (x+y) using groupWith
+      ]
 ```
 
-## Empty Module
+### RecConstr and RecUpdate
 
 ``` haskell
+{-# LANGUAGE RecordWildCards #-}
+
+foo = Point { x = 1, y = 2 }
+foo = Point { x = 1 -- the one
+            , y
+            , ..
+            }
+
+foo = bar { x = 1 }
+foo = bar { x = 1 -- the one
+          , y
+          , ..
+          }
 ```
 
-## Empty Case
+### Let, If, MultiIf, and Case
 
-```haskell
-{-# LANGUAGE EmptyCase #-}
+``` haskell
+{-# LANGUAGE MultiWayIf #-}
+
+foo = let x = x in x
+
+foo = let x = x -- bottom
+ in
+  -- bottom
+  x
+
+foo = if null xs then None else Some $ head xs
+
+foo = if null xs -- condition
+  then None -- it's empty
+  else Some $ head xs -- it's not
+
+foo = if | null xs -> None
+         | otherwise -> Some $ head xs
+
+foo = if | null xs ->
+           -- it's empty
+           None
+         | otherwise ->
+           -- it's not
+           Some $ head x
+
+foo = case x of
+  True -> False
+  False -> True
+
+foo = case xs of
+  [] ->
+    -- it's empty
+    None
+  x : _ ->
+    -- it's not
+    Some x
+```
+
+### Do and MDo
+
+``` haskell
+{-# LANGUAGE RecursiveDo #-}
+
+foo = do { return () }
+
+foo = do
+  return ()
+
+foo = do
+  this <- that
+  let this' = tail this
+  if this -- condition
+  then that
+  else those
+
+foo = mdo
+  return ()
+```
+
+### Lambda, LCase
+
+``` haskell
 {-# LANGUAGE LambdaCase #-}
-f1 = case () of {}
-f2 = \case {}
+
+foo = \x -> x
+foo = \ ~x -> x
+foo = \ !x -> x
+foo d = \case
+  Nothing -> d
+  Some x -> x
+```
+
+### BracketExp, SpliceExp, QuasiQuote, VarQuote, and TypQuote
+
+``` haskell
+{-# LANGUAGE TemplateHaskell #-}
+
+mkDecl :: Q Decl
+mkDecl = [d|id x = x|]
+
+mkType :: Q Type
+mkType = [t|(a, b) -> a|]
+
+mkPat :: Q Pat
+mkPat = [p|(a, b)|]
+
+mkExp :: Q Exp
+mkExp = [e|a|]
+
+fst :: $(mkType)
+fst (a, b) = $(mkExp)
+
+html = [html|<p>Lorem Ipsum Dolor Amet Sit</p>|]
+
+foo = mkSomething 'id 'Nothing ''Maybe
 ```
