@@ -11,7 +11,6 @@ module Floskell.Types
     ( OutputRestriction(..)
     , Penalty(..)
     , TabStop(..)
-    , defaultLinePenalty
     , Printer(..)
     , execPrinter
     , runPrinter
@@ -34,7 +33,7 @@ import           Control.Monad
 import           Control.Monad.Search           ( MonadSearch, Search
                                                 , runSearchBest )
 import           Control.Monad.State.Strict     ( MonadState(..), StateT
-                                                , execStateT, gets, runStateT )
+                                                , execStateT, runStateT )
 
 import           Data.Data
 import           Data.Int                       ( Int64 )
@@ -67,14 +66,6 @@ instance Monoid Penalty where
 #if !(MIN_VERSION_base(4,11,0))
     mappend = (<>)
 #endif
-
-defaultLinePenalty :: Bool -> Int64 -> Printer s Penalty
-defaultLinePenalty eol col = do
-    maxCol <- gets (configMaxColumns . psConfig)
-    return $ linebreakPenalty + overfullPenalty (col - maxCol)
-  where
-    linebreakPenalty = if eol then 1 else 0
-    overfullPenalty n = if n > 0 then 10 else 0
 
 -- | A pretty printing monad.
 newtype Printer s a =

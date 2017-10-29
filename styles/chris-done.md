@@ -21,6 +21,7 @@ constructs.
 
 ``` haskell
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
+
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
@@ -30,32 +31,29 @@ Module: Style.Haskell.Example
 Haskell Code Style Example.
 -}
 module Style.Haskell.Example
-  (
-   -- * Types
+  (-- * Types
    Enum(..)
   ,Either(..)
   ,Point(..)
-  ,
    -- * Functions
-   hello)
-  where
+  ,hello) where
 
 -- Module imports
 import qualified Control.Monad.Trans.State
-       (State, evalState, execState, get, modify, put, runState)
+       (State,evalState,execState,get,modify,put,runState)
 import qualified Data.Map as Map
 import qualified Data.Text as Text
 import Prelude hiding (map)
 
 -- Data declarations
-data Enum
-  = CaseA
+data Enum =
+    CaseA
   | CaseB
   | CaseC
   deriving (Eq,Enum,Show)
 
-data Either a b
-  = Left a
+data Either a b =
+    Left a
   | Right b
   deriving (Eq,Show)
 
@@ -66,27 +64,25 @@ data Point =
   deriving (Eq,Show)
 
 -- Type classes
-class Functor f =>
-      Applicative a where
+class Functor f => Applicative a where
   pure :: b -> a b
   ap :: a (b -> c) -> a b -> a c
 
 class Fundep a b | a -> b where
   convert :: a -> b
 
-instance Functor f =>
-         Functor (Wrap f) where
+instance Functor f => Functor (Wrap f) where
   fmap f (Wrap x) = Wrap $ fmap f x
 
 -- Values
 origin :: Point
-origin = 
+origin =
   Point {pointX = 0
         ,pointY = 0
         ,pointLabel = "Origin"}
 
 lorem :: [String]
-lorem = 
+lorem =
   ["Lorem ipsum dolor sit amet, consectetur adipiscing elit."
   ,"Curabitur nec ante nec mauris ornare suscipit."
   ,"In ac vulputate libero."
@@ -97,15 +93,14 @@ lorem =
 facs :: [Int]
 facs = [1,1] ++ zipWith (+) (tailfacs)
 
-hello :: MonadIO m
-      => m ()
-hello = 
+hello :: MonadIO m => m ()
+hello =
   do name <- liftIO getLine
      liftIO . putStrLn $ greetings name
   where greetings n = "Hello " ++ n ++ "!"
 
 letExpr :: Point -> String
-letExp x = 
+letExp x =
   let y = 1
       z = 2
   in if x > 0
@@ -113,13 +108,13 @@ letExp x =
         else z
 
 ifExpr :: Bool -> Bool
-ifExpr b = 
+ifExpr b =
   if b == True
      then False
      else True
 
 caseExpr :: [a] -> Maybe a
-caseExpr xs = 
+caseExpr xs =
   case xs of
     [] -> Nothing
     (x:_) -> Just x
@@ -130,11 +125,11 @@ guarded x
   | x == 1 = 1
   | otherwise = guarded (x - 2) + guarded (x - 1)
 
-someLongFunctionNameWithALotOfParameters :: (MonadIO m
-                                            ,MonadRandom m)
-                                         => String
-                                         -> (String -> String)
-                                         -> m ()
+someLongFunctionNameWithALotOfParameters
+  :: (MonadIO m,MonadRandom m)
+  => String
+  -> (String -> String)
+  -> m ()
 someLongFunctionNameWithALotOfParameters = undefined
 ```
 
@@ -151,28 +146,20 @@ module Main where
 With exports
 
 ``` haskell
-module Main
-  (foo
-  ,bar
-  ,baz
-  ,main)
-  where
+module Main (foo,bar,baz,main) where
 ```
 
 With exports and comments
 
 ``` haskell
 module Main
-  (
-   -- * Main Program
+  (-- * Main Program
    main
-  ,
    -- * Functions
-   foo -- foo function
+  ,foo -- foo function
   ,bar -- bar function
   ,baz -- baz function
-   )
-  where
+  ) where
 ```
 
 With deprecation
@@ -193,8 +180,8 @@ module Main {-# WARNING "do not use" #-} where
 import Prelude
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.ByteString (ByteString, pack, unpack)
-import qualified Data.ByteString as BS (pack, unpack)
+import qualified Data.ByteString (ByteString,pack,unpack)
+import qualified Data.ByteString as BS (pack,unpack)
 import Control.Monad hiding (forM)
 ```
 
@@ -215,23 +202,19 @@ type Fun a b = a -> b
 ``` haskell
 data Void
 
-data Unit =
-  Unit
+data Unit = Unit
 
-data Maybe a
-  = Nothing
+data Maybe a =
+    Nothing
   | Just a
 
-data Num a =>
-     SomeNum =
-  SomeNum a
+data Num a => SomeNum = SomeNum a
 
-newtype RWS r w s =
-  RWS (ReaderT r (WriterT w (StateT s Identity)))
+newtype RWS r w s = RWS (ReaderT r (WriterT w (StateT s Identity)))
   deriving (Functor,Applicative,Monad)
 
-data Enum
-  = One   -- Foo
+data Enum =
+    One   -- Foo
   | Two   -- Bar
   | Three -- Baz
 
@@ -239,7 +222,7 @@ data Foo
   deriving ()
 
 data Foo
-  deriving (Show)
+  deriving Show
 
 data Foo
   deriving (Show)
@@ -248,18 +231,21 @@ data Foo
   deriving (Eq,Ord)
 
 data Expr :: * -> * where
-        Const :: Int -> Expr Int
-        Plus :: Expr Int -> Expr Int -> Expr Int
-        Eq :: Expr Int -> Expr Int -> Expr Bool
-    deriving (Show)
+  Const :: Int -> Expr Int
+  Plus :: Expr Int -> Expr Int -> Expr Int
+  Eq :: Expr Int -> Expr Int -> Expr Bool
+  deriving (Show)
 
 data Term a where
-        Lit :: {val :: Int} -> Term Int
-        Succ :: {num :: Term Int} -> Term Int
-        Pred :: {num :: Term Int} -> Term Int
-        IsZero :: {arg :: Term Int} -> Term Bool
-        Pair :: {arg1 :: Term a, arg2 :: Term b} -> Term (a, b)
-        If :: {cnd :: Term Bool, tru :: Term a, fls :: Term a} -> Term a
+  Lit :: {val :: Int} -> Term Int
+  Succ :: {num :: Term Int} -> Term Int
+  Pred :: {num :: Term Int} -> Term Int
+  IsZero :: {arg :: Term Int} -> Term Bool
+  Pair :: {arg1 :: Term a
+          ,arg2 :: Term b} -> Term (a,b)
+  If :: {cnd :: Term Bool
+        ,tru :: Term a
+        ,fls :: Term a} -> Term a
 ```
 
 ### TypeFamDecl, TypeInsDecl, and ClosedTypeFamDecl
@@ -274,14 +260,14 @@ type family Mutable v = r | r -> v
 type instance Mutable Int = MIntVector
 
 type family Store a where
-        Store Bool = [Int]
-        Store a = [a]
+  Store Bool = [Int]
+  Store a = [a]
 
 type family Store a = (r :: *) where
-        Store a = [a]
+  Store a = [a]
 
 type family Store a = r | r -> a where
-        Store a = [a]
+  Store a = [a]
 ```
 
 ### DataFamDecl, DataInsDecl, and GDataInsDecl
@@ -289,21 +275,22 @@ type family Store a = r | r -> a where
 ``` haskell
 data family List a
 
-data instance  List () = NilList Int
+data instance List () = NilList Int
 
-data instance  List Char = CharNil
-                         | CharCons Char (List Char)
-                             deriving (Eq, Ord, Show)
+data instance List Char =
+    CharNil
+  | CharCons Char (List Char)
+  deriving (Eq,Ord,Show)
 
-data instance  List Int :: * where
-        IntNil :: List Int
-        IntCons :: Int -> List Int
-    deriving (Eq, Ord, Show)
+data instance List Int :: * where
+  IntNil :: List Int
+  IntCons :: Int -> List Int
+  deriving (Eq,Ord,Show)
 
-data instance  List Int :: * where
-        IntNil :: List Int
-        IntCons :: {val :: Int} -> List Int
-    deriving (Eq, Ord, Show)
+data instance List Int :: * where
+  IntNil :: List Int
+  IntCons :: {val :: Int} -> List Int
+  deriving (Eq,Ord,Show)
 ```
 
 ### ClassDecl and InstDecl
@@ -313,45 +300,44 @@ class Monoid a where
   mempty :: a
   mappend :: a -> a -> a
 
-class Applicative m =>
-      Monad m where
+class Applicative m => Monad m where
   fail :: m a
   return :: a -> m a
   (>>=) :: a -> (a -> m b) -> m b
 
-class Monad m =>
-      MonadState s m | m -> s where
+class Monad m => MonadState s m | m -> s where
   get :: m s
   put :: s -> m ()
   state :: (s -> (a,s)) -> m a
 
 class ToJSON a where
   toJSON :: a -> Value
-  default toJSON :: (Generic a
-                    ,GToJSON (Rep a)) =>
-                    a -> Value
+  default toJSON :: (Generic a,GToJSON (Rep a)) => a -> Value
   toJSON = genericToJSON defaultOptions
 
 instance ToJSON ()
 
 instance Bounded Bool where
   minBound = False
+
   maxBound = True
 
-instance Semigroup a =>
-         Monoid (Maybe a) where
+instance Semigroup a => Monoid (Maybe a) where
   mempty = Nothing
+
   Nothing `mappend` m = m
   m `mappend` Nothing = m
   Just m1 `mappend` Just m2 = Just (m1 `mappend` m2)
 
 instance Data () where
   type Base = ()
-  newtype Wrapped = Wrapped{unWrap :: ()}
+
+  newtype Wrapped = Wrapped {unWrap :: ()}
+
   data Expr :: * -> * where
-        Const :: Int -> Expr Int
-        Plus :: Expr Int -> Expr Int -> Expr Int
-        Eq :: Expr Int -> Expr Int -> Expr Bool
+    Const :: Int -> Expr Int
+    Plus :: Expr Int -> Expr Int -> Expr Int
+    Eq :: Expr Int -> Expr Int -> Expr Bool
 ```
 
 ### DerivDecl
@@ -371,7 +357,7 @@ deriving newtype instance {-# OVERLAPPABLE #-} Eq a => Eq (Sum a)
 ### InfixDecl
 
 ``` haskell
-infix 4 ==, /=, <, <=, >, >=
+infix 4 ==,/=,<,<=,>,>=
 
 infixr 0 $
 
@@ -383,7 +369,7 @@ infixl !!
 ``` haskell
 default ()
 
-default (Integer, Double)
+default (Integer,Double)
 ```
 
 ### SpliceDecl
@@ -398,10 +384,8 @@ $(bar baz)
 
 ``` haskell
 id :: a -> a
-sort :: Ord a
-     => [a] -> [a]
-long :: (IsString a
-        ,Monad m)
+sort :: Ord a => [a] -> [a]
+long :: (IsString a,Monad m)
      => ByteString
      -> ByteString
      -> ByteString
@@ -413,9 +397,7 @@ mktime :: Int -- hours
        -> Int -- minutes
        -> Int -- seconds
        -> Time
-transform
-  :: forall a. 
-     St -> State St a -> EitherT ServantErr IO a
+transform :: forall a. St -> State St a -> EitherT ServantErr IO a
 ```
 
 ### PatSyn and PatSynSig
@@ -424,27 +406,22 @@ transform
 {-# LANGUAGE PatternSynonyms #-}
 
 pattern MyJust :: a -> Maybe a
-
 pattern MyJust a = Just a
 
-pattern MyPoint :: Int -> Int -> (Int, Int)
-
-pattern MyPoint{x, y} = (x, y)
+pattern MyPoint :: Int -> Int -> (Int,Int)
+pattern MyPoint {x,y} = (x,y)
 
 pattern ErrorCall :: String -> ErrorCall
-
 pattern ErrorCall s <- ErrorCallWithLocation s _
   where ErrorCall s = ErrorCallWithLocation s ""
 
 pattern IsTrue :: Show a => a
-
 pattern IsTrue <- ((== "True") . show -> True)
 
 pattern ExNumPat :: () => Show b => b -> T
-
 pattern ExNumPat x = MkT x
 
-pattern Foo, Bar :: Show a => a
+pattern Foo,Bar :: Show a => a
 ```
 
 ### FunBind and PatBind
@@ -464,9 +441,7 @@ not _ = False
 head (x:_) = x
 
 maybe x _ Nothing = x
-maybe _
-      f
-      (Some x) = f x
+maybe _ f (Some x) = f x
 
 fst (x,_) = x
 
@@ -481,8 +456,7 @@ empty _ = False
 
 unSum (Sum {getSum = s}) = s
 
-mag2 Point {x
-           ,y} = sqr x + sqr y
+mag2 Point {x,y} = sqr x + sqr y
 mag2 Point {..} = sqr x + sqr y
 
 strict !x = x
@@ -510,77 +484,41 @@ foreign import ccall "sin" sin :: Double -> Double
 
 foreign import ccall unsafe exit :: Double -> Double
 
-foreign export ccall Nothing callback :: Int -> Int
+foreign export ccall callback :: Int -> Int
 ```
 
 ### Pragmas
 
 ``` haskell
-{-# RULES
- #-}
+{-# RULES #-}
 
-{-# RULES
-"map/map" forall f g xs . map f (map g xs) = map (f . g) xs
- #-}
+{-# RULES "map/map" forall f g xs. map f (map g xs) = map (f . g) xs #-}
 
-{-# RULES
-"map/append" [2] forall f xs ys . map f (xs ++ ys) =
-             map f xs ++ map f ys
- #-}
+{-# RULES "map/append" [2] forall f xs ys. map f (xs ++ ys) =
+          map f xs ++ map f ys #-}
 
-{-# DEPRECATED
- #-}
-
-{-# DEPRECATED
-foo "use bar instead"
- #-}
-
-{-# DEPRECATED
-foo, bar, baz "no longer supported"
- #-}
-
-{-# WARNING
- #-}
-
-{-# WARNING
-foo "use bar instead"
- #-}
-
-{-# WARNING
-foo, bar, baz "no longer supported"
- #-}
-
+{-# DEPRECATED #-}
+{-# DEPRECATED foo "use bar instead" #-}
+{-# DEPRECATED foo,bar,baz "no longer supported" #-}
+{-# WARNING #-}
+{-# WARNING foo "use bar instead" #-}
+{-# WARNING foo,bar,baz "no longer supported" #-}
 {-# INLINE foo #-}
-
-{-# INLINE foo #-}
-
-{-# INLINE foo #-}
-
+{-# INLINE [3] foo #-}
+{-# INLINE [~3] foo #-}
 {-# NOINLINE foo #-}
-
 {-# INLINE CONLIKE foo #-}
-
 {-# INLINE CONLIKE [3] foo #-}
-
 {-# SPECIALISE foo :: Int -> Int #-}
-
-{-# SPECIALISE [3] foo :: Int -> Int, Float -> Float #-}
-
+{-# SPECIALISE [3] foo :: Int -> Int,Float -> Float #-}
 {-# SPECIALISE INLINE foo :: Int -> Int #-}
-
 {-# SPECIALISE NOINLINE foo :: Int -> Int #-}
-
 {-# SPECIALISE instance Foo Int #-}
-
-{-# SPECIALISE instance forall a . (Ord a) => Foo a #-}
-
+{-# SPECIALISE instance forall a. (Ord a) => Foo a #-}
 {-# ANN foo (Just "Foo") #-}
-
 {-# ANN type Foo (Just "Foo") #-}
-
 {-# ANN module (Just "Foo") #-}
-
-{-# MINIMAL foo | bar , (baz | quux) #-}
+{-# MINIMAL foo | bar,(baz | quux) #-}
 ```
 
 ## Exp
@@ -607,7 +545,7 @@ foo = ()
 
 foo = (1,2)
 
-foo = 
+foo =
   (1 -- the one
   ,2)
 
@@ -615,7 +553,7 @@ foo = (# #)
 
 foo = (# 1,2 #)
 
-foo = 
+foo =
   (# 1 -- the one
     ,2 #)
 
@@ -623,9 +561,9 @@ foo = (# 1 #)
 
 foo = (# | 1 | | #)
 
-foo = 
+foo =
   (# | 1 -- the one
-                   | | #)
+  | | #)
 
 foo = []
 
@@ -633,7 +571,7 @@ foo = [1]
 
 foo = [1,2]
 
-foo = 
+foo =
   [1 -- the one
   ,2]
 
@@ -645,7 +583,10 @@ foo = 1 :: Int
 ``` haskell
 foo = foldl fn init list
 
-foo = foldl fn init list
+foo =
+  foldl fn -- reducer
+        init -- initial value
+        list
 
 foo = 1 + 2
 
@@ -675,7 +616,7 @@ foo = [1,2 .. 10]
 
 foo = [:1 .. 10:]
 
-foo = [:1, 2 .. 10:]
+foo = [:1,2 .. 10:]
 ```
 
 ### ListComp, ParComp, and ParArrayComp
@@ -685,28 +626,35 @@ foo = [:1, 2 .. 10:]
 
 foo = [(x,y) | x <- xs,y <- ys]
 
-foo = 
+foo =
   [(x,y) -- cartesian product
-  |x <- xs -- first list
-  ,y <- ys -- second list
-   ]
+  | x <- xs -- first list
+   ,y <- ys -- second list
+  ]
 
-foo = [(x, y)| x <- xs| y <- ys]
+foo = [(x,y) | x <- xs | y <- ys]
 
-foo = [(x, y)| x <- xs| y <- ys]
+foo =
+  [(x,y) -- zip
+  | x <- xs -- first list
+  | y <- ys -- second list
+  ]
 
-foo = [:(x, y)| x <- xs| y <- ys:]
+foo = [:(x,y) | x <- xs | y <- ys:]
 
-foo = [:(x, y)| x <- xs| y <- ys:]
+foo =
+  [:(x,y) -- zip
+  | x <- xs -- first list
+  | y <- ys -- second list
+  :]
 
-foo = 
-  [(x,y)
-  |x <- xs
-  ,y <- ys
-  ,then reverse
-  ,then sortWith by (x + y)
-  ,then group using permutations
-  ,then group by (x + y) using groupWith]
+foo =
+  [(x,y) | x <- xs
+          ,y <- ys
+          ,then reverse
+          ,then sortWith by (x + y)
+          ,then group using permutations
+          ,then group by (x + y) using groupWith]
 ```
 
 ### RecConstr and RecUpdate
@@ -714,18 +662,18 @@ foo =
 ``` haskell
 {-# LANGUAGE RecordWildCards #-}
 
-foo = 
+foo =
   Point {x = 1
         ,y = 2}
 
-foo = 
+foo =
   Point {x = 1 -- the one
         ,y
         ,..}
 
 foo = bar {x = 1}
 
-foo = 
+foo =
   bar {x = 1 -- the one
       ,y
       ,..}
@@ -736,56 +684,55 @@ foo =
 ``` haskell
 {-# LANGUAGE MultiWayIf #-}
 
-foo = 
+foo =
   let x = x
   in x
 
-foo = 
+foo =
   let x = x -- bottom
-  in 
+  in
      -- bottom
      x
 
-foo = 
+foo =
   if null xs
      then None
      else Some $ head xs
 
-foo = 
+foo =
   if null xs -- condition
      then None -- it's empty
      else Some $ head xs -- it's not
 
-foo = 
-  if | null xs ->
-       None
-     | otherwise ->
-       Some $ head xs
+foo =
+  if
+    | null xs -> None
+    | otherwise -> Some $ head xs
 
-foo = 
-  if | null xs ->
-       -- it's empty
-       None
-     | otherwise ->
-       -- it's not
-       Some $
-       head x
+foo =
+  if
+    | null xs ->
+      -- it's empty
+      None
+    | otherwise ->
+      -- it's not
+      Some $ head x
 
-foo = 
+foo =
   case x of
     True -> False
     False -> True
 
-foo = 
+foo =
   case xs of
-    [] -> 
+    [] ->
       -- it's empty
       None
-    x:_ -> 
+    x:_ ->
       -- it's not
       Some x
 
-foo = 
+foo =
   case xs of
     _
       | null xs -> None
@@ -801,7 +748,7 @@ foo = do return ()
 
 foo = do return ()
 
-foo = 
+foo =
   do this <- that
      let this' = tail this
      if this -- condition
@@ -822,7 +769,7 @@ foo = \ ~x -> x
 
 foo = \ !x -> x
 
-foo d = 
+foo d =
   \case
     Nothing -> d
     Some x -> x
@@ -834,7 +781,7 @@ foo d =
 {-# LANGUAGE TemplateHaskell #-}
 
 mkDecl :: Q Decl
-mkDecl = [d| id x = x |]
+mkDecl = [d|id x = x|]
 
 mkType :: Q Type
 mkType = [t|(a,b) -> a|]
@@ -860,10 +807,10 @@ foo = mkSomething 'id 'Nothing ''Maybe
 Before comments and onside indent do not mix well.
 
 ``` haskell
-foo = 
-  do 
-     -- comment
-     some expression
+foo =
+  do
+       -- comment
+       some expression
 ```
 
 ## Onside
@@ -871,7 +818,7 @@ foo =
 Indent within onside started on non-empty line should still not stack.
 
 ``` haskell
-foo = 
+foo =
   if cond
      then do this
      else do that
@@ -880,37 +827,37 @@ foo =
 Before comments at the start of onside do not trigger onside.
 
 ``` haskell
-foo = 
-  do 
-     -- comment
-     some expression
+foo =
+  do
+       -- comment
+       some expression
 ```
 
 Matche arms have individual onside.
 
 ``` haskell
-foo True = 
+foo True =
   some -- comment
-    expression
-foo False = 
+  expression
+foo False =
   some -- comment
-    other
-    expression
+  other
+  expression
 ```
 
 Where binds are considered outside of onside.
 
 ``` haskell
-foo = 
+foo =
   some -- comment
-    expression
+  expression
   where expression = other
 ```
 
 Align overrides onside.
 
 ``` haskell
-foo = 
+foo =
   some expr
        [1 -- comment
        ,2]
@@ -919,7 +866,7 @@ foo =
 If-then-else must always indent in do blocks.
 
 ``` haskell
-foo = 
+foo =
   do if condition -- comment
         then this
         else that

@@ -77,20 +77,7 @@ loadSnippets filename = do
 
 -- | Some styles are broken and will fail the idempotency test.
 expectedFailures :: [(T.Text, [Int])]
-expectedFailures = [ ("fundamental", [ 2, 3, 4, 1 ])
-                   , ("fundamental", [ 2, 3, 13, 1 ])
-                   , ("chris-done", [ 2, 3, 4, 1 ])
-                   , ("chris-done", [ 2, 3, 13, 1 ])
-                   , ("johan-tibell", [ 2, 3, 4, 1 ])
-                   , ("johan-tibell", [ 2, 3, 13, 1 ])
-                   , ("gibiansky", [ 2, 3, 4, 1 ])
-                   , ("gibiansky", [ 2, 3, 13, 1 ])
-                   , ("gibiansky", [ 2, 4, 2, 1 ])
-                   , ("cramer", [ 2, 3, 4, 1 ])
-                   , ("cramer", [ 2, 3, 13, 1 ])
-                   , ("cramer", [ 3, 2, 3 ])
-                   , ("cramer", [ 3, 2, 4 ])
-                   ]
+expectedFailures = [ ]
 
 -- | Convert the Markdone document to Spec benchmarks.
 toSpec :: Style -> [Int] -> [TestTree] -> [TestTree] -> Spec

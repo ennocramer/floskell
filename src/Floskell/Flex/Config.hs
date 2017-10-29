@@ -8,6 +8,7 @@ module Floskell.Flex.Config
     , WsLoc(..)
     , Whitespace(..)
     , Layout(..)
+    , ConfigMapKey(..)
     , ConfigMap(..)
     , PenaltyConfig(..)
     , AlignConfig(..)
@@ -18,6 +19,7 @@ module Floskell.Flex.Config
     , OptionConfig(..)
     , FlexConfig(..)
     , defaultFlexConfig
+    , safeFlexConfig
     , cfgMapFind
     , cfgOpWs
     , cfgGroupWs
@@ -185,13 +187,8 @@ newtype GroupConfig = GroupConfig { unGroupConfig :: ConfigMap Whitespace }
 instance Default GroupConfig where
     def =
         GroupConfig ConfigMap { cfgMapDefault = Whitespace WsBoth WsAfter False
-                              , cfgMapOverrides = Map.fromList overrides
+                              , cfgMapOverrides = Map.empty
                               }
-      where
-        overrides = [ ( ConfigMapKey (Just "(#") Nothing
-                      , Whitespace WsBoth WsAfter False
-                      )
-                    ]
 
 data OptionConfig = OptionConfig { cfgOptionSortPragmas           :: !Bool
                                  , cfgOptionSplitLanguagePragmas  :: !Bool
@@ -240,6 +237,27 @@ defaultFlexConfig =
         , (ConfigMapKey (Just "record") Nothing, Whitespace WsAfter WsAfter False)
         , (ConfigMapKey (Just ".") (Just Type), Whitespace WsAfter WsAfter False)
         ]
+
+safeFlexConfig :: FlexConfig -> FlexConfig
+safeFlexConfig cfg = cfg { cfgGroup = group, cfgOp = op }
+  where
+    group =
+        GroupConfig $ updateOverrides (unGroupConfig $ cfgGroup cfg)
+                                      [ ("(#", Expression), ("(#", Pattern) ]
+
+    op = OpConfig $ updateOverrides (unOpConfig $ cfgOp cfg)
+                                    [ (".", Expression) ]
+
+    updateOverrides config overrides =
+        config { cfgMapOverrides = foldl (updateWs config)
+                                         (cfgMapOverrides config)
+                                         overrides
+               }
+
+    updateWs config m (key, ctx) =
+        Map.insert (ConfigMapKey (Just key) (Just ctx))
+                   (cfgMapFind ctx key config) { wsSpaces = WsBoth }
+                   m
 
 cfgMapFind :: LayoutContext -> ByteString -> ConfigMap a -> a
 cfgMapFind ctx key ConfigMap{..} =

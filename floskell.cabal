@@ -37,12 +37,7 @@ library
                      Floskell.Flex.Config
                      Floskell.Flex.Printers
                      Floskell.Flex.Pretty
-                     Floskell.Styles.Fundamental
-                     Floskell.Styles.ChrisDone
-                     Floskell.Styles.JohanTibell
-                     Floskell.Styles.Gibiansky
-                     Floskell.Styles.Cramer
-                     Floskell.Styles.Flex
+                     Floskell.Styles
   build-depends:     base >= 4.7 && <5
                    , aeson
                    , containers

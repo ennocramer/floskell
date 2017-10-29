@@ -25,7 +25,7 @@ import           Data.Version                    ( showVersion )
 import           Floskell                        ( reformat, styles )
 import           Floskell.Flex.Config            ( FlexConfig
                                                  , defaultFlexConfig )
-import           Floskell.Styles.Flex            ( makeFlex )
+import           Floskell.Styles                 ( makeFlex )
 import           Floskell.Types                  ( Style(styleName, styleDefConfig)
                                                  , configMaxColumns )
 

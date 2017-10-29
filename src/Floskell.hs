@@ -15,7 +15,6 @@ module Floskell
     , styles
     , chrisDone
     , johanTibell
-    , fundamental
     , gibiansky
     , cramer
     , flex
@@ -40,12 +39,8 @@ import           Data.Monoid
 import qualified Floskell.Buffer             as Buffer
 import           Floskell.Comments
 import           Floskell.Pretty
-import           Floskell.Styles.ChrisDone   ( chrisDone )
-import           Floskell.Styles.Cramer      ( cramer )
-import           Floskell.Styles.Flex        ( flex )
-import           Floskell.Styles.Fundamental ( fundamental )
-import           Floskell.Styles.Gibiansky   ( gibiansky )
-import           Floskell.Styles.JohanTibell ( johanTibell )
+import           Floskell.Styles             ( chrisDone, cramer, flex
+                                             , gibiansky , johanTibell )
 import           Floskell.Types
 
 import           Language.Haskell.Exts       hiding ( Pretty, Style, parse
@@ -224,7 +219,7 @@ runPrinterStyle mode' (Style _name _author _desc st extenders config preprocesso
 
 -- | Styles list, useful for programmatically choosing.
 styles :: [Style]
-styles = [ fundamental, chrisDone, johanTibell, gibiansky, cramer, flex ]
+styles = [ flex, chrisDone, johanTibell, gibiansky, cramer ]
 
 -- | Default extensions.
 defaultExtensions :: [Extension]
