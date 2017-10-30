@@ -19,6 +19,19 @@ data Whitespace = Whitespace { wsSpaces         :: !WsLoc
                              }
     deriving (Show)
 
+data PenaltyConfig = PenaltyConfig { penaltyLinebreak    :: !Int
+                                   , penaltyIndent       :: !Int
+                                   , penaltyOverfull     :: !Int
+                                   , penaltyOverfullOnce :: !Int
+                                   }
+
+instance Default PenaltyConfig where
+    def = PenaltyConfig { penaltyLinebreak = 100
+                        , penaltyIndent = 1
+                        , penaltyOverfull = 10
+                        , penaltyOverfullOnce = 200
+                        }
+
 data OpConfig = OpConfig { cfgOpWsDefault   :: !Whitespace
                          , cfgOpWsOverrides :: !(Map ByteString Whitespace)
                          }
@@ -57,13 +70,15 @@ instance Default ModuleConfig where
                        , cfgModuleSortImportLists = False
                        }
 
-data FlexConfig = FlexConfig { cfgOp     :: !OpConfig
-                             , cfgGroup  :: !GroupConfig
-                             , cfgModule :: !ModuleConfig
+data FlexConfig = FlexConfig { cfgPenalty :: !PenaltyConfig
+                             , cfgOp      :: !OpConfig
+                             , cfgGroup   :: !GroupConfig
+                             , cfgModule  :: !ModuleConfig
                              }
 
 instance Default FlexConfig where
-    def = FlexConfig { cfgOp = def
+    def = FlexConfig { cfgPenalty = def
+                     , cfgOp = def
                      , cfgGroup = def
                      , cfgModule = def
                      }

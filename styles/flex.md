@@ -105,10 +105,10 @@ data Point = Point { x :: Int, y :: Int, label :: String }
 data Commented = Commented { singleField :: Int -- with a comment
                            }
 
-data LongTypeSig = LongTypeSig { field :: ( IsString a, Monad m )
-                                     => (ByteString -> ByteString)
-                                     -> ByteString -> a -> m ()
-                               }
+data LongTypeSig
+    = LongTypeSig { field :: ( IsString a, Monad m )
+                        => (ByteString -> ByteString) -> ByteString -> a -> m ()
+                  }
 ```
 
 # Type Classes
@@ -171,16 +171,16 @@ type instance Id Int = Int
 ``` haskell
 id :: a -> a
 sort :: Ord a => [ a ] -> [ a ]
-long :: ( IsString a, Monad m ) => ByteString
-    -> ByteString -> ByteString -> ByteString -> ByteString -> a -> m ()
-mkEncoderData
-    :: DocumentType -> (Text -> Except String ByteString) -> EncoderData
-codepageReference
-    :: (ParserState -> Word8) -> AP.Parser Word8 -> Parser CodepageReference
+long :: ( IsString a, Monad m ) => ByteString -> ByteString -> ByteString
+    -> ByteString -> ByteString -> a -> m ()
+mkEncoderData :: DocumentType -> (Text -> Except String ByteString)
+    -> EncoderData
+codepageReference :: (ParserState -> Word8) -> AP.Parser Word8
+    -> Parser CodepageReference
 mktime :: Int -- hours
-     -> Int -- minutes
-     -> Int -- seconds
-     -> Time
+    -> Int -- minutes
+    -> Int -- seconds
+    -> Time
 transform :: forall a. St -> State St a -> EitherT ServantErr IO a
 Implicit parameters
 
@@ -290,7 +290,7 @@ if cond -- comment
  then true else false
 
 if cond then do
-        return () else return ()
+    return () else return ()
 
 do
     if cond then true else false
@@ -356,16 +356,16 @@ simple _ = False
 ``` haskell
 map f xs = [ f x | x <- xs ]
 
-defaultExtensions = [ e | EnableExtension { extensionField1 = extensionField1
-                                          } <- knownExtensions knownExtensions
+defaultExtensions = [ e | EnableExtension { extensionField1 = extensionField1 }
+                          <- knownExtensions knownExtensions
                         , let a = b
                           -- comment
                         , let c = d
                     ]
 
 -- comment
-defaultExtensions = [ e | e @ EnableExtension {} <- knownExtensions
-                    ] \\ map EnableExtension badExtensions
+defaultExtensions = [ e | e @ EnableExtension {} <- knownExtensions ]
+    \\ map EnableExtension badExtensions
 ```
 
 Parallel list comprehension
@@ -385,14 +385,15 @@ Transform list comprehensions
 ``` haskell
 {-# LANGUAGE TransformListComp #-}
 
-list = [ ( x, y, map the v ) | x <- [ 1 .. 10 ]
-                             , y <- [ 1 .. 10 ]
-                             , let v = x + y
-                             , then group by v using groupWith
-                             , then take 10
-                             , then group using permutations
-                             , t <- concat v
-                             , then takeWhile by t < 3
+list = [ ( x, y, map the v )
+       | x <- [ 1 .. 10 ]
+       , y <- [ 1 .. 10 ]
+       , let v = x + y
+       , then group by v using groupWith
+       , then take 10
+       , then group using permutations
+       , t <- concat v
+       , then takeWhile by t < 3
        ]
 ```
 
@@ -401,8 +402,8 @@ list = [ ( x, y, map the v ) | x <- [ 1 .. 10 ]
 Applicative-style operators
 
 ``` haskell
-x = Value <$> thing <*> secondThing <*> thirdThing
-    <*> fourthThing <*> Just thisissolong <*> Just stilllonger <*> evenlonger
+x = Value <$> thing <*> secondThing <*> thirdThing <*> fourthThing <*> Just
+    thisissolong <*> Just stilllonger <*> evenlonger
 ```
 
 # Function declarations
