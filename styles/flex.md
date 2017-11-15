@@ -146,7 +146,7 @@ instance Bounded Bool where
 
     maxBound = True
 
-instance Semigroup a =>Monoid (Maybe a) where
+instance Semigroup a => Monoid (Maybe a) where
     mempty = Nothing
 
     Nothing `mappend` m = m
@@ -305,8 +305,8 @@ Multi-way if
 ``` haskell
 x = if
          | x <- Just x, x <- Just x -> case x of
-            Just x -> e
-            Nothing -> p
+                Just x -> e
+                Nothing -> p
          | otherwise -> e
 ```
 

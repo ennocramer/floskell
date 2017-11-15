@@ -18,6 +18,7 @@ module Floskell.Flex.Printers
     , withPrefix
     , withPostfix
     , withIndent
+    , withLayout
     , inter
     , aligned
     , indented
@@ -97,6 +98,17 @@ withIndent fn p = do
     indentby indent = do
         newline
         P.indented (fromIntegral indent) p
+
+withLayout :: (LayoutConfig -> Layout)
+           -> Printer FlexConfig a
+           -> Printer FlexConfig a
+           -> Printer FlexConfig a
+withLayout fn flex vertical = do
+    cfg <- getConfig (fn . cfgLayout)
+    case cfg of
+        Flex -> flex
+        Vertical -> vertical
+        TryOneline -> oneline flex <|> vertical
 
 inter :: Printer s () -> [Printer s ()] -> Printer s ()
 inter x = sequence_ . intersperse x

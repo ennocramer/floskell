@@ -27,6 +27,9 @@ data Whitespace = Whitespace { wsSpaces         :: !WsLoc
                              }
     deriving (Show)
 
+data Layout = Flex | Vertical | TryOneline
+    deriving (Eq, Show)
+
 data ConfigMap a =
     ConfigMap { cfgMapDefault   :: !a
               , cfgMapOverrides :: !(Map (Maybe ByteString, Maybe LayoutContext) a)
@@ -49,6 +52,7 @@ data IndentConfig = IndentConfig { cfgIndentOnside         :: !Int
                                  , cfgIndentCase           :: !Indent
                                  , cfgIndentClass          :: !Indent
                                  , cfgIndentDo             :: !Indent
+                                 , cfgIndentIf             :: !Indent
                                  , cfgIndentLet            :: !Indent
                                  , cfgIndentMultiIf        :: !Indent
                                  , cfgIndentWhere          :: !Indent
@@ -60,10 +64,38 @@ instance Default IndentConfig where
                        , cfgIndentCase = IndentBy 4
                        , cfgIndentClass = IndentBy 4
                        , cfgIndentDo = IndentBy 4
+                       , cfgIndentIf = IndentBy 0
                        , cfgIndentLet = Align
                        , cfgIndentMultiIf = IndentBy 4
                        , cfgIndentWhere = IndentBy 4
                        , cfgIndentExportSpecList = Align
+                       }
+
+data LayoutConfig = LayoutConfig { cfgLayoutExportSpecList :: !Layout
+                                 , cfgLayoutImportSpecList :: !Layout
+                                 , cfgLayoutDeriving       :: !Layout
+                                 , cfgLayoutDeclaration    :: !Layout
+                                 , cfgLayoutConDecl        :: !Layout
+                                 , cfgLayoutRecDecl        :: !Layout
+                                 , cfgLayoutTypesig        :: !Layout
+                                 , cfgLayoutLet            :: !Layout
+                                 , cfgLayoutIf             :: !Layout
+                                 , cfgLayoutApp            :: !Layout
+                                 , cfgLayoutInfixApp       :: !Layout
+                                 }
+
+instance Default LayoutConfig where
+    def = LayoutConfig { cfgLayoutExportSpecList = Flex
+                       , cfgLayoutImportSpecList = Flex
+                       , cfgLayoutDeriving = Flex
+                       , cfgLayoutDeclaration = Flex
+                       , cfgLayoutConDecl = TryOneline
+                       , cfgLayoutRecDecl = TryOneline
+                       , cfgLayoutTypesig = Flex
+                       , cfgLayoutLet = Flex
+                       , cfgLayoutIf = Flex
+                       , cfgLayoutApp = Flex
+                       , cfgLayoutInfixApp = Flex
                        }
 
 newtype OpConfig = OpConfig { unOpConfig :: ConfigMap Whitespace }
@@ -100,6 +132,7 @@ instance Default ModuleConfig where
 
 data FlexConfig = FlexConfig { cfgPenalty :: !PenaltyConfig
                              , cfgIndent  :: !IndentConfig
+                             , cfgLayout  :: !LayoutConfig
                              , cfgOp      :: !OpConfig
                              , cfgGroup   :: !GroupConfig
                              , cfgModule  :: !ModuleConfig
@@ -108,6 +141,7 @@ data FlexConfig = FlexConfig { cfgPenalty :: !PenaltyConfig
 instance Default FlexConfig where
     def = FlexConfig { cfgPenalty = def
                      , cfgIndent = def
+                     , cfgLayout = def
                      , cfgOp = def
                      , cfgGroup = def
                      , cfgModule = def
