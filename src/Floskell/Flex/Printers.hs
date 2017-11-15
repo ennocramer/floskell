@@ -17,6 +17,7 @@ module Floskell.Flex.Printers
     , mayM_
     , withPrefix
     , withPostfix
+    , withIndent
     , inter
     , aligned
     , indented
@@ -80,6 +81,23 @@ withPrefix pre f x = pre *> f x
 withPostfix :: Applicative f => f a -> (x -> f b) -> x -> f b
 withPostfix post f x = f x <* post
 
+withIndent :: (IndentConfig -> Indent)
+           -> Printer FlexConfig a
+           -> Printer FlexConfig a
+withIndent fn p = do
+    cfg <- getConfig (fn . cfgIndent)
+    case cfg of
+        Align -> align
+        IndentBy i -> indentby i
+        AlignOrIndentBy i -> align <|> indentby i
+  where
+    align = do
+        space
+        aligned p
+    indentby indent = do
+        newline
+        P.indented (fromIntegral indent) p
+
 inter :: Printer s () -> [Printer s ()] -> Printer s ()
 inter x = sequence_ . intersperse x
 
@@ -89,7 +107,9 @@ aligned p = do
     P.column col p
 
 indented :: Printer FlexConfig a -> Printer FlexConfig a
-indented = P.indentedBlock
+indented p = do
+    indent <- getConfig (cfgIndentOnside . cfgIndent)
+    P.indented (fromIntegral indent) p
 
 depend :: ByteString -> Printer FlexConfig a -> Printer FlexConfig a
 depend kw = depend' (write kw)

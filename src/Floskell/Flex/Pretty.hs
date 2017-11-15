@@ -318,10 +318,11 @@ instance Pretty Module where
     prettyPrint ast@XmlHybrid{} = prettyHSE ast
 
 instance Pretty ModuleHead where
-    prettyPrint (ModuleHead _ name mwarning mexports) = depend "module" $ do
-        pretty name
-        mayM_ mwarning $ withPrefix spaceOrNewline pretty
-        mayM_ mexports $ withPrefix spaceOrNewline pretty
+    prettyPrint (ModuleHead _ name mwarning mexports) = do
+        depend "module" $ do
+            pretty name
+            mayM_ mwarning $ withPrefix spaceOrNewline pretty
+        mayM_ mexports $ \exports -> withIndent cfgIndentExportSpecList (pretty exports)
         write " where"
 
 instance Pretty WarningText where
@@ -434,8 +435,7 @@ instance Pretty Decl where
             unless (null fundeps) $ list' Declaration "|" "," fundeps
         mayM_ mclassdecls $ \decls -> do
             write " where"
-            newline
-            indented $ prettyDecls (\d _ -> skipBlankClassDecl d) decls
+            withIndent cfgIndentClass $ prettyDecls (\d _ -> skipBlankClassDecl d) decls
 
     prettyPrint (InstDecl _ moverlap instrule minstdecls) = do
         depend "instance" $ do
@@ -443,8 +443,7 @@ instance Pretty Decl where
             pretty instrule
         mayM_ minstdecls $ \decls -> do
             write " where"
-            newline
-            indented $ prettyDecls (\d _ -> skipBlankInstDecl d) decls
+            withIndent cfgIndentClass $ prettyDecls (\d _ -> skipBlankInstDecl d) decls
 
     prettyPrint (DerivDecl _ moverlap instrule) = depend "deriving instance" $ do
         mayM_ moverlap $ withPostfix space pretty
@@ -614,14 +613,12 @@ instance Pretty Binds where
     prettyPrint (BDecls _ decls) = do
         newline
         write "  where"
-        newline
-        indented $ prettyDecls (\d _ -> skipBlankDecl d) decls
+        withIndent cfgIndentWhere $ prettyDecls (\d _ -> skipBlankDecl d) decls
 
     prettyPrint (IPBinds _ ipbinds) = do
         newline
         write "  where"
-        newline
-        indented $ lined ipbinds
+        withIndent cfgIndentWhere $ lined ipbinds
 
 instance Pretty IPBind where
     prettyPrint (IPBind _ ipname expr) = do
@@ -963,8 +960,8 @@ instance Pretty Exp where
         pretty expr
 
     prettyPrint (Let _ binds expr) = aligned $ do
-        write "let "
-        aligned $ pretty (CompactBinds binds)
+        write "let"
+        withIndent cfgIndentLet $ pretty (CompactBinds binds)
         spaceOrNewline
         write "in "
         pretty expr
@@ -981,8 +978,7 @@ instance Pretty Exp where
 
     prettyPrint (MultiIf _ guardedrhss) = do
         write "if"
-        newline
-        indented . lined $ map GuardedAlt guardedrhss
+        withIndent cfgIndentMultiIf . lined $ map GuardedAlt guardedrhss
 
     prettyPrint (Case _ expr alts) = do
         write "case "
@@ -990,19 +986,15 @@ instance Pretty Exp where
         write " of"
         if null alts
             then write " { }"
-            else do
-                newline
-                indented $ lined alts
+            else withIndent cfgIndentCase $ lined alts
 
     prettyPrint (Do _ stmts) = do
         write "do"
-        newline
-        indented $ lined stmts
+        withIndent cfgIndentDo $ lined stmts
 
     prettyPrint (MDo _ stmts) = do
         write "mdo"
-        newline
-        indented $ lined stmts
+        withIndent cfgIndentDo $ lined stmts
 
     prettyPrint (Tuple _ boxed exprs) = case boxed of
         Boxed -> list Expression "(" ")" "," exprs
@@ -1198,9 +1190,7 @@ instance Pretty Exp where
         write "\\case"
         if null alts
             then write " { }"
-            else do
-                newline
-                indented $ lined alts
+            else withIndent cfgIndentCase $ lined alts
 
     prettyPrint (ExprHole _) = write "_"
 

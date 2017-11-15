@@ -283,14 +283,14 @@ foo = let x = if True then False else True in x
 ``` haskell
 if True then False else True
 
-if the condition evaluates
-    to true then execute the first branch else execute the second branch
+if the condition evaluates to true
+then execute the first branch else execute the second branch
 
 if cond -- comment
  then true else false
 
 if cond then do
-    return () else return ()
+        return () else return ()
 
 do
     if cond then true else false

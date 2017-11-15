@@ -10,6 +10,11 @@ import qualified Data.Map.Strict as Map
 
 import           Floskell.Types  ( ComInfoLocation(..) )
 
+data Indent = Align
+            | IndentBy !Int
+            | AlignOrIndentBy !Int
+    deriving (Eq, Show)
+
 data LayoutContext = Declaration | Type | Pattern | Expression | Other
     deriving (Eq, Ord, Show)
 
@@ -39,6 +44,27 @@ instance Default PenaltyConfig where
                         , penaltyOverfull = 10
                         , penaltyOverfullOnce = 200
                         }
+
+data IndentConfig = IndentConfig { cfgIndentOnside         :: !Int
+                                 , cfgIndentCase           :: !Indent
+                                 , cfgIndentClass          :: !Indent
+                                 , cfgIndentDo             :: !Indent
+                                 , cfgIndentLet            :: !Indent
+                                 , cfgIndentMultiIf        :: !Indent
+                                 , cfgIndentWhere          :: !Indent
+                                 , cfgIndentExportSpecList :: !Indent
+                                 }
+
+instance Default IndentConfig where
+    def = IndentConfig { cfgIndentOnside = 4
+                       , cfgIndentCase = IndentBy 4
+                       , cfgIndentClass = IndentBy 4
+                       , cfgIndentDo = IndentBy 4
+                       , cfgIndentLet = Align
+                       , cfgIndentMultiIf = IndentBy 4
+                       , cfgIndentWhere = IndentBy 4
+                       , cfgIndentExportSpecList = Align
+                       }
 
 newtype OpConfig = OpConfig { unOpConfig :: ConfigMap Whitespace }
 
@@ -73,6 +99,7 @@ instance Default ModuleConfig where
                        }
 
 data FlexConfig = FlexConfig { cfgPenalty :: !PenaltyConfig
+                             , cfgIndent  :: !IndentConfig
                              , cfgOp      :: !OpConfig
                              , cfgGroup   :: !GroupConfig
                              , cfgModule  :: !ModuleConfig
@@ -80,6 +107,7 @@ data FlexConfig = FlexConfig { cfgPenalty :: !PenaltyConfig
 
 instance Default FlexConfig where
     def = FlexConfig { cfgPenalty = def
+                     , cfgIndent = def
                      , cfgOp = def
                      , cfgGroup = def
                      , cfgModule = def
