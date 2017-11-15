@@ -89,11 +89,12 @@ lined :: (Annotated ast, Pretty ast) => [ast NodeInfo] -> Printer FlexConfig ()
 lined = inter newline . map (cut . pretty)
 
 listVinternal :: (Annotated ast, Pretty ast)
-              => ByteString
+              => LayoutContext
+              -> ByteString
               -> [ast NodeInfo]
               -> Printer FlexConfig ()
-listVinternal sep xs = aligned $ do
-    ws <- getConfig (cfgOpWs sep . cfgOp)
+listVinternal ctx sep xs = aligned $ do
+    ws <- getConfig (cfgOpWs ctx sep . cfgOp)
     nl <- gets psNewline
     col <- getNextColumn
     let correction = if wsLinebreak After ws
@@ -111,7 +112,7 @@ listVinternal sep xs = aligned $ do
                 printCommentsSimple After x
             forM_ xs' $ \x' -> do
                 printComments Before x'
-                column sepCol $ operatorV sep
+                column sepCol $ operatorV ctx sep
                 cut $ prettyPrint x'
                 printComments After x'
   where
@@ -125,85 +126,92 @@ listVinternal sep xs = aligned $ do
                                                        comment
 
 listH :: (Annotated ast, Pretty ast)
-      => ByteString
+      => LayoutContext
+      -> ByteString
       -> ByteString
       -> ByteString
       -> [ast NodeInfo]
       -> Printer FlexConfig ()
-listH open close _ [] = do
+listH _ open close _ [] = do
     write open
     write close
 
-listH open close sep xs =
-    groupH open close . inter (operatorH sep) $ map pretty xs
+listH ctx open close sep xs =
+    groupH ctx open close . inter (operatorH ctx sep) $ map pretty xs
 
 listV :: (Annotated ast, Pretty ast)
-      => ByteString
+      => LayoutContext
+      -> ByteString
       -> ByteString
       -> ByteString
       -> [ast NodeInfo]
       -> Printer FlexConfig ()
-listV open close sep xs = groupV open close $ do
-    ws <- getConfig (cfgOpWs sep . cfgOp)
-    ws' <- getConfig (cfgGroupWs open . cfgGroup)
+listV ctx open close sep xs = groupV ctx open close $ do
+    ws <- getConfig (cfgOpWs ctx sep . cfgOp)
+    ws' <- getConfig (cfgGroupWs ctx open . cfgGroup)
     unless ((wsLinebreak Before ws')
             || (wsSpace After ws')
             || (wsLinebreak After ws)
             || not (wsSpace After ws))
            space
-    listVinternal sep xs
+    listVinternal ctx sep xs
 
 list :: (Annotated ast, Pretty ast)
-     => ByteString
+     => LayoutContext
+     -> ByteString
      -> ByteString
      -> ByteString
      -> [ast NodeInfo]
      -> Printer FlexConfig ()
-list open close sep xs = oneline hor <|> ver
+list ctx open close sep xs = oneline hor <|> ver
   where
-    hor = listH open close sep xs
-    ver = listV open close sep xs
+    hor = listH ctx open close sep xs
+    ver = listV ctx open close sep xs
 
 listH' :: (Annotated ast, Pretty ast)
-       => ByteString
+       => LayoutContext
+       -> ByteString
        -> ByteString
        -> [ast NodeInfo]
        -> Printer FlexConfig ()
-listH' op sep xs = do
-    operator op
-    inter (operatorH sep) $ map pretty xs
+listH' ctx op sep xs = do
+    operator ctx op
+    inter (operatorH ctx sep) $ map pretty xs
 
 listV' :: (Annotated ast, Pretty ast)
-       => ByteString
+       => LayoutContext
+       -> ByteString
        -> ByteString
        -> [ast NodeInfo]
        -> Printer FlexConfig ()
-listV' op sep xs = do
-    operator op
-    listVinternal sep xs
+listV' ctx op sep xs = do
+    operator ctx op
+    listVinternal ctx sep xs
 
 list' :: (Annotated ast, Pretty ast)
-      => ByteString
+      => LayoutContext
+      -> ByteString
       -> ByteString
       -> [ast NodeInfo]
       -> Printer FlexConfig ()
-list' op sep xs = oneline hor <|> ver
+list' ctx op sep xs = oneline hor <|> ver
   where
-    hor = listH' op sep xs
-    ver = listV' op sep xs
+    hor = listH' ctx op sep xs
+    ver = listV' ctx op sep xs
 
 listAutoWrap :: (Annotated ast, Pretty ast)
-             => ByteString
+             => LayoutContext
+             -> ByteString
              -> ByteString
              -> ByteString
              -> [ast NodeInfo]
              -> Printer FlexConfig ()
-listAutoWrap open close _ [] = do
+listAutoWrap _ open close _ [] = do
     write open
     write close
 
-listAutoWrap open close sep (x : xs) = groupH open close . aligned $ do
-    ws <- getConfig (cfgOpWs sep . cfgOp)
+listAutoWrap ctx open close sep (x : xs) = groupH ctx open close . aligned $ do
+    ws <- getConfig (cfgOpWs ctx sep . cfgOp)
     let correction = if wsLinebreak After ws
                      then 0
                      else BS.length sep + if wsSpace After ws then 1 else 0
@@ -212,7 +220,7 @@ listAutoWrap open close sep (x : xs) = groupH open close . aligned $ do
     forM_ xs $ \x' -> do
         printComments Before x'
         cut $ do
-            column (col - fromIntegral correction) $ operator sep
+            column (col - fromIntegral correction) $ operator ctx sep
             prettyPrint x'
             printComments After x'
 
@@ -321,7 +329,7 @@ instance Pretty WarningText where
     prettyPrint (WarnText _ s) = write "{-# WARNING " >> string (show s) >> write " #-}"
 
 instance Pretty ExportSpecList where
-    prettyPrint (ExportSpecList _ exports) = listAutoWrap "(" ")" "," exports
+    prettyPrint (ExportSpecList _ exports) = listAutoWrap Other "(" ")" "," exports
 
 instance Pretty ExportSpec
 
@@ -345,7 +353,7 @@ instance Pretty ImportSpecList where
         sortP <- getConfig (cfgModuleSortImportLists . cfgModule)
         let specs' = if sortP then sortOn HSE.prettyPrint specs else specs
         when hiding $ write "hiding "
-        listAutoWrap "(" ")" "," specs'
+        listAutoWrap Other "(" ")" "," specs'
 
 instance Pretty ImportSpec
 
@@ -354,7 +362,7 @@ instance Pretty Assoc
 instance Pretty Decl where
     prettyPrint (TypeDecl _ declhead ty) = depend "type" $ do
         pretty declhead
-        operator "="
+        operator Declaration "="
         pretty ty
 
     prettyPrint (TypeFamDecl _ declhead mresultsig minjectivityinfo) =
@@ -376,7 +384,7 @@ instance Pretty Decl where
         depend' (pretty dataornew) $ do
             mapM_ pretty mcontext
             pretty declhead
-            unless (null qualcondecls) $ list' "=" "|" qualcondecls
+            unless (null qualcondecls) $ list' Declaration "=" "|" qualcondecls
         mapM_ pretty mderiving
 
     prettyPrint (GDataDecl _ dataornew mcontext declhead mkind gadtdecls mderiving) = do
@@ -384,7 +392,7 @@ instance Pretty Decl where
             mapM_ pretty mcontext
             pretty declhead
             mayM_ mkind $ \kind -> do
-                operator "::"
+                operator Declaration "::"
                 pretty kind
             write " where"
             newline
@@ -399,20 +407,20 @@ instance Pretty Decl where
 
     prettyPrint (TypeInsDecl _ ty ty') = depend "type instance" $ do
         pretty ty
-        operator "="
+        operator Declaration "="
         pretty ty'
 
     prettyPrint (DataInsDecl _ dataornew ty qualcondecls mderiving) = do
         depend' (pretty dataornew >> write " instance") $ do
             pretty ty
-            list' "=" "|" qualcondecls
+            list' Declaration "=" "|" qualcondecls
         mapM_ pretty mderiving
 
     prettyPrint (GDataInsDecl _ dataornew ty mkind gadtdecls mderiving) = do
         depend' (pretty dataornew >> write " instance") $ do
             pretty ty
             mayM_ mkind $ \kind -> do
-                operator "::"
+                operator Declaration "::"
                 pretty kind
             write " where"
             newline
@@ -423,7 +431,7 @@ instance Pretty Decl where
         depend "class" $ do
             mapM_ pretty mcontext
             pretty declhead
-            unless (null fundeps) $ list' "|" "," fundeps
+            unless (null fundeps) $ list' Declaration "|" "," fundeps
         mayM_ mclassdecls $ \decls -> do
             write " where"
             newline
@@ -450,19 +458,19 @@ instance Pretty Decl where
 
     prettyPrint (DefaultDecl _ types) = do
         write "default "
-        listAutoWrap "(" ")" "," types
+        listAutoWrap Other "(" ")" "," types
 
     prettyPrint (SpliceDecl _ expr) = pretty expr
 
     prettyPrint (TypeSig _ names ty) = do
         inter comma $ map pretty names
         indented $ do
-            operator "::"
+            operator Declaration "::"
             pretty ty
 
     prettyPrint (PatSynSig _ name mtyvarbinds mcontext mcontext' ty) = depend "pattern" $ do
         pretty name
-        operator "::"
+        operator Declaration "::"
         mapM_ prettyForall mtyvarbinds
         mayM_ mcontext pretty
         mayM_ mcontext' pretty
@@ -478,7 +486,7 @@ instance Pretty Decl where
     prettyPrint (PatSyn _ pat pat' patternsyndirection) = do
         depend "pattern" $ do
             pretty pat
-            operator sep
+            operator Declaration sep
             pretty pat'
         case patternsyndirection of
             ExplicitBidirectional _ decls ->
@@ -497,7 +505,7 @@ instance Pretty Decl where
             mayM_ mstring $ withPrefix space (string . show)
             space
             pretty name
-            operator "::"
+            operator Declaration "::"
             pretty ty
 
     prettyPrint (ForExp _ callconv mstring name ty) = depend "foreign export" $ do
@@ -505,7 +513,7 @@ instance Pretty Decl where
         mayM_ mstring $ withPrefix space (string . show)
         space
         pretty name
-        operator "::"
+        operator Declaration "::"
         pretty ty
 
     prettyPrint (RulePragmaDecl _ rules) =
@@ -548,14 +556,14 @@ instance Pretty Decl where
         prettyPragma "SPECIALISE" $ do
             mayM_ mactivation $ withPostfix space pretty
             pretty qname
-            operator "::"
+            operator Declaration "::"
             inter comma $ map pretty types
 
     prettyPrint (SpecInlineSig _ inline mactivation qname types) =
         prettyPragma name $ do
             mayM_ mactivation $ withPostfix space pretty
             pretty qname
-            operator "::"
+            operator Declaration "::"
             inter comma $ map pretty types
       where
         name = if inline then "SPECIALISE INLINE" else "SPECIALISE NOINLINE"
@@ -618,23 +626,23 @@ instance Pretty Binds where
 instance Pretty IPBind where
     prettyPrint (IPBind _ ipname expr) = do
         pretty ipname
-        operator "="
+        operator Declaration "="
         pretty expr
 
 instance Pretty InjectivityInfo where
     prettyPrint (InjectivityInfo _ name names) = do
-        operator "|"
+        operator Declaration "|"
         pretty name
-        operator "->"
+        operator Declaration "->"
         inter space $ map pretty names
 
 instance Pretty ResultSig where
     prettyPrint (KindSig _ kind) = do
-        operator "::"
+        operator Declaration "::"
         pretty kind
 
     prettyPrint (TyVarSig _ tyvarbind) = do
-        operator "="
+        operator Declaration "="
         pretty tyvarbind
 
 instance Pretty ClassDecl where
@@ -655,7 +663,7 @@ instance Pretty ClassDecl where
 
     prettyPrint (ClsDefSig _ name ty) = depend "default" $ do
         pretty name
-        operator "::"
+        operator Declaration "::"
         pretty ty
 
 instance Pretty InstDecl where
@@ -663,20 +671,20 @@ instance Pretty InstDecl where
 
     prettyPrint (InsType _ ty ty') = depend "type" $ do
         pretty ty
-        operator "="
+        operator Declaration "="
         pretty ty'
 
     prettyPrint (InsData _ dataornew ty qualcondecls mderiving) =
         depend' (pretty dataornew) $ do
             pretty ty
-            unless (null qualcondecls) $ list' "=" "|" qualcondecls
+            unless (null qualcondecls) $ list' Declaration "=" "|" qualcondecls
             mapM_ pretty mderiving
 
     prettyPrint (InsGData _ dataornew ty mkind gadtdecls mderiving) =
         depend' (pretty dataornew) $ do
             pretty ty
             mayM_ mkind $ withPrefix space pretty
-            unless (null gadtdecls) $ list' "=" "|" gadtdecls
+            unless (null gadtdecls) $ list' Declaration "=" "|" gadtdecls
             mapM_ pretty mderiving
 
 instance Pretty Deriving where
@@ -686,7 +694,7 @@ instance Pretty Deriving where
             write "deriving "
             case instrules of
                 [ i@IRule{} ] -> pretty i
-                _ -> listAutoWrap "(" ")" "," instrules'
+                _ -> listAutoWrap Other "(" ")" "," instrules'
       where
         instrules' = case instrules of
             [ IParen _ i ] -> [ i ]
@@ -712,14 +720,14 @@ instance Pretty ConDecl where
         sepSpace
         oneline flex <|> vertical
       where
-        flex = listH "{" "}" "," fielddecls
-        vertical = listV "{" "}" "," fielddecls
+        flex = listH Declaration "{" "}" "," fielddecls
+        vertical = listV Declaration "{" "}" "," fielddecls
 
 instance Pretty FieldDecl where
     prettyPrint (FieldDecl _ names ty) = do
         inter comma $ map pretty names
         indented $ do
-            operator "::"
+            operator Declaration "::"
             pretty ty
 
 instance Pretty QualConDecl where
@@ -731,14 +739,14 @@ instance Pretty QualConDecl where
 instance Pretty GadtDecl where
     prettyPrint (GadtDecl _ name mfielddecls ty) = do
         pretty name
-        operator "::"
+        operator Declaration "::"
         mayM_ mfielddecls $ \decls -> do
             oneline (flex decls) <|> vertical decls
-            operator "->"
+            operator Type "->"
         pretty ty
       where
-        flex = listH "{" "}" ","
-        vertical = listV "{" "}" ","
+        flex = listH Declaration "{" "}" ","
+        vertical = listV Declaration "{" "}" ","
 
 instance Pretty Match where
     prettyPrint (Match _ name pats rhs mbinds) = do
@@ -758,36 +766,36 @@ instance Pretty Match where
 
 instance Pretty Rhs where
     prettyPrint (UnGuardedRhs _ expr) = cut . indented $ do
-        operator "="
+        operator Declaration "="
         pretty expr
 
     prettyPrint (GuardedRhss _ guardedrhss) = aligned $ lined guardedrhss
 
 instance Pretty GuardedRhs where
     prettyPrint (GuardedRhs _ stmts expr) = do
-        operator "|"
+        operator Declaration "|"
         inter comma $ map pretty stmts
         indented $ do
-            operator "="
+            operator Declaration "="
             pretty expr
 
 instance Pretty Context where
     prettyPrint (CxSingle _ asst) = do
         pretty asst
-        operator "=>"
+        operator Type "=>"
 
     prettyPrint (CxTuple _ assts) = do
-        list "(" ")" "," assts
-        operator "=>"
+        list Type "(" ")" "," assts
+        operator Type "=>"
 
     prettyPrint (CxEmpty _) = do
         write "()"
-        operator "=>"
+        operator Type "=>"
 
 instance Pretty FunDep where
     prettyPrint (FunDep _ names names') = do
         inter space $ map pretty names
-        operator "->"
+        operator Declaration "->"
         inter space $ map pretty names'
 
 instance Pretty Asst where
@@ -808,12 +816,12 @@ instance Pretty Asst where
 
     prettyPrint (IParam _ ipname ty) = do
         pretty ipname
-        operator "::"
+        operator Type "::"
         pretty ty
 
     prettyPrint (EqualP _ ty ty') = do
         pretty ty
-        operator "~"
+        operator Type "~"
         pretty ty'
 
     prettyPrint (ParenA _ asst) = parens $ pretty asst
@@ -830,16 +838,16 @@ instance Pretty Type where
 
     prettyPrint (TyFun _ ty ty') = do
         pretty ty
-        operator "->"
+        operator Type "->"
         pretty ty'
 
     prettyPrint (TyTuple _ boxed tys) = case boxed of
-        Unboxed -> list "(#" "#)" "," tys
-        Boxed -> list "(" ")" "," tys
+        Unboxed -> list Type "(#" "#)" "," tys
+        Boxed -> list Type "(" ")" "," tys
 
-    prettyPrint (TyList _ ty) = group "[" "]" $ pretty ty
+    prettyPrint (TyList _ ty) = group Type "[" "]" $ pretty ty
 
-    prettyPrint (TyParArray _ ty) = group "[:" ":]" $ pretty ty
+    prettyPrint (TyParArray _ ty) = group Type "[:" ":]" $ pretty ty
 
     prettyPrint (TyApp _ ty ty') = do
         pretty ty
@@ -859,14 +867,14 @@ instance Pretty Type where
 
     prettyPrint (TyKind _ ty kind) = do
         pretty ty
-        operator "::"
+        operator Type "::"
         pretty kind
 
     prettyPrint t@(TyPromoted _ _promoted) = prettyHSE t
 
     prettyPrint (TyEquals _ ty ty') = do
         pretty ty
-        operator "~"
+        operator Type  "~"
         pretty ty'
 
     prettyPrint (TySplice _ splice) = pretty splice
@@ -890,7 +898,7 @@ instance Pretty Kind where
 
     prettyPrint (KindFn _ kind kind') = do
         pretty kind
-        operator "->"
+        operator Type "->"
         pretty kind'
 
     prettyPrint (KindParen _ kind) = parens $ pretty kind
@@ -902,14 +910,14 @@ instance Pretty Kind where
         space
         pretty kind'
 
-    prettyPrint (KindTuple _ kinds) = list "'(" ")" "," kinds
+    prettyPrint (KindTuple _ kinds) = list Type "'(" ")" "," kinds
 
-    prettyPrint (KindList _ kind) = group "'[" "]" $ pretty kind
+    prettyPrint (KindList _ kind) = group Type "'[" "]" $ pretty kind
 
 instance Pretty TyVarBind where
     prettyPrint (KindedVar _ name kind) = parens $ do
         pretty name
-        operator "::"
+        operator Type "::"
         pretty kind
 
     prettyPrint (UnkindedVar _ name) = pretty name
@@ -917,7 +925,7 @@ instance Pretty TyVarBind where
 instance Pretty TypeEqn where
     prettyPrint (TypeEqn _ ty ty') = do
         pretty ty
-        operator "="
+        operator Type "="
         pretty ty'
 
 instance Pretty Exp where
@@ -951,7 +959,7 @@ instance Pretty Exp where
         write "\\"
         space
         inter space $ map pretty pats
-        operator "->"
+        operator Expression "->"
         pretty expr
 
     prettyPrint (Let _ binds expr) = aligned $ do
@@ -997,16 +1005,16 @@ instance Pretty Exp where
         indented $ lined stmts
 
     prettyPrint (Tuple _ boxed exprs) = case boxed of
-        Boxed -> list "(" ")" "," exprs
-        Unboxed -> list "(#" "#)" "," exprs
+        Boxed -> list Expression "(" ")" "," exprs
+        Unboxed -> list Expression "(#" "#)" "," exprs
 
     prettyPrint (TupleSection _ boxed mexprs) = case boxed of
-        Boxed -> list "(" ")" "," $ map MayAst mexprs
-        Unboxed -> list "(#" "#)" "," $ map MayAst mexprs
+        Boxed -> list Expression "(" ")" "," $ map MayAst mexprs
+        Unboxed -> list Expression "(#" "#)" "," $ map MayAst mexprs
 
-    prettyPrint (List _ exprs) = list "[" "]" "," exprs
+    prettyPrint (List _ exprs) = list Expression "[" "]" "," exprs
 
-    prettyPrint (ParArray _ exprs) = list "[:" ":]" "," exprs
+    prettyPrint (ParArray _ exprs) = list Expression "[:" ":]" "," exprs
 
     prettyPrint (Paren _ expr) = parens $ pretty expr
 
@@ -1023,64 +1031,64 @@ instance Pretty Exp where
     prettyPrint (RecConstr _ qname fieldupdates) = do
         pretty qname
         sepSpace
-        list "{" "}" "," fieldupdates
+        list Expression "{" "}" "," fieldupdates
 
     prettyPrint (RecUpdate _ expr fieldupdates) = do
         pretty expr
         sepSpace
-        list "{" "}" "," fieldupdates
+        list Expression "{" "}" "," fieldupdates
 
-    prettyPrint (EnumFrom _ expr) = group "[" "]" $ do
+    prettyPrint (EnumFrom _ expr) = group Expression "[" "]" $ do
         pretty expr
-        operator ".."
+        operator Expression ".."
 
-    prettyPrint (EnumFromTo _ expr expr') = group "[" "]" $ do
+    prettyPrint (EnumFromTo _ expr expr') = group Expression "[" "]" $ do
         pretty expr
-        operator ".."
+        operator Expression ".."
         pretty expr'
 
-    prettyPrint (EnumFromThen _ expr expr') = group "[" "]" $ do
+    prettyPrint (EnumFromThen _ expr expr') = group Expression "[" "]" $ do
         pretty expr
         comma
         pretty expr'
-        operator ".."
+        operator Expression ".."
 
-    prettyPrint (EnumFromThenTo _ expr expr' expr'') = group "[" "]" $ do
+    prettyPrint (EnumFromThenTo _ expr expr' expr'') = group Expression "[" "]" $ do
         pretty expr
         comma
         pretty expr'
-        operator ".."
+        operator Expression ".."
         pretty expr''
 
-    prettyPrint (ParArrayFromTo _ expr expr') = group "[:" ":]" $ do
+    prettyPrint (ParArrayFromTo _ expr expr') = group Expression "[:" ":]" $ do
         pretty expr
-        operator ".."
+        operator Expression ".."
         pretty expr'
 
-    prettyPrint (ParArrayFromThenTo _ expr expr' expr'') = group "[:" ":]" $ do
+    prettyPrint (ParArrayFromThenTo _ expr expr' expr'') = group Expression "[:" ":]" $ do
         pretty expr
         comma
         pretty expr'
-        operator ".."
+        operator Expression ".."
         pretty expr''
 
-    prettyPrint (ListComp _ expr qualstmts) = group "[" "]" $ do
+    prettyPrint (ListComp _ expr qualstmts) = group Expression "[" "]" $ do
         pretty expr
-        list' "|" "," qualstmts
+        list' Expression "|" "," qualstmts
 
-    prettyPrint (ParComp _ expr qualstmtss) = group "[" "]" $ do
+    prettyPrint (ParComp _ expr qualstmtss) = group Expression "[" "]" $ do
         pretty expr
         aligned . inter newline . flip map qualstmtss $ \qualstmts ->
-            cut $ list' "|" "," qualstmts
+            cut $ list' Expression "|" "," qualstmts
 
-    prettyPrint (ParArrayComp _ expr qualstmtss) = group "[:" ":]" $ do
+    prettyPrint (ParArrayComp _ expr qualstmtss) = group Expression "[:" ":]" $ do
         pretty expr
         aligned . inter newline . flip map qualstmtss $ \qualstmts ->
-            cut $ list' "|" "," qualstmts
+            cut $ list' Expression "|" "," qualstmts
 
     prettyPrint (ExpTypeSig _ expr typ) = do
         pretty expr
-        operator "::"
+        operator Expression "::"
         pretty typ
 
     prettyPrint (VarQuote _ qname) = do
@@ -1163,27 +1171,27 @@ instance Pretty Exp where
     prettyPrint (Proc _ pat expr) = do
         write "proc "
         pretty pat
-        operator "->"
+        operator Expression "->"
         pretty expr
 
     prettyPrint (LeftArrApp _ expr expr') = do
         pretty expr
-        operator "-<"
+        operator Expression "-<"
         pretty expr'
 
     prettyPrint (RightArrApp _ expr expr') = do
         pretty expr
-        operator ">-"
+        operator Expression ">-"
         pretty expr'
 
     prettyPrint (LeftArrHighApp _ expr expr') = do
         pretty expr
-        operator "-<<"
+        operator Expression "-<<"
         pretty expr'
 
     prettyPrint (RightArrHighApp _ expr expr') = do
         pretty expr
-        operator ">>-"
+        operator Expression ">>-"
         pretty expr'
 
     prettyPrint (LCase _ alts) = do
@@ -1205,7 +1213,7 @@ instance Pretty Alt where
 instance Pretty XAttr where
     prettyPrint (XAttr _ xname expr) = do
         pretty xname
-        operator "="
+        operator Expression "="
         pretty expr
 
 instance Pretty Pat where
@@ -1219,7 +1227,7 @@ instance Pretty Pat where
 
     prettyPrint (PNPlusK _ name integer) = do
         pretty name
-        operator "+"
+        operator Pattern "+"
         int integer
 
     prettyPrint (PInfixApp _ pat qname pat') = do
@@ -1232,21 +1240,21 @@ instance Pretty Pat where
         forM_ pats $ withPrefix space pretty
 
     prettyPrint (PTuple _ boxed pats) = case boxed of
-        Boxed -> list "(" ")" "," pats
-        Unboxed -> list "(#" "#)" "," pats
+        Boxed -> list Pattern "(" ")" "," pats
+        Unboxed -> list Pattern "(#" "#)" "," pats
 
-    prettyPrint (PList _ pats) = list "[" "]" "," pats
+    prettyPrint (PList _ pats) = list Pattern "[" "]" "," pats
 
     prettyPrint (PParen _ pat) = parens $ pretty pat
 
     prettyPrint (PRec _ qname patfields) = do
         pretty qname
         sepSpace
-        list "{" "}" "," patfields
+        list Pattern "{" "}" "," patfields
 
     prettyPrint (PAsPat _ name pat) = do
         pretty name
-        operator "@"
+        operator Pattern "@"
         pretty pat
 
     prettyPrint (PWildCard _) = write "_"
@@ -1257,15 +1265,15 @@ instance Pretty Pat where
 
     prettyPrint (PatTypeSig _ pat ty) = do
         pretty pat
-        operator "::"
+        operator Pattern "::"
         pretty ty
 
     prettyPrint (PViewPat _ expr pat) = do
         pretty expr
-        operator "->"
+        operator Pattern "->"
         pretty pat
 
-    prettyPrint (PRPat _ rpats) = list "[" "]" "," rpats
+    prettyPrint (PRPat _ rpats) = list Pattern "[" "]" "," rpats
 
     prettyPrint (PXTag _ xname pxattrs mpat pats) = do
         write "<"
@@ -1311,7 +1319,7 @@ instance Pretty Pat where
 instance Pretty PatField where
     prettyPrint (PFieldPat _ qname pat) = do
         pretty qname
-        operator "="
+        operator Pattern "="
         pretty pat
 
     prettyPrint (PFieldPun _ qname) = pretty qname
@@ -1321,7 +1329,7 @@ instance Pretty PatField where
 instance Pretty PXAttr where
     prettyPrint (PXAttr _ xname pat) = do
         pretty xname
-        operator "="
+        operator Pattern "="
         pretty pat
 
 instance Pretty Literal where
@@ -1395,7 +1403,7 @@ instance Pretty QualStmt where
 instance Pretty Stmt where
     prettyPrint (Generator _ pat expr) = do
         pretty pat
-        operator "<-"
+        operator Expression "<-"
         pretty expr
 
     prettyPrint (Qualifier _ expr) = pretty expr
@@ -1411,7 +1419,7 @@ instance Pretty Stmt where
 instance Pretty FieldUpdate where
     prettyPrint (FieldUpdate _ qname expr) = do
         pretty qname
-        operator "="
+        operator Expression "="
         pretty expr
 
     prettyPrint (FieldPun _ qname) = pretty qname
@@ -1419,7 +1427,7 @@ instance Pretty FieldUpdate where
     prettyPrint (FieldWildcard _) = write ".."
 
 instance Pretty QOp where
-    prettyPrint qop = withOperatorFormatting (opName qop) (prettyHSE qop) (return ())
+    prettyPrint qop = withOperatorFormatting Expression (opName qop) (prettyHSE qop) (return ())
       where
         opName (QVarOp _ qname) = opName' qname
         opName (QConOp _ qname) = opName' qname
@@ -1437,20 +1445,20 @@ instance Pretty Op where
     prettyPrint (ConOp l name) = prettyPrint (QConOp l (UnQual noNodeInfo name))
 
 instance Pretty Bracket where
-    prettyPrint (ExpBracket _ expr) = group "[|" "|]" $ pretty expr
+    prettyPrint (ExpBracket _ expr) = group Expression "[|" "|]" $ pretty expr
 
-    prettyPrint (PatBracket _ pat) = group "[p|" "|]" $ pretty pat
+    prettyPrint (PatBracket _ pat) = group Expression "[p|" "|]" $ pretty pat
 
-    prettyPrint (TypeBracket _ ty) = group "[t|" "|]" $ pretty ty
+    prettyPrint (TypeBracket _ ty) = group Expression "[t|" "|]" $ pretty ty
 
-    prettyPrint (DeclBracket _ decls) = group "[d|" "|]" . aligned $ lined decls
+    prettyPrint (DeclBracket _ decls) = group Expression "[d|" "|]" . aligned $ lined decls
 
 instance Pretty Splice where
     prettyPrint (IdSplice _ str) = do
         write "$"
         string str
 
-    prettyPrint (ParenSplice _ expr) = group "$(" ")" $ pretty expr
+    prettyPrint (ParenSplice _ expr) = group Expression "$(" ")" $ pretty expr
 
 instance Pretty ModulePragma where
     prettyPrint (LanguagePragma _ names) =
@@ -1471,7 +1479,7 @@ instance Pretty Rule where
         mayM_ mactivation $ withPostfix space pretty
         mapM_ prettyForall mrulevars
         pretty expr
-        operator "="
+        operator Expression "="
         pretty expr'
 
 instance Pretty RuleVar where
@@ -1479,7 +1487,7 @@ instance Pretty RuleVar where
 
     prettyPrint (TypedRuleVar _ name ty) = parens $ do
         pretty name
-        operator "::"
+        operator Expression "::"
         pretty ty
 
 instance Pretty Activation where
@@ -1512,7 +1520,7 @@ instance Pretty BooleanFormula where
         inter comma $ map pretty booleanformulas
 
     prettyPrint (OrFormula _ booleanformulas) =
-        inter (operator "|") $ map pretty booleanformulas
+        inter (operator Expression "|") $ map pretty booleanformulas
 
     prettyPrint (ParenFormula _ booleanformula) = parens $ pretty booleanformula
 
@@ -1547,9 +1555,9 @@ newtype GuardedAlt l = GuardedAlt (GuardedRhs l)
 
 instance Pretty GuardedAlt where
     prettyPrint (GuardedAlt (GuardedRhs _ stmts expr)) = do
-        operator "|"
+        operator Expression "|"
         inter comma $ map pretty stmts
-        operator "->"
+        operator Expression "->"
         indented $ pretty expr
 
 newtype GuardedAlts l = GuardedAlts (Rhs l)
@@ -1557,7 +1565,7 @@ newtype GuardedAlts l = GuardedAlts (Rhs l)
 
 instance Pretty GuardedAlts where
     prettyPrint (GuardedAlts (UnGuardedRhs _ expr)) = cut . indented $ do
-        operator "->"
+        operator Expression "->"
         pretty expr
 
     prettyPrint (GuardedAlts (GuardedRhss _ guardedrhss)) =

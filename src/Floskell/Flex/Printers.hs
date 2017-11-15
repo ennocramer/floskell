@@ -94,41 +94,46 @@ indented = P.indentedBlock
 depend :: ByteString -> Printer FlexConfig a -> Printer FlexConfig a
 depend kw = depend' (write kw)
 
-depend' :: Printer FlexConfig () -> Printer FlexConfig a -> Printer FlexConfig a
+depend' :: Printer FlexConfig ()
+        -> Printer FlexConfig a
+        -> Printer FlexConfig a
 depend' kw p = do
     kw
     space
     indented p
 
-group :: ByteString
+group :: LayoutContext
+      -> ByteString
       -> ByteString
       -> Printer FlexConfig ()
       -> Printer FlexConfig ()
-group open close p = do
-    force <- getConfig (wsForceLinebreak . cfgGroupWs open . cfgGroup)
+group ctx open close p = do
+    force <- getConfig (wsForceLinebreak . cfgGroupWs ctx open . cfgGroup)
     if force then vert else oneline hor <|> vert
   where
-    hor = groupH open close p
-    vert = groupV open close p
+    hor = groupH ctx open close p
+    vert = groupV ctx open close p
 
-groupH :: ByteString
+groupH :: LayoutContext
+       -> ByteString
        -> ByteString
        -> Printer FlexConfig ()
        -> Printer FlexConfig ()
-groupH open close p = do
-    ws <- getConfig (cfgGroupWs open . cfgGroup)
+groupH ctx open close p = do
+    ws <- getConfig (cfgGroupWs ctx open . cfgGroup)
     write open
     when (wsSpace Before ws) space
     p
     when (wsSpace After ws) space
     write close
 
-groupV :: ByteString
+groupV :: LayoutContext
+       -> ByteString
        -> ByteString
        -> Printer FlexConfig ()
        -> Printer FlexConfig ()
-groupV open close p = aligned $ do
-    ws <- getConfig (cfgGroupWs open . cfgGroup)
+groupV ctx open close p = aligned $ do
+    ws <- getConfig (cfgGroupWs ctx open . cfgGroup)
     write open
     if wsLinebreak Before ws then newline else when (wsSpace Before ws) space
     p
@@ -137,56 +142,68 @@ groupV open close p = aligned $ do
 
 sepSpace :: Printer FlexConfig ()
 sepSpace = do
-    sp <- getConfig (wsSpaces . cfgOpWsDefault . cfgOp)
+    sp <- getConfig (wsSpaces . cfgMapDefault . unOpConfig . cfgOp)
     when (sp /= WsNone) space
 
-operator :: ByteString -> Printer FlexConfig ()
-operator op = alignOnOperator op $ return ()
+operator :: LayoutContext -> ByteString -> Printer FlexConfig ()
+operator ctx op = alignOnOperator ctx op $ return ()
 
-operatorH :: ByteString -> Printer FlexConfig ()
-operatorH op = alignOnOperatorH op $ return ()
+operatorH :: LayoutContext -> ByteString -> Printer FlexConfig ()
+operatorH ctx op = alignOnOperatorH ctx op $ return ()
 
-operatorV :: ByteString -> Printer FlexConfig ()
-operatorV op = alignOnOperatorV op $ return ()
+operatorV :: LayoutContext -> ByteString -> Printer FlexConfig ()
+operatorV ctx op = alignOnOperatorV ctx op $ return ()
 
-alignOnOperator :: ByteString -> Printer FlexConfig a -> Printer FlexConfig a
-alignOnOperator op = withOperatorFormatting op (write op)
+alignOnOperator :: LayoutContext
+                -> ByteString
+                -> Printer FlexConfig a
+                -> Printer FlexConfig a
+alignOnOperator ctx op = withOperatorFormatting ctx op (write op)
 
-alignOnOperatorH :: ByteString -> Printer FlexConfig a -> Printer FlexConfig a
-alignOnOperatorH op = withOperatorFormattingH op (write op)
+alignOnOperatorH :: LayoutContext
+                 -> ByteString
+                 -> Printer FlexConfig a
+                 -> Printer FlexConfig a
+alignOnOperatorH ctx op = withOperatorFormattingH ctx op (write op)
 
-alignOnOperatorV :: ByteString -> Printer FlexConfig a -> Printer FlexConfig a
-alignOnOperatorV op = withOperatorFormattingV op (write op)
+alignOnOperatorV :: LayoutContext
+                 -> ByteString
+                 -> Printer FlexConfig a
+                 -> Printer FlexConfig a
+alignOnOperatorV ctx op = withOperatorFormattingV ctx op (write op)
 
-withOperatorFormatting :: ByteString
+withOperatorFormatting :: LayoutContext
+                       -> ByteString
                        -> Printer FlexConfig ()
                        -> Printer FlexConfig a
                        -> Printer FlexConfig a
-withOperatorFormatting op opp p = do
-    force <- getConfig (wsForceLinebreak . cfgOpWs op . cfgOp)
+withOperatorFormatting ctx op opp p = do
+    force <- getConfig (wsForceLinebreak . cfgOpWs ctx op . cfgOp)
     if force then vert else hor <|> vert
   where
-    hor = withOperatorFormattingH op opp p
-    vert = withOperatorFormattingV op opp p
+    hor = withOperatorFormattingH ctx op opp p
+    vert = withOperatorFormattingV ctx op opp p
 
-withOperatorFormattingH :: ByteString
+withOperatorFormattingH :: LayoutContext
+                        -> ByteString
                         -> Printer FlexConfig ()
                         -> Printer FlexConfig a
                         -> Printer FlexConfig a
-withOperatorFormattingH op opp p = do
-    ws <- getConfig (cfgOpWs op . cfgOp)
+withOperatorFormattingH ctx op opp p = do
+    ws <- getConfig (cfgOpWs ctx op . cfgOp)
     when (wsSpace Before ws) space
     aligned $ do
         opp
         when (wsSpace After ws) space
         p
 
-withOperatorFormattingV :: ByteString
+withOperatorFormattingV :: LayoutContext
+                        -> ByteString
                         -> Printer FlexConfig ()
                         -> Printer FlexConfig a
                         -> Printer FlexConfig a
-withOperatorFormattingV op opp p = do
-    ws <- getConfig (cfgOpWs op . cfgOp)
+withOperatorFormattingV ctx op opp p = do
+    ws <- getConfig (cfgOpWs ctx op . cfgOp)
     if wsLinebreak Before ws then newline else when (wsSpace Before ws) space
     aligned $ do
         opp
@@ -194,4 +211,4 @@ withOperatorFormattingV op opp p = do
         p
 
 comma :: Printer FlexConfig ()
-comma = operator ","
+comma = operator Expression ","

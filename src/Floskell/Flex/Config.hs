@@ -10,6 +10,9 @@ import qualified Data.Map.Strict as Map
 
 import           Floskell.Types  ( ComInfoLocation(..) )
 
+data LayoutContext = Declaration | Type | Pattern | Expression | Other
+    deriving (Eq, Ord, Show)
+
 data WsLoc = WsNone | WsBefore | WsAfter | WsBoth
     deriving (Eq, Show)
 
@@ -18,6 +21,11 @@ data Whitespace = Whitespace { wsSpaces         :: !WsLoc
                              , wsForceLinebreak :: !Bool
                              }
     deriving (Show)
+
+data ConfigMap a =
+    ConfigMap { cfgMapDefault   :: !a
+              , cfgMapOverrides :: !(Map (Maybe ByteString, Maybe LayoutContext) a)
+              }
 
 data PenaltyConfig = PenaltyConfig { penaltyLinebreak    :: !Int
                                    , penaltyIndent       :: !Int
@@ -32,28 +40,22 @@ instance Default PenaltyConfig where
                         , penaltyOverfullOnce = 200
                         }
 
-data OpConfig = OpConfig { cfgOpWsDefault   :: !Whitespace
-                         , cfgOpWsOverrides :: !(Map ByteString Whitespace)
-                         }
+newtype OpConfig = OpConfig { unOpConfig :: ConfigMap Whitespace }
 
 instance Default OpConfig where
-    def = OpConfig { cfgOpWsDefault = Whitespace WsBoth WsBefore False
-                   , cfgOpWsOverrides = Map.fromList overrides
-                   }
-      where
-        overrides = [ (",", Whitespace WsAfter WsBefore False) ]
+    def = OpConfig ConfigMap { cfgMapDefault = Whitespace WsBoth WsBefore False
+                             , cfgMapOverrides = Map.empty
+                             }
 
-data GroupConfig =
-    GroupConfig { cfgGroupWsDefault   :: !Whitespace
-                , cfgGroupWsOverrides :: !(Map ByteString Whitespace)
-                }
+newtype GroupConfig = GroupConfig { unGroupConfig :: ConfigMap Whitespace }
 
 instance Default GroupConfig where
-    def = GroupConfig { cfgGroupWsDefault = Whitespace WsBoth WsAfter False
-                      , cfgGroupWsOverrides = Map.fromList overrides
-                      }
+    def =
+        GroupConfig ConfigMap { cfgMapDefault = Whitespace WsBoth WsAfter False
+                              , cfgMapOverrides = Map.fromList overrides
+                              }
       where
-        overrides = [ ("(#", Whitespace WsBoth WsAfter False) ]
+        overrides = [ ((Just "(#", Nothing), Whitespace WsBoth WsAfter False) ]
 
 data ModuleConfig = ModuleConfig { cfgModuleSortPragmas          :: !Bool
                                  , cfgModuleSplitLanguagePragmas :: !Bool
@@ -85,17 +87,23 @@ instance Default FlexConfig where
 
 defaultFlexConfig :: FlexConfig
 defaultFlexConfig =
-    def { cfgOp = def { cfgOpWsOverrides = Map.fromList opWsOverrides } }
+    def { cfgOp = OpConfig ((unOpConfig def) { cfgMapOverrides = Map.fromList opWsOverrides }) }
   where
-    opWsOverrides = [ (",", Whitespace WsAfter WsBefore False) ]
+    opWsOverrides = [ ((Just ",", Nothing), Whitespace WsAfter WsBefore False) ]
 
-cfgOpWs :: ByteString -> OpConfig -> Whitespace
-cfgOpWs op OpConfig{..} =
-    Map.findWithDefault cfgOpWsDefault op cfgOpWsOverrides
+cfgMapFind :: LayoutContext -> ByteString -> ConfigMap a -> a
+cfgMapFind ctx key ConfigMap{..} =
+    let value = cfgMapDefault
+        value' = Map.findWithDefault value (Nothing, Just ctx) cfgMapOverrides
+        value'' = Map.findWithDefault value' (Just key, Nothing) cfgMapOverrides
+        value''' = Map.findWithDefault value'' (Just key, Just ctx) cfgMapOverrides
+    in value'''
 
-cfgGroupWs :: ByteString -> GroupConfig -> Whitespace
-cfgGroupWs op GroupConfig{..} =
-    Map.findWithDefault cfgGroupWsDefault op cfgGroupWsOverrides
+cfgOpWs :: LayoutContext -> ByteString -> OpConfig -> Whitespace
+cfgOpWs ctx op = cfgMapFind ctx op . unOpConfig
+
+cfgGroupWs :: LayoutContext -> ByteString -> GroupConfig -> Whitespace
+cfgGroupWs ctx op = cfgMapFind ctx op . unGroupConfig
 
 inWs :: ComInfoLocation -> WsLoc -> Bool
 inWs _ WsBoth = True
