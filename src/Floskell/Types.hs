@@ -133,14 +133,12 @@ data Style =
 data Config =
     Config { configMaxColumns      :: !Int64 -- ^ Maximum columns to fit code into ideally.
            , configIndentSpaces    :: !Int64 -- ^ How many spaces to indent?
-           , configClearEmptyLines :: !Bool  -- ^ Remove spaces on lines that are otherwise empty?
            }
 
 -- | Default style configuration.
 defaultConfig :: Config
 defaultConfig = Config { configMaxColumns = 80
                        , configIndentSpaces = 2
-                       , configClearEmptyLines = False
                        }
 
 -- | Information for each node in the AST.

@@ -74,7 +74,6 @@ gibiansky =
                              ]
           , styleDefConfig = defaultConfig { configMaxColumns = 100
                                            , configIndentSpaces = indentSpaces
-                                           , configClearEmptyLines = True
                                            }
           , styleCommentPreprocessor = commentPreprocessor
           , styleLinePenalty = defaultLinePenalty

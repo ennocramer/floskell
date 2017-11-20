@@ -74,7 +74,6 @@ cramer = Style { styleName = "cramer"
                                   ]
                , styleDefConfig = defaultConfig { configMaxColumns = 80
                                                 , configIndentSpaces = 4
-                                                , configClearEmptyLines = True
                                                 }
                , styleCommentPreprocessor = return
                , styleLinePenalty = linePenalty

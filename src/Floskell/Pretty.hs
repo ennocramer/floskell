@@ -289,16 +289,10 @@ getLineNum = gets psLine
 newline :: Printer s ()
 newline = do
     state <- get
-    let clearEmpty = configClearEmptyLines (psConfig state)
-        indent = if psNewline state && not clearEmpty
-                 then fromIntegral (psIndentLevel state)
-                 else 0
-        out = S.replicate indent 32
     guard $ psOutputRestriction state /= NoOverflowOrLinebreak
     penalty <- psLinePenalty state True (psColumn state)
     when (penalty /= mempty) $ cost penalty mempty
-    modify (\s -> s { psBuffer = Buffer.newline $ Buffer.write out
-                                                               (psBuffer state)
+    modify (\s -> s { psBuffer = Buffer.newline (psBuffer state)
                     , psEolComment = False
                     })
 
