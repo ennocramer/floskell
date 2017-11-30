@@ -273,7 +273,7 @@ foo = let x = 1
           y = 2 in x + y
 
 foo = let expr = do
-                  return () in expr
+              return () in expr
 
 foo = let x = if True then False else True in x
 ```
@@ -290,7 +290,7 @@ if cond -- comment
  then true else false
 
 if cond then do
-        return () else return ()
+    return () else return ()
 
 do
     if cond then true else false
@@ -304,10 +304,10 @@ Multi-way if
 
 ``` haskell
 x = if
-         | x <- Just x, x <- Just x -> case x of
-                Just x -> e
-                Nothing -> p
-         | otherwise -> e
+     | x <- Just x, x <- Just x -> case x of
+        Just x -> e
+        Nothing -> p
+     | otherwise -> e
 ```
 
 ## Case
@@ -315,17 +315,17 @@ x = if
 ``` haskell
 strToMonth :: String -> Int
 strToMonth month = case month of
-        "Jan" -> 1
-        "Feb" -> 2
-        _ -> error $ "Unknown month " ++ month
+    "Jan" -> 1
+    "Feb" -> 2
+    _ -> error $ "Unknown month " ++ month
 ```
 
 ## Do-Notation
 
 ``` haskell
 main = do
-        name <- getLine
-        putStrLn $ "Hello " ++ name ++ "!"
+    name <- getLine
+    putStrLn $ "Hello " ++ name ++ "!"
 
 main = repeatedly $ do
         getLine >>= putStrLn
@@ -413,8 +413,8 @@ x = Value <$> thing <*> secondThing <*> thirdThing <*> fourthThing <*> Just
 ``` haskell
 sayHello :: IO ()
 sayHello = do
-        name <- getLine
-        putStrLn $ greeting name
+    name <- getLine
+    putStrLn $ greeting name
   where
     greeting name = "Hello, " ++ name ++ "!"
 ```
@@ -424,9 +424,9 @@ sayHello = do
 ``` haskell
 f :: Int
 f x | x <- Just x, x <- Just x = case x of
-           Just x -> e
+       Just x -> e
     | otherwise = do
-           e
+       e
   where
     x = y
 ```
@@ -435,11 +435,11 @@ f x | x <- Just x, x <- Just x = case x of
 
 ``` haskell
 g x = case x of
-        a -> x
+    a -> x
   where
     foo = case x of
-            _ -> do
-                    launchMissiles
+        _ -> do
+            launchMissiles
       where
         y = 2
 ```
@@ -583,7 +583,7 @@ f :: Int -> Int -> (# Int, Int #)
 f x y = (# x + 1, y - 1 #)
 
 g x = case f x x of
-        (# a, b #) -> a + b
+    (# a, b #) -> a + b
 
 h x = let (# p, q #) = h x in undefined
 ```

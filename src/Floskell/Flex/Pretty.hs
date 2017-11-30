@@ -404,6 +404,27 @@ prettyPragma' name mp = do
     mayM_ mp $ withPrefix space aligned
     write " #-}"
 
+-- This is a temporary work-around to avoid some duplicate
+-- indentation and should be replaced by a better indentation
+-- algorithm once all other styles have been replaced by flex.
+maybeIndented :: (Exp NodeInfo -> Printer FlexConfig ())
+              -> Exp NodeInfo
+              -> Printer FlexConfig ()
+maybeIndented pp expr =
+    if needsIndent || commentsBefore then indented $ pp expr else pp expr
+  where
+    commentsBefore =
+        any ((== Just Before) . comInfoLocation) . nodeInfoComments $ ann expr
+
+    needsIndent = case expr of
+        Case{} -> False
+        Do{} -> False
+        If{} -> False
+        Let{} -> False
+        MDo{} -> False
+        MultiIf{} -> False
+        _ -> True
+
 instance Pretty Module where
     prettyPrint (Module _ mhead pragmas imports decls) = inter blankline $
         catMaybes [ ifNotEmpty prettyPragmas pragmas
@@ -864,14 +885,10 @@ instance Pretty Match where
 
 instance Pretty Rhs where
     prettyPrint (UnGuardedRhs _ expr) =
-        cut . indented $ withLayout cfgLayoutDeclaration flex vertical
+        cut $ withLayout cfgLayoutDeclaration flex vertical
       where
-        flex = do
-            operator Declaration "="
-            pretty expr
-        vertical = do
-            operatorV Declaration "="
-            pretty expr
+        flex = maybeIndented (withPrefix (operator Declaration "=") pretty) expr
+        vertical = maybeIndented (withPrefix (operatorV Declaration "=") pretty) expr
 
     prettyPrint (GuardedRhss _ guardedrhss) = aligned $ lined guardedrhss
 
@@ -879,9 +896,7 @@ instance Pretty GuardedRhs where
     prettyPrint (GuardedRhs _ stmts expr) = do
         operator Declaration "|"
         inter comma $ map pretty stmts
-        indented $ do
-            operator Declaration "="
-            pretty expr
+        maybeIndented (withPrefix (operator Declaration "=") pretty) expr
 
 instance Pretty Context where
     prettyPrint (CxSingle _ asst) = do
@@ -1086,16 +1101,16 @@ instance Pretty Exp where
       where
         flex = do
             write "if "
-            indented $ pretty expr
+            maybeIndented pretty expr
             spaceOrNewline
             write "then "
-            indented $ pretty expr'
+            maybeIndented pretty expr'
             spaceOrNewline
             write "else "
-            indented $ pretty expr''
+            maybeIndented pretty expr''
         vertical = do
             write "if "
-            indented $ pretty expr
+            maybeIndented pretty expr
             withIndent cfgIndentIf $ do
                 write "then "
                 pretty expr'
@@ -1658,15 +1673,15 @@ instance Pretty GuardedAlt where
         operator Expression "|"
         inter comma $ map pretty stmts
         operator Expression "->"
-        indented $ pretty expr
+        maybeIndented pretty expr
 
 newtype GuardedAlts l = GuardedAlts (Rhs l)
     deriving (Functor, Annotated)
 
 instance Pretty GuardedAlts where
-    prettyPrint (GuardedAlts (UnGuardedRhs _ expr)) = cut . indented $ do
+    prettyPrint (GuardedAlts (UnGuardedRhs _ expr)) = cut $ do
         operator Expression "->"
-        pretty expr
+        maybeIndented pretty expr
 
     prettyPrint (GuardedAlts (GuardedRhss _ guardedrhss)) =
         aligned . lined $ map GuardedAlt guardedrhss
