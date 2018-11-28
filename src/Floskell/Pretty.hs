@@ -361,7 +361,9 @@ brackets p = depend (write "[")
 
 -- | Write a space.
 space :: Printer s ()
-space = write " "
+space = do
+    comment <- gets psEolComment
+    unless comment $ write " "
 
 -- | Write a comma.
 comma :: Printer s ()

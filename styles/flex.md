@@ -287,7 +287,7 @@ if the condition evaluates to true
 then execute the first branch else execute the second branch
 
 if cond -- comment
- then true else false
+then true else false
 
 if cond then do
     return () else return ()
@@ -297,7 +297,7 @@ do
 
 do
     if cond -- comment
-     then true else false
+    then true else false
 ```
 
 Multi-way if
