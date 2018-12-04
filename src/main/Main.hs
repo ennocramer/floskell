@@ -1,117 +1,173 @@
-{-# LANGUAGE PatternGuards     #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE PatternGuards     #-}
+{-# LANGUAGE RecordWildCards   #-}
 
 -- | Main entry point to floskell.
-module Main where
+module Main ( main ) where
 
-import           Control.Applicative
+import           Control.Applicative             ( (<|>), many, optional )
+import           Control.Exception               ( catch, throw )
 
-import           Control.Exception
+import qualified Data.ByteString                 as BS
+import qualified Data.ByteString.Lazy            as BL
+import           Data.Maybe                      ( fromMaybe )
+import           Data.Monoid                     ( (<>) )
 
-import qualified Data.ByteString            as S
-import qualified Data.ByteString.Lazy.Char8 as L8
-import           Data.List
-import           Data.Text                  ( Text )
-import qualified Data.Text                  as T
-import           Data.Version               ( showVersion )
+import qualified Data.Text                       as T
+import           Data.Version                    ( showVersion )
 
-import           Descriptive
-import           Descriptive.Options
+import           Floskell                        ( reformat, styles )
+import           Floskell.Types                  ( Style(styleName, styleDefConfig)
+                                                 , configMaxColumns )
 
-import           Floskell
-import           Floskell.Types
+import           Foreign.C.Error                 ( Errno(..), eXDEV )
 
-import           Foreign.C.Error
+import           GHC.IO.Exception                ( ioe_errno )
 
-import           GHC.IO.Exception
+import           Language.Haskell.Exts           ( Extension(..), Language(..)
+                                                 , classifyExtension
+                                                 , classifyLanguage
+                                                 , knownExtensions
+                                                 , knownLanguages )
 
-import           Language.Haskell.Exts      hiding ( Style, style )
+import           Options.Applicative             ( ParseError(..), abortOption
+                                                 , argument, auto, execParser
+                                                 , footerDoc, fullDesc, header
+                                                 , help, helper, hidden, info
+                                                 , long, metavar, option
+                                                 , progDesc, short, str, switch )
+import qualified Options.Applicative.Help.Pretty as PP
 
-import           Paths_floskell             ( version )
+import           Paths_floskell                  ( version )
 
-import           System.Directory
-import           System.Environment
-import           System.IO
+import           System.Directory                ( copyFile, copyPermissions
+                                                 , getTemporaryDirectory
+                                                 , removeFile, renameFile )
+import           System.IO                       ( hClose, hFlush, openTempFile )
 
-import           Text.Read
+-- | Program options.
+data Options = Options { optStyle      :: Maybe String
+                       , optLineLength :: Maybe Int
+                       , optLanguage   :: Maybe String
+                       , optExtensions :: [String]
+                       , optFiles      :: [FilePath]
+                       }
 
 -- | Main entry point.
 main :: IO ()
-main = do
-    args <- getArgs
-    case consume options (map T.pack args) of
-        Succeeded (style, exts, mfilepath) -> case mfilepath of
-            Just filepath -> do
-                text <- S.readFile filepath
-                tmpDir <- getTemporaryDirectory
-                (fp, h) <- openTempFile tmpDir "floskell.hs"
-                L8.hPutStr h
-                           (either error
-                                   id
-                                   (reformat style
-                                             (Just exts)
-                                             (Just filepath)
-                                             text))
-                hFlush h
-                hClose h
-                let exdev e = if ioe_errno e == Just ((\(Errno a) -> a) eXDEV)
-                              then copyFile fp filepath >> removeFile fp
-                              else throw e
-                copyPermissions filepath fp
-                renameFile fp filepath `catch` exdev
-            Nothing -> L8.interact (either error id .
-                                        reformat style (Just exts) Nothing .
-                                            L8.toStrict)
-        Failed (Wrap (Stopped Version) _) -> putStrLn ("floskell " ++
-                                                           showVersion version)
-        _ -> error (T.unpack (textDescription (describe options [])))
-
--- | Options that stop the argument parser.
-data Stoppers = Version
-    deriving (Show)
-
--- | Program options.
-options :: Monad m
-        => Consumer [Text] (Option Stoppers) m ( Style
-                                               , [Extension]
-                                               , Maybe FilePath
-                                               )
-options = ver *>
-    ((,,) <$> style <*> exts <*> file)
+main = run =<< execParser parser
   where
-    ver = stop (flag "version" "Print the version" Version)
-    style = makeStyle <$> (constant "--style" "Style to print with" () *>
-                               foldr1 (<|>)
-                                      (map (\s -> constant (styleName s)
-                                                           (styleDescription s)
-                                                           s)
-                                           styles))
-                      <*> lineLen
-    exts = fmap getExtensions (many (prefix "X" "Language extension"))
-    lineLen = fmap (>>= (readMaybe . T.unpack))
-                   (optional (arg "line-length" "Desired length of lines"))
-    makeStyle s mlen = case mlen of
-        Nothing -> s
-        Just len ->
-            s { styleDefConfig = (styleDefConfig s) { configMaxColumns = len }
-              }
-    file = fmap (fmap T.unpack) (optional (anyString "[<filename>]"))
+    parser =
+        info (helper <*> versioner <*> options)
+             (fullDesc
+                  <> progDesc "Floskell reformats one or more Haskell modules."
+                  <> header "floskell - A Haskell Source Code Pretty Printer"
+                  <> footerDoc (Just (footerStyles PP.<$$>
+                                          footerLanguages PP.<$$>
+                                          footerExtensions)))
+    versioner = abortOption (InfoMsg $ "floskell " ++ showVersion version)
+                            (long "version"
+                                 <> help "Display program version number"
+                                 <> hidden)
+    options =
+        Options <$> optional (option str
+                                     (long "style"
+                                          <> short 's'
+                                          <> metavar "STYLE"
+                                          <> help "Formatting style"))
+                <*> optional (option auto
+                                     (long "line-length"
+                                          <> metavar "INT"
+                                          <> help "Override style's default line length"))
+                <*> optional (option str
+                                     (long "language"
+                                          <> short 'L'
+                                          <> metavar "LANGUAGE"
+                                          <> help "Select base language"))
+                <*> many (option str
+                                 (long "extension"
+                                      <> short 'X'
+                                      <> metavar "EXTENSION"
+                                      <> help "Enable or disable language extensions"))
+                <*> many (argument str
+                                   (metavar "FILES"
+                                        <> help "Input files (will be replaced)"))
+    footerStyles = makeFooter "Supported styles:"
+                              (map (T.unpack . styleName) styles)
+    footerLanguages = makeFooter "Supported languages:"
+                                 (map show knownLanguages)
+    footerExtensions = makeFooter "Supported extensions:"
+                                  [ show e
+                                  | EnableExtension e <- knownExtensions ]
+    makeFooter hdr xs =
+        PP.empty
+        PP.<$$>
+        PP.text hdr
+        PP.<$$>
+        (PP.indent 2 . PP.fillSep . PP.punctuate PP.comma $ map PP.text xs)
 
---------------------------------------------------------------------------------
--- Extensions stuff stolen from hlint
--- | Consume an extensions list from arguments.
-getExtensions :: [Text] -> [Extension]
-getExtensions = foldl f defaultExtensions . map T.unpack
+-- | Reformat files or stdin based on provided options.
+run :: Options -> IO ()
+run Options{..} = case optFiles of
+    [] -> reformatStdin style language extensions
+    files -> mapM_ (reformatFile style language extensions) files
   where
-    f _ "Haskell98" = []
-    f a ('N' : 'o' : x) | Just x' <- readExtension x = delete x' a
-    f a x | Just x' <- readExtension x = x' :
-                delete x' a
-    f _ x = error $ "Unknown extension: " ++ x
+    style = setLineLength optLineLength .
+        fromMaybe (head styles) $ fmap lookupStyle optStyle
+    language = fromMaybe Haskell2010 $ fmap lookupLanguage optLanguage
+    extensions = fmap lookupExtension optExtensions
 
--- | Parse an extension.
-readExtension :: String -> Maybe Extension
-readExtension x = case classifyExtension x of
-    UnknownExtension _ -> Nothing
-    x' -> Just x'
+    setLineLength Nothing s = s
+    setLineLength (Just l) s =
+        s { styleDefConfig = (styleDefConfig s) { configMaxColumns = fromIntegral l
+                                                }
+          }
+
+-- | Reformat stdin according to Style, Language, and Extensions.
+reformatStdin :: Style -> Language -> [Extension] -> IO ()
+reformatStdin style language extensions = BL.interact $
+    reformatByteString style language extensions Nothing . BL.toStrict
+
+-- | Reformat a file according to Style, Language, and Extensions.
+reformatFile :: Style -> Language -> [Extension] -> FilePath -> IO ()
+reformatFile style language extensions file = do
+    text <- BS.readFile file
+    tmpDir <- getTemporaryDirectory
+    (fp, h) <- openTempFile tmpDir "floskell.hs"
+    BL.hPutStr h $
+        reformatByteString style language extensions (Just file) text
+    hFlush h
+    hClose h
+    let exdev e = if ioe_errno e == Just ((\(Errno a) -> a) eXDEV)
+                  then copyFile fp file >> removeFile fp
+                  else throw e
+    copyPermissions file fp
+    renameFile fp file `catch` exdev
+
+-- | Reformat a ByteString according to Style, Language, and Extensions.
+reformatByteString :: Style
+                   -> Language
+                   -> [Extension]
+                   -> Maybe FilePath
+                   -> BS.ByteString
+                   -> BL.ByteString
+reformatByteString style language extensions mpath text =
+    either error id $ reformat style language extensions mpath text
+
+-- | Lookup a style by name.
+lookupStyle :: String -> Style
+lookupStyle name = case filter ((== T.pack name) . styleName) styles of
+    [] -> error $ "Unknown style: " ++ name
+    x : _ -> x
+
+-- | Lookup a language by name.
+lookupLanguage :: String -> Language
+lookupLanguage name = case classifyLanguage name of
+    UnknownLanguage _ -> error $ "Unknown language: " ++ name
+    x -> x
+
+-- | Lookup an extension by name.
+lookupExtension :: String -> Extension
+lookupExtension name = case classifyExtension name of
+    UnknownExtension _ -> error $ "Unkown extension: " ++ name
+    x -> x

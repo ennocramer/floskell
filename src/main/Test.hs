@@ -16,6 +16,8 @@ import qualified Data.Text                    as T
 
 import           Floskell
 
+import           Language.Haskell.Exts        ( Language(Haskell2010) )
+
 import           Markdone                     ( Markdone(..) )
 import qualified Markdone                     as MD
 
@@ -127,7 +129,8 @@ testAll = do
 
 reformatSnippet :: Style -> ByteString -> Either String ByteString
 reformatSnippet style code = L.toStrict <$> reformat style
-                                                     (Just defaultExtensions)
+                                                     Haskell2010
+                                                     defaultExtensions
                                                      (Just "TEST.md")
                                                      code
 

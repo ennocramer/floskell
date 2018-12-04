@@ -16,6 +16,8 @@ import qualified Data.Text             as T
 
 import           Floskell
 
+import           Language.Haskell.Exts ( Language(Haskell2010) )
+
 import           Markdone
 
 -- | Main benchmarks.
@@ -37,7 +39,8 @@ toCriterion style = go
         then (bench (UTF8.toString desc)
                     (nf (either error id .
                              reformat style
-                                      (Just defaultExtensions)
+                                      Haskell2010
+                                      defaultExtensions
                                       (Just "BENCHMARK.md"))
                         code)) :
             go next

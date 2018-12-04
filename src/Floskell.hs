@@ -10,7 +10,6 @@ module Floskell
     ( -- * Formatting functions.
       reformat
     , prettyPrint
-    , parseMode
       -- * Style
     , Style(..)
     , styles
@@ -58,11 +57,12 @@ data CodeBlock = HaskellSource Int ByteString
 
 -- | Format the given source.
 reformat :: Style
-         -> Maybe [Extension]
+         -> Language
+         -> [Extension]
          -> Maybe FilePath
          -> ByteString
          -> Either String L.ByteString
-reformat style mexts mfilepath x = preserveTrailingNewline x .
+reformat style language langextensions mfilepath x = preserveTrailingNewline x .
     mconcat . intersperse "\n" <$> mapM processBlock (cppSplitBlocks x)
   where
     processBlock :: CodeBlock -> Either String L.ByteString
@@ -127,11 +127,10 @@ reformat style mexts mfilepath x = preserveTrailingNewline x .
             then S8.cons first (findSmallestPrefix (S.tail p : map S.tail ps))
             else ""
 
-    mode' = let m = case mexts of
-                    Just exts -> parseMode { extensions = exts }
-                    Nothing -> parseMode
-            in
-                m { parseFilename = fromMaybe "<stdin>" mfilepath }
+    mode' = defaultParseMode { parseFilename = fromMaybe "<stdin>" mfilepath
+                             , baseLanguage = language
+                             , extensions = langextensions
+                             }
 
     preserveTrailingNewline x x' = if not (S8.null x) && S8.last x == '\n' &&
                                        not (L8.null x') && L8.last x' /= '\n'
@@ -219,14 +218,6 @@ runPrinterStyle mode' (Style _name _author _desc st extenders config preprocesso
                                            preprocessor
                                            penalty
                                            Anything))
-
--- | Parse mode, includes all extensions, doesn't assume any fixities.
-parseMode :: ParseMode
-parseMode = defaultParseMode { extensions = allExtensions, fixities = Nothing }
-  where
-    allExtensions = filter isDisabledExtention knownExtensions
-    isDisabledExtention (DisableExtension _) = False
-    isDisabledExtention _ = True
 
 -- | Styles list, useful for programmatically choosing.
 styles :: [Style]
