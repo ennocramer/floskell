@@ -44,7 +44,9 @@ library
                      Floskell.Styles.Cramer
                      Floskell.Styles.Flex
   build-depends:     base >= 4.7 && <5
+                   , aeson
                    , containers
+                   , unordered-containers
                    , data-default
                    , haskell-src-exts >= 1.19
                    , monad-loops

@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 
@@ -24,32 +25,42 @@ module Floskell.Flex.Config
     , wsLinebreak
     ) where
 
-import           Data.ByteString ( ByteString )
-import           Data.Default    ( Default(..) )
-import           Data.Map.Strict ( Map )
-import qualified Data.Map.Strict as Map
+import           Data.Aeson         ( FromJSON(..), ToJSON(..)
+                                    , genericParseJSON, genericToJSON )
+import qualified Data.Aeson         as JSON
+import           Data.Aeson.Types   as JSON ( Options(..), camelTo
+                                            , typeMismatch )
+import           Data.ByteString    ( ByteString )
+import           Data.Default       ( Default(..) )
+import qualified Data.HashMap.Lazy  as HashMap
+import           Data.Map.Strict    ( Map )
+import qualified Data.Map.Strict    as Map
+import qualified Data.Text          as T
+import qualified Data.Text.Encoding as T ( decodeUtf8, encodeUtf8 )
 
-import           Floskell.Types  ( ComInfoLocation(..) )
+import           Floskell.Types     ( ComInfoLocation(..) )
+
+import           GHC.Generics
 
 data Indent = Align
             | IndentBy !Int
             | AlignOrIndentBy !Int
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord, Show, Generic)
 
 data LayoutContext = Declaration | Type | Pattern | Expression | Other
-    deriving (Eq, Ord, Bounded, Enum, Show)
+    deriving (Eq, Ord, Bounded, Enum, Show, Generic)
 
 data WsLoc = WsNone | WsBefore | WsAfter | WsBoth
-    deriving (Eq, Ord, Bounded, Enum, Show)
+    deriving (Eq, Ord, Bounded, Enum, Show, Generic)
 
 data Whitespace = Whitespace { wsSpaces         :: !WsLoc
                              , wsLinebreaks     :: !WsLoc
                              , wsForceLinebreak :: !Bool
                              }
-    deriving (Show)
+    deriving (Show, Generic)
 
 data Layout = Flex | Vertical | TryOneline
-    deriving (Eq, Ord, Bounded, Enum, Show)
+    deriving (Eq, Ord, Bounded, Enum, Show, Generic)
 
 data ConfigMapKey = ConfigMapKey !(Maybe ByteString) !(Maybe LayoutContext)
     deriving (Eq, Ord, Show)
@@ -57,12 +68,14 @@ data ConfigMapKey = ConfigMapKey !(Maybe ByteString) !(Maybe LayoutContext)
 data ConfigMap a = ConfigMap { cfgMapDefault   :: !a
                              , cfgMapOverrides :: !(Map ConfigMapKey a)
                              }
+    deriving (Generic)
 
 data PenaltyConfig = PenaltyConfig { penaltyLinebreak    :: !Int
                                    , penaltyIndent       :: !Int
                                    , penaltyOverfull     :: !Int
                                    , penaltyOverfullOnce :: !Int
                                    }
+    deriving (Generic)
 
 instance Default PenaltyConfig where
     def = PenaltyConfig { penaltyLinebreak = 100
@@ -81,6 +94,7 @@ data IndentConfig = IndentConfig { cfgIndentOnside         :: !Int
                                  , cfgIndentWhere          :: !Indent
                                  , cfgIndentExportSpecList :: !Indent
                                  }
+    deriving (Generic)
 
 instance Default IndentConfig where
     def = IndentConfig { cfgIndentOnside = 4
@@ -106,6 +120,7 @@ data LayoutConfig = LayoutConfig { cfgLayoutExportSpecList :: !Layout
                                  , cfgLayoutApp            :: !Layout
                                  , cfgLayoutInfixApp       :: !Layout
                                  }
+    deriving (Generic)
 
 instance Default LayoutConfig where
     def = LayoutConfig { cfgLayoutExportSpecList = Flex
@@ -122,6 +137,7 @@ instance Default LayoutConfig where
                        }
 
 newtype OpConfig = OpConfig { unOpConfig :: ConfigMap Whitespace }
+    deriving (Generic)
 
 instance Default OpConfig where
     def = OpConfig ConfigMap { cfgMapDefault = Whitespace WsBoth WsBefore False
@@ -129,6 +145,7 @@ instance Default OpConfig where
                              }
 
 newtype GroupConfig = GroupConfig { unGroupConfig :: ConfigMap Whitespace }
+    deriving (Generic)
 
 instance Default GroupConfig where
     def =
@@ -147,6 +164,7 @@ data ModuleConfig = ModuleConfig { cfgModuleSortPragmas          :: !Bool
                                  , cfgModuleAlignImports         :: !Bool
                                  , cfgModuleSortImportLists      :: !Bool
                                  }
+    deriving (Generic)
 
 instance Default ModuleConfig where
     def = ModuleConfig { cfgModuleSortPragmas = False
@@ -163,6 +181,7 @@ data FlexConfig = FlexConfig { cfgPenalty :: !PenaltyConfig
                              , cfgGroup   :: !GroupConfig
                              , cfgModule  :: !ModuleConfig
                              }
+    deriving (Generic)
 
 instance Default FlexConfig where
     def = FlexConfig { cfgPenalty = def
@@ -215,3 +234,153 @@ wsSpace loc ws = loc `inWs` wsSpaces ws
 
 wsLinebreak :: ComInfoLocation -> Whitespace -> Bool
 wsLinebreak loc ws = loc `inWs` wsLinebreaks ws
+
+------------------------------------------------------------------------
+readMaybe :: Read a => String -> Maybe a
+readMaybe str = case reads str of
+    [ (x, "") ] -> Just x
+    _ -> Nothing
+
+enumOptions :: Int -> Options
+enumOptions n =
+    JSON.defaultOptions { constructorTagModifier = JSON.camelTo '-' . drop n }
+
+recordOptions :: Int -> Options
+recordOptions n =
+    JSON.defaultOptions { fieldLabelModifier = JSON.camelTo '-' . drop n
+                        , unwrapUnaryRecords = True
+                        }
+
+instance ToJSON Indent where
+    toJSON i = JSON.String $ case i of
+        Align -> "align"
+        IndentBy x -> "indent-by " `T.append` T.pack (show x)
+        AlignOrIndentBy x -> "align-or-indent-by " `T.append` T.pack (show x)
+
+instance FromJSON Indent where
+    parseJSON v@(JSON.String t) = maybe (JSON.typeMismatch "Indent" v) return $
+        if t == "align"
+        then Just Align
+        else if "indent-by " `T.isPrefixOf` t
+             then IndentBy <$> readMaybe (T.unpack $ T.drop 10 t)
+             else if "align-or-indent-by " `T.isPrefixOf` t
+                  then AlignOrIndentBy <$> readMaybe (T.unpack $ T.drop 19 t)
+                  else Nothing
+
+    parseJSON v = JSON.typeMismatch "Indent" v
+
+instance ToJSON LayoutContext where
+    toJSON = genericToJSON (enumOptions 0)
+
+instance FromJSON LayoutContext where
+    parseJSON = genericParseJSON (enumOptions 0)
+
+instance ToJSON WsLoc where
+    toJSON = genericToJSON (enumOptions 2)
+
+instance FromJSON WsLoc where
+    parseJSON = genericParseJSON (enumOptions 2)
+
+instance ToJSON Whitespace where
+    toJSON = genericToJSON (recordOptions 2)
+
+instance FromJSON Whitespace where
+    parseJSON = genericParseJSON (recordOptions 2)
+
+instance ToJSON Layout where
+    toJSON = genericToJSON (enumOptions 0)
+
+instance FromJSON Layout where
+    parseJSON = genericParseJSON (enumOptions 0)
+
+layoutToText :: LayoutContext -> T.Text
+layoutToText Declaration = "declaration"
+layoutToText Type = "type"
+layoutToText Pattern = "pattern"
+layoutToText Expression = "expression"
+layoutToText Other = "other"
+
+textToLayout :: T.Text -> Maybe LayoutContext
+textToLayout "declaration" = Just Declaration
+textToLayout "type" = Just Type
+textToLayout "pattern" = Just Pattern
+textToLayout "expression" = Just Expression
+textToLayout "other" = Just Other
+textToLayout _ = Nothing
+
+keyToText :: ConfigMapKey -> T.Text
+keyToText (ConfigMapKey Nothing Nothing) = "default"
+keyToText (ConfigMapKey (Just n) Nothing) = T.decodeUtf8 n
+keyToText (ConfigMapKey Nothing (Just l)) = "* in " `T.append` layoutToText l
+keyToText (ConfigMapKey (Just n) (Just l)) =
+    T.decodeUtf8 n `T.append` " in " `T.append` layoutToText l
+
+textToKey :: T.Text -> Maybe ConfigMapKey
+textToKey t = case T.splitOn " in " t of
+    [ "default" ] -> Just (ConfigMapKey Nothing Nothing)
+    [ "*", "*" ] -> Just (ConfigMapKey Nothing Nothing)
+    [ name ] -> Just (ConfigMapKey (Just (T.encodeUtf8 name)) Nothing)
+    [ name, "*" ] -> Just (ConfigMapKey (Just (T.encodeUtf8 name)) Nothing)
+    [ "*", layout ] -> ConfigMapKey Nothing . Just <$> textToLayout layout
+    [ name, layout ] -> ConfigMapKey (Just (T.encodeUtf8 name)) . Just <$> textToLayout layout
+    _ -> Nothing
+
+instance ToJSON a => ToJSON (ConfigMap a) where
+    toJSON ConfigMap{..} = toJSON $ Map.insert "default" cfgMapDefault $
+        Map.mapKeys keyToText cfgMapOverrides
+
+instance FromJSON a => FromJSON (ConfigMap a) where
+    parseJSON value = do
+        o <- parseJSON value
+        cfgMapDefault <- maybe (fail "Missing key: default") return $
+                             HashMap.lookup "default" o
+        cfgMapOverrides <- either fail (return . Map.fromList) $ sequence $
+                               map toKey $
+                                   HashMap.toList $ HashMap.delete "default" o
+        return ConfigMap { .. }
+      where
+        toKey (k, v) = case textToKey k of
+            Just k' -> Right (k', v)
+            Nothing -> Left ("Invalid key: " ++ T.unpack k)
+
+instance ToJSON PenaltyConfig where
+    toJSON = genericToJSON (recordOptions 7)
+
+instance FromJSON PenaltyConfig where
+    parseJSON = genericParseJSON (recordOptions 7)
+
+instance ToJSON IndentConfig where
+    toJSON = genericToJSON (recordOptions 9)
+
+instance FromJSON IndentConfig where
+    parseJSON = genericParseJSON (recordOptions 9)
+
+instance ToJSON LayoutConfig where
+    toJSON = genericToJSON (recordOptions 9)
+
+instance FromJSON LayoutConfig where
+    parseJSON = genericParseJSON (recordOptions 9)
+
+instance ToJSON OpConfig where
+    toJSON = genericToJSON (recordOptions 0)
+
+instance FromJSON OpConfig where
+    parseJSON = genericParseJSON (recordOptions 0)
+
+instance ToJSON GroupConfig where
+    toJSON = genericToJSON (recordOptions 0)
+
+instance FromJSON GroupConfig where
+    parseJSON = genericParseJSON (recordOptions 0)
+
+instance ToJSON ModuleConfig where
+    toJSON = genericToJSON (recordOptions 9)
+
+instance FromJSON ModuleConfig where
+    parseJSON = genericParseJSON (recordOptions 9)
+
+instance ToJSON FlexConfig where
+    toJSON = genericToJSON (recordOptions 3)
+
+instance FromJSON FlexConfig where
+    parseJSON = genericParseJSON (recordOptions 3)
