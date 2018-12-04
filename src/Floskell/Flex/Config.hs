@@ -1,7 +1,28 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 
-module Floskell.Flex.Config where
+module Floskell.Flex.Config
+    ( Indent(..)
+    , LayoutContext(..)
+    , WsLoc(..)
+    , Whitespace(..)
+    , Layout(..)
+    , ConfigMap(..)
+    , PenaltyConfig(..)
+    , IndentConfig(..)
+    , LayoutConfig(..)
+    , OpConfig(..)
+    , GroupConfig(..)
+    , ModuleConfig(..)
+    , FlexConfig(..)
+    , defaultFlexConfig
+    , cfgMapFind
+    , cfgOpWs
+    , cfgGroupWs
+    , inWs
+    , wsSpace
+    , wsLinebreak
+    ) where
 
 import           Data.ByteString ( ByteString )
 import           Data.Default    ( Default(..) )
@@ -13,13 +34,13 @@ import           Floskell.Types  ( ComInfoLocation(..) )
 data Indent = Align
             | IndentBy !Int
             | AlignOrIndentBy !Int
-    deriving (Eq, Show)
-
-data LayoutContext = Declaration | Type | Pattern | Expression | Other
     deriving (Eq, Ord, Show)
 
+data LayoutContext = Declaration | Type | Pattern | Expression | Other
+    deriving (Eq, Ord, Bounded, Enum, Show)
+
 data WsLoc = WsNone | WsBefore | WsAfter | WsBoth
-    deriving (Eq, Show)
+    deriving (Eq, Ord, Bounded, Enum, Show)
 
 data Whitespace = Whitespace { wsSpaces         :: !WsLoc
                              , wsLinebreaks     :: !WsLoc
@@ -28,12 +49,14 @@ data Whitespace = Whitespace { wsSpaces         :: !WsLoc
     deriving (Show)
 
 data Layout = Flex | Vertical | TryOneline
-    deriving (Eq, Show)
+    deriving (Eq, Ord, Bounded, Enum, Show)
 
-data ConfigMap a =
-    ConfigMap { cfgMapDefault   :: !a
-              , cfgMapOverrides :: !(Map (Maybe ByteString, Maybe LayoutContext) a)
-              }
+data ConfigMapKey = ConfigMapKey !(Maybe ByteString) !(Maybe LayoutContext)
+    deriving (Eq, Ord, Show)
+
+data ConfigMap a = ConfigMap { cfgMapDefault   :: !a
+                             , cfgMapOverrides :: !(Map ConfigMapKey a)
+                             }
 
 data PenaltyConfig = PenaltyConfig { penaltyLinebreak    :: !Int
                                    , penaltyIndent       :: !Int
@@ -113,7 +136,10 @@ instance Default GroupConfig where
                               , cfgMapOverrides = Map.fromList overrides
                               }
       where
-        overrides = [ ((Just "(#", Nothing), Whitespace WsBoth WsAfter False) ]
+        overrides = [ ( ConfigMapKey (Just "(#") Nothing
+                      , Whitespace WsBoth WsAfter False
+                      )
+                    ]
 
 data ModuleConfig = ModuleConfig { cfgModuleSortPragmas          :: !Bool
                                  , cfgModuleSplitLanguagePragmas :: !Bool
@@ -149,17 +175,28 @@ instance Default FlexConfig where
 
 defaultFlexConfig :: FlexConfig
 defaultFlexConfig =
-    def { cfgOp = OpConfig ((unOpConfig def) { cfgMapOverrides = Map.fromList opWsOverrides }) }
+    def { cfgOp = OpConfig ((unOpConfig def) { cfgMapOverrides = Map.fromList opWsOverrides
+                                             })
+        }
   where
-    opWsOverrides = [ ((Just ",", Nothing), Whitespace WsAfter WsBefore False) ]
+    opWsOverrides =
+        [ (ConfigMapKey (Just ",") Nothing, Whitespace WsAfter WsBefore False)
+        ]
 
 cfgMapFind :: LayoutContext -> ByteString -> ConfigMap a -> a
 cfgMapFind ctx key ConfigMap{..} =
     let value = cfgMapDefault
-        value' = Map.findWithDefault value (Nothing, Just ctx) cfgMapOverrides
-        value'' = Map.findWithDefault value' (Just key, Nothing) cfgMapOverrides
-        value''' = Map.findWithDefault value'' (Just key, Just ctx) cfgMapOverrides
-    in value'''
+        value' = Map.findWithDefault value
+                                     (ConfigMapKey Nothing (Just ctx))
+                                     cfgMapOverrides
+        value'' = Map.findWithDefault value'
+                                      (ConfigMapKey (Just key) Nothing)
+                                      cfgMapOverrides
+        value''' = Map.findWithDefault value''
+                                       (ConfigMapKey (Just key) (Just ctx))
+                                       cfgMapOverrides
+    in
+        value'''
 
 cfgOpWs :: LayoutContext -> ByteString -> OpConfig -> Whitespace
 cfgOpWs ctx op = cfgMapFind ctx op . unOpConfig
