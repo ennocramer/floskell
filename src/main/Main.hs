@@ -8,9 +8,13 @@ module Main ( main ) where
 import           Control.Applicative             ( (<|>), many, optional )
 import           Control.Exception               ( catch, throw )
 
+import           Data.Aeson                      ( (.:?), (.=), FromJSON(..)
+                                                 , ToJSON(..) )
+import qualified Data.Aeson                      as JSON
+import qualified Data.Aeson.Types                as JSON ( typeMismatch )
 import qualified Data.ByteString                 as BS
 import qualified Data.ByteString.Lazy            as BL
-import           Data.Maybe                      ( fromMaybe )
+import           Data.List                       ( inits )
 import           Data.Monoid                     ( (<>) )
 
 import qualified Data.Text                       as T
@@ -40,22 +44,77 @@ import qualified Options.Applicative.Help.Pretty as PP
 
 import           Paths_floskell                  ( version )
 
-import           System.Directory                ( copyFile, copyPermissions
+import           System.Directory                ( XdgDirectory(..), copyFile
+                                                 , copyPermissions
+                                                 , doesFileExist, findFileWith
+                                                 , getAppUserDataDirectory
+                                                 , getCurrentDirectory
+                                                 , getHomeDirectory
                                                  , getTemporaryDirectory
-                                                 , removeFile, renameFile )
-import           System.IO                       ( hClose, hFlush, openTempFile )
+                                                 , getXdgDirectory, removeFile
+                                                 , renameFile )
+import           System.FilePath                 ( joinPath, splitDirectories )
+import           System.IO                       ( FilePath, hClose, hFlush
+                                                 , openTempFile )
 
 -- | Program options.
-data Options = Options { optStyle      :: Maybe String
-                       , optLineLength :: Maybe Int
-                       , optLanguage   :: Maybe String
-                       , optExtensions :: [String]
-                       , optFiles      :: [FilePath]
+data Options = Options { optStyle       :: Maybe String
+                       , optLineLength  :: Maybe Int
+                       , optLanguage    :: Maybe String
+                       , optExtensions  :: [String]
+                       , optConfig      :: Maybe FilePath
+                       , optPrintConfig :: Bool
+                       , optFiles       :: [FilePath]
                        }
+
+-- | Program configuration.
+data Config = Config { cfgStyle      :: Style
+                     , cfgLineLength :: Maybe Int
+                     , cfgLanguage   :: Language
+                     , cfgExtensions :: [Extension]
+                     }
+
+instance ToJSON Config where
+    toJSON Config{..} =
+        JSON.object [ "style" .= styleName cfgStyle
+                    , "line-length" .= configMaxColumns (styleDefConfig cfgStyle)
+                    , "language" .= show cfgLanguage
+                    , "extensions" .= map showExt cfgExtensions
+                    ]
+      where
+        showExt (EnableExtension x) = show x
+        showExt (DisableExtension x) = "No" ++ show x
+        showExt (UnknownExtension x) = x
+
+instance FromJSON Config where
+    parseJSON (JSON.Object o) = Config <$> (maybe (cfgStyle defaultConfig)
+                                                  lookupStyle <$>
+                                                o .:? "style")
+        <*> o .:? "line-length"
+        <*> (maybe (cfgLanguage defaultConfig) lookupLanguage <$>
+                 o .:? "language")
+        <*> (maybe (cfgExtensions defaultConfig) (map lookupExtension) <$>
+                 o .:? "extensions")
+    parseJSON v = JSON.typeMismatch "Config" v
+
+-- | Default program configuration.
+defaultConfig :: Config
+defaultConfig = Config (head styles) Nothing Haskell2010 []
 
 -- | Main entry point.
 main :: IO ()
-main = run =<< execParser parser
+main = do
+    opts <- execParser parser
+    mconfig <- case optConfig opts of
+                   Just c -> return $ Just c
+                   Nothing -> findConfig
+    baseConfig <- case mconfig of
+                      Just path -> readConfig path
+                      Nothing -> return defaultConfig
+    let config = mergeConfig baseConfig opts
+    if optPrintConfig opts
+        then BL.putStr $ JSON.encode config
+        else run config (optFiles opts)
   where
     parser =
         info (helper <*> versioner <*> options)
@@ -89,6 +148,13 @@ main = run =<< execParser parser
                                       <> short 'X'
                                       <> metavar "EXTENSION"
                                       <> help "Enable or disable language extensions"))
+                <*> optional (option str
+                                     (long "config"
+                                          <> short 'c'
+                                          <> metavar "FILE"
+                                          <> help "Configuration file"))
+                <*> switch (long "print-config"
+                                <> help "Print configuration")
                 <*> many (argument str
                                    (metavar "FILES"
                                         <> help "Input files (will be replaced)"))
@@ -106,22 +172,11 @@ main = run =<< execParser parser
         PP.<$$>
         (PP.indent 2 . PP.fillSep . PP.punctuate PP.comma $ map PP.text xs)
 
--- | Reformat files or stdin based on provided options.
-run :: Options -> IO ()
-run Options{..} = case optFiles of
-    [] -> reformatStdin style language extensions
-    files -> mapM_ (reformatFile style language extensions) files
-  where
-    style = setLineLength optLineLength .
-        fromMaybe (head styles) $ fmap lookupStyle optStyle
-    language = fromMaybe Haskell2010 $ fmap lookupLanguage optLanguage
-    extensions = fmap lookupExtension optExtensions
-
-    setLineLength Nothing s = s
-    setLineLength (Just l) s =
-        s { styleDefConfig = (styleDefConfig s) { configMaxColumns = fromIntegral l
-                                                }
-          }
+-- | Reformat files or stdin based on provided configuration.
+run :: Config -> [FilePath] -> IO ()
+run Config{..} files = case files of
+    [] -> reformatStdin cfgStyle cfgLanguage cfgExtensions
+    _ -> mapM_ (reformatFile cfgStyle cfgLanguage cfgExtensions) files
 
 -- | Reformat stdin according to Style, Language, and Extensions.
 reformatStdin :: Style -> Language -> [Extension] -> IO ()
@@ -153,6 +208,42 @@ reformatByteString :: Style
                    -> BL.ByteString
 reformatByteString style language extensions mpath text =
     either error id $ reformat style language extensions mpath text
+
+-- | Try to find a configuration file based on current working
+-- directory, or in one of the application configuration directories.
+findConfig :: IO (Maybe FilePath)
+findConfig = do
+    dotfilePaths <- sequence [ getHomeDirectory, getXdgDirectory XdgConfig "" ]
+    dotfileConfig <- findFileWith doesFileExist dotfilePaths ".floskell.json"
+    userPaths <- sequence [ getAppUserDataDirectory "floskell"
+                          , getXdgDirectory XdgConfig "floskell"
+                          ]
+    userConfig <- findFileWith doesFileExist userPaths "config.json"
+    localPaths <- map joinPath . reverse . drop 1 . inits . splitDirectories <$>
+                      getCurrentDirectory
+    localConfig <- findFileWith doesFileExist localPaths "floskell.json"
+    return $ localConfig <|> userConfig <|> dotfileConfig
+
+-- | Load a configuration file.
+readConfig :: FilePath -> IO Config
+readConfig file = do
+    text <- BS.readFile file
+    either (error . (++) (file ++ ": ")) return $ JSON.eitherDecodeStrict text
+
+-- | Update the program configuration from the program options.
+mergeConfig :: Config -> Options -> Config
+mergeConfig cfg@Config{..} Options{..} =
+    cfg { cfgStyle = setLineLength optLineLength $
+            maybe cfgStyle lookupStyle optStyle
+        , cfgLanguage = maybe cfgLanguage lookupLanguage optLanguage
+        , cfgExtensions = cfgExtensions ++ map lookupExtension optExtensions
+        }
+  where
+    setLineLength Nothing s = s
+    setLineLength (Just l) s =
+        s { styleDefConfig = (styleDefConfig s) { configMaxColumns = fromIntegral l
+                                                }
+          }
 
 -- | Lookup a style by name.
 lookupStyle :: String -> Style

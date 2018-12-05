@@ -63,11 +63,13 @@ executable floskell
   main-is:           Main.hs
   build-depends:     base >= 4 && < 5
                    , floskell
+                   , aeson
                    , bytestring
                    , optparse-applicative
                    , haskell-src-exts
                    , ghc-prim
                    , directory
+                   , filepath
                    , text
 
 test-suite floskell-test
