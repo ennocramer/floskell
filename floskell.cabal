@@ -70,6 +70,7 @@ executable floskell
                    , ghc-prim
                    , directory
                    , filepath
+                   , unordered-containers
                    , text
 
 test-suite floskell-test

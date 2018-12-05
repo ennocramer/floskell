@@ -1,6 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Floskell.Styles.Flex ( flex ) where
+module Floskell.Styles.Flex
+    ( flex
+    , makeFlex
+    ) where
 
 import           Control.Monad.State.Strict   ( gets )
 
@@ -14,17 +17,20 @@ import           Language.Haskell.Exts.Syntax
 
 -- | Style definition.
 flex :: Style
-flex = Style { styleName = "flex"
-             , styleAuthor = "Enno Cramer"
-             , styleDescription = "Configurable formatting style"
-             , styleInitialState = defaultFlexConfig
-             , styleExtenders = [ Extender prettyModule ]
-             , styleDefConfig = defaultConfig { configMaxColumns = 80
-                                              , configIndentSpaces = 4
-                                              }
-             , styleCommentPreprocessor = return
-             , styleLinePenalty = linePenalty
-             }
+flex = makeFlex defaultFlexConfig
+
+makeFlex :: FlexConfig -> Style
+makeFlex cfg = Style { styleName = "flex"
+                     , styleAuthor = "Enno Cramer"
+                     , styleDescription = "Configurable formatting style"
+                     , styleInitialState = cfg
+                     , styleExtenders = [ Extender prettyModule ]
+                     , styleDefConfig = defaultConfig { configMaxColumns = 80
+                                                      , configIndentSpaces = 4
+                                                      }
+                     , styleCommentPreprocessor = return
+                     , styleLinePenalty = linePenalty
+                     }
 
 -- | Entry Point for old pretty print framework
 prettyModule :: PrettyPrinter Module

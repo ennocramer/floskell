@@ -14,6 +14,7 @@ import qualified Data.Aeson                      as JSON
 import qualified Data.Aeson.Types                as JSON ( typeMismatch )
 import qualified Data.ByteString                 as BS
 import qualified Data.ByteString.Lazy            as BL
+import qualified Data.HashMap.Lazy               as HashMap
 import           Data.List                       ( inits )
 import           Data.Monoid                     ( (<>) )
 
@@ -21,6 +22,9 @@ import qualified Data.Text                       as T
 import           Data.Version                    ( showVersion )
 
 import           Floskell                        ( reformat, styles )
+import           Floskell.Flex.Config            ( FlexConfig
+                                                 , defaultFlexConfig )
+import           Floskell.Styles.Flex            ( makeFlex )
 import           Floskell.Types                  ( Style(styleName, styleDefConfig)
                                                  , configMaxColumns )
 
@@ -72,6 +76,7 @@ data Config = Config { cfgStyle      :: Style
                      , cfgLineLength :: Maybe Int
                      , cfgLanguage   :: Language
                      , cfgExtensions :: [Extension]
+                     , cfgFlex       :: FlexConfig
                      }
 
 instance ToJSON Config where
@@ -80,6 +85,7 @@ instance ToJSON Config where
                     , "line-length" .= configMaxColumns (styleDefConfig cfgStyle)
                     , "language" .= show cfgLanguage
                     , "extensions" .= map showExt cfgExtensions
+                    , "flex" .= cfgFlex
                     ]
       where
         showExt (EnableExtension x) = show x
@@ -95,11 +101,25 @@ instance FromJSON Config where
                  o .:? "language")
         <*> (maybe (cfgExtensions defaultConfig) (map lookupExtension) <$>
                  o .:? "extensions")
+        <*> (maybe (cfgFlex defaultConfig) updateFlexConfig <$>
+                 o .:? "flex")
+      where
+        updateFlexConfig v = case JSON.fromJSON $
+            mergeJSON (toJSON defaultFlexConfig) v of
+            JSON.Error e -> error e
+            JSON.Success x -> x
+
+        mergeJSON JSON.Null r = r
+        mergeJSON l JSON.Null = l
+        mergeJSON (JSON.Object l) (JSON.Object r) =
+            JSON.Object (HashMap.unionWith mergeJSON l r)
+        mergeJSON _ r = r
+
     parseJSON v = JSON.typeMismatch "Config" v
 
 -- | Default program configuration.
 defaultConfig :: Config
-defaultConfig = Config (head styles) Nothing Haskell2010 []
+defaultConfig = Config (head styles) Nothing Haskell2010 [] defaultFlexConfig
 
 -- | Main entry point.
 main :: IO ()
@@ -233,7 +253,7 @@ readConfig file = do
 -- | Update the program configuration from the program options.
 mergeConfig :: Config -> Options -> Config
 mergeConfig cfg@Config{..} Options{..} =
-    cfg { cfgStyle = setLineLength optLineLength $
+    cfg { cfgStyle = setLineLength optLineLength . updateFlexStyle cfgFlex $
             maybe cfgStyle lookupStyle optStyle
         , cfgLanguage = maybe cfgLanguage lookupLanguage optLanguage
         , cfgExtensions = cfgExtensions ++ map lookupExtension optExtensions
@@ -244,6 +264,9 @@ mergeConfig cfg@Config{..} Options{..} =
         s { styleDefConfig = (styleDefConfig s) { configMaxColumns = fromIntegral l
                                                 }
           }
+
+    updateFlexStyle conf style =
+        if styleName style == "flex" then makeFlex conf else style
 
 -- | Lookup a style by name.
 lookupStyle :: String -> Style
