@@ -209,6 +209,7 @@ runPrinterStyle mode' (Style _name _author _desc st extenders config preprocesso
           (snd <$> execPrinter m
                                (PrintState Buffer.empty
                                            0
+                                           0
                                            st
                                            extenders
                                            config

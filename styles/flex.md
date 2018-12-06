@@ -602,14 +602,14 @@ foo = let x = x in x
 
 foo = let x = x -- bottom
       in 
-      -- bottom
-      x
+          -- bottom
+          x
 
 foo = if null xs then None else Some $ head xs
 
 foo = if null xs -- condition
-then None -- it's empty
-else Some $ head xs -- it's not
+    then None -- it's empty
+    else Some $ head xs -- it's not
 
 foo = if
      | null xs -> None
@@ -651,7 +651,7 @@ foo = do
     this <- that
     let this' = tail this
     if this -- condition
-    then that else those
+        then that else those
 
 foo = mdo
     return ()
@@ -669,8 +669,8 @@ foo = \ ~x -> x
 foo = \ !x -> x
 
 foo d = \case
-        Nothing -> d
-        Some x -> x
+    Nothing -> d
+    Some x -> x
 ```
 
 ### BracketExp, SpliceExp, QuasiQuote, VarQuote, and TypQuote

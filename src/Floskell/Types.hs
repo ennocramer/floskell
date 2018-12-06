@@ -79,6 +79,7 @@ runPrinter m s = listToMaybe . runSearch $ runStateT (unPrinter m) s
 data PrintState s =
     PrintState { psBuffer              :: !Buffer -- ^ Output buffer
                , psIndentLevel         :: !Int64 -- ^ Current indentation level.
+               , psOnside              :: !Int64 -- ^ Extra indentation is necessary with next line break.
                , psUserState           :: !s -- ^ User state.
                , psExtenders           :: ![Extender s] -- ^ Extenders.
                , psConfig              :: !Config -- ^ Config which styles may or may not pay attention to.

@@ -22,6 +22,7 @@ module Floskell.Flex.Printers
     , inter
     , aligned
     , indented
+    , onside
     , depend
     , depend'
     , parens
@@ -95,9 +96,9 @@ withIndent fn p = do
     align = do
         space
         aligned p
-    indentby indent = do
+    indentby indent = P.indented (fromIntegral indent) $ do
         newline
-        P.indented (fromIntegral indent) p
+        p
 
 withLayout :: (LayoutConfig -> Layout)
            -> Printer FlexConfig a
@@ -122,6 +123,11 @@ indented :: Printer FlexConfig a -> Printer FlexConfig a
 indented p = do
     indent <- getConfig (cfgIndentOnside . cfgIndent)
     P.indented (fromIntegral indent) p
+
+onside :: Printer FlexConfig a -> Printer FlexConfig a
+onside p = do
+    indent <- getConfig (cfgIndentOnside . cfgIndent)
+    P.onside (fromIntegral indent) p
 
 depend :: ByteString -> Printer FlexConfig a -> Printer FlexConfig a
 depend kw = depend' (write kw)

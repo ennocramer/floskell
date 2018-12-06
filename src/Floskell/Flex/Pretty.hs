@@ -323,13 +323,13 @@ prettyTypesig ctx names ty = withLayout cfgLayoutTypesig flex vertical
   where
     flex = do
         inter comma $ map pretty names
-        indented $ do
+        onside $ do
             operator ctx "::"
             pretty ty
 
     vertical = do
         inter comma $ map pretty names
-        alignOnOperator ctx "::" $ pretty' ty
+        onside . alignOnOperator ctx "::" $ pretty' ty
 
     pretty' (TyForall _ mtyvarbinds mcontext ty') = do
         forM_ mtyvarbinds $ \tyvarbinds -> do
@@ -403,27 +403,6 @@ prettyPragma' name mp = do
     write name
     mayM_ mp $ withPrefix space aligned
     write " #-}"
-
--- This is a temporary work-around to avoid some duplicate
--- indentation and should be replaced by a better indentation
--- algorithm once all other styles have been replaced by flex.
-maybeIndented :: (Exp NodeInfo -> Printer FlexConfig ())
-              -> Exp NodeInfo
-              -> Printer FlexConfig ()
-maybeIndented pp expr =
-    if needsIndent || commentsBefore then indented $ pp expr else pp expr
-  where
-    commentsBefore =
-        any ((== Just Before) . comInfoLocation) . nodeInfoComments $ ann expr
-
-    needsIndent = case expr of
-        Case{} -> False
-        Do{} -> False
-        If{} -> False
-        Let{} -> False
-        MDo{} -> False
-        MultiIf{} -> False
-        _ -> True
 
 instance Pretty Module where
     prettyPrint (Module _ mhead pragmas imports decls) = inter blankline $
@@ -869,34 +848,42 @@ instance Pretty GadtDecl where
 
 instance Pretty Match where
     prettyPrint (Match _ name pats rhs mbinds) = do
-        pretty name
-        unless (null pats) $ do
-            space
-            inter space $ map pretty pats
-        pretty rhs
+        onside $ do
+            pretty name
+            unless (null pats) $ do
+                space
+                inter space $ map pretty pats
+            pretty rhs
         mapM_ pretty mbinds
 
     prettyPrint (InfixMatch _ pat name pats rhs mbinds) = do
-        pretty pat
-        pretty $ VarOp noNodeInfo name
-        inter space $ map pretty pats
-        pretty rhs
+        onside $ do
+            pretty pat
+            pretty $ VarOp noNodeInfo name
+            inter space $ map pretty pats
+            pretty rhs
         mapM_ pretty mbinds
 
 instance Pretty Rhs where
     prettyPrint (UnGuardedRhs _ expr) =
-        cut $ withLayout cfgLayoutDeclaration flex vertical
+        cut . onside $ withLayout cfgLayoutDeclaration flex vertical
       where
-        flex = maybeIndented (withPrefix (operator Declaration "=") pretty) expr
-        vertical = maybeIndented (withPrefix (operatorV Declaration "=") pretty) expr
+        flex = do
+            operator Declaration "="
+            pretty expr
+        vertical = do
+            operatorV Declaration "="
+            pretty expr
 
     prettyPrint (GuardedRhss _ guardedrhss) = aligned $ lined guardedrhss
 
 instance Pretty GuardedRhs where
     prettyPrint (GuardedRhs _ stmts expr) = do
         operator Declaration "|"
-        inter comma $ map pretty stmts
-        maybeIndented (withPrefix (operator Declaration "=") pretty) expr
+        onside $ do
+            inter comma $ map pretty stmts
+            operator Declaration "="
+            pretty expr
 
 instance Pretty Context where
     prettyPrint (CxSingle _ asst) = do
@@ -1089,28 +1076,28 @@ instance Pretty Exp where
             withIndent cfgIndentLet $ pretty (CompactBinds binds)
             spaceOrNewline
             write "in "
-            pretty expr
+            onside $ pretty expr
         vertical = aligned $ do
             write "let"
             withIndent cfgIndentLet $ pretty (CompactBinds binds)
             newline
             write "in "
-            pretty expr
+            onside $ pretty expr
 
     prettyPrint (If _ expr expr' expr'') = withLayout cfgLayoutIf flex vertical
       where
         flex = do
             write "if "
-            maybeIndented pretty expr
+            onside $ pretty expr
             spaceOrNewline
             write "then "
-            maybeIndented pretty expr'
+            onside $ pretty expr'
             spaceOrNewline
             write "else "
-            maybeIndented pretty expr''
+            onside $ pretty expr''
         vertical = do
             write "if "
-            maybeIndented pretty expr
+            onside $ pretty expr
             withIndent cfgIndentIf $ do
                 write "then "
                 pretty expr'
@@ -1531,10 +1518,11 @@ instance Pretty QualStmt where
 instance Pretty Stmt where
     prettyPrint (Generator _ pat expr) = do
         pretty pat
-        operator Expression "<-"
-        pretty expr
+        onside $ do
+            operator Expression "<-"
+            pretty expr
 
-    prettyPrint (Qualifier _ expr) = pretty expr
+    prettyPrint (Qualifier _ expr) = onside $ pretty expr
 
     prettyPrint (LetStmt _ binds) = do
         write "let "
@@ -1669,19 +1657,20 @@ newtype GuardedAlt l = GuardedAlt (GuardedRhs l)
     deriving (Functor, Annotated)
 
 instance Pretty GuardedAlt where
-    prettyPrint (GuardedAlt (GuardedRhs _ stmts expr)) = do
-        operator Expression "|"
-        inter comma $ map pretty stmts
-        operator Expression "->"
-        maybeIndented pretty expr
+    prettyPrint (GuardedAlt (GuardedRhs _ stmts expr)) = cut $ do
+        operatorH Expression "|"
+        onside $ do
+            inter comma $ map pretty stmts
+            operator Expression "->"
+            pretty expr
 
 newtype GuardedAlts l = GuardedAlts (Rhs l)
     deriving (Functor, Annotated)
 
 instance Pretty GuardedAlts where
-    prettyPrint (GuardedAlts (UnGuardedRhs _ expr)) = cut $ do
+    prettyPrint (GuardedAlts (UnGuardedRhs _ expr)) = cut . onside $ do
         operator Expression "->"
-        maybeIndented pretty expr
+        pretty expr
 
     prettyPrint (GuardedAlts (GuardedRhss _ guardedrhss)) =
         aligned . lined $ map GuardedAlt guardedrhss

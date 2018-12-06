@@ -45,6 +45,7 @@ module Floskell.Pretty
     , brackets
     , braces
       -- * Indentation
+    , onside
     , indented
     , indentedBlock
     , column
@@ -208,14 +209,22 @@ putState s' = modifyState (const s')
 modifyState :: (s -> s) -> Printer s ()
 modifyState f = modify (\s -> s { psUserState = f (psUserState s) })
 
+-- | Increase indentation level b n spaces for the given printer, but
+-- ignore increase when computing further indentations.
+onside :: Int64 -> Printer s a -> Printer s a
+onside i p = do
+    level <- gets psIndentLevel
+    onside' <- gets psOnside
+    modify (\s -> s { psOnside = i })
+    m <- p
+    modify (\s -> s { psIndentLevel = level, psOnside = onside' })
+    return m
+
 -- | Increase indentation level by n spaces for the given printer.
 indented :: Int64 -> Printer s a -> Printer s a
 indented i p = do
     level <- gets psIndentLevel
-    modify (\s -> s { psIndentLevel = level + i })
-    m <- p
-    modify (\s -> s { psIndentLevel = level })
-    return m
+    column (level + i) p
 
 indentedBlock :: Printer s a -> Printer s a
 indentedBlock p = do
@@ -263,9 +272,10 @@ prefixedLined pref ps' = case ps' of
 column :: Int64 -> Printer s a -> Printer s a
 column i p = do
     level <- gets psIndentLevel
-    modify (\s -> s { psIndentLevel = i })
+    onside' <- gets psOnside
+    modify (\s -> s { psIndentLevel = i, psOnside = if i > level then 0 else onside' })
     m <- p
-    modify (\s -> s { psIndentLevel = level })
+    modify (\s -> s { psIndentLevel = level, psOnside = onside' })
     return m
 
 -- | Get the column directly after the last printed character.
@@ -278,8 +288,8 @@ getNextColumn = do
     st <- get
     return $
         if psEolComment st
-        then psIndentLevel st
-        else max (psColumn st) (psIndentLevel st)
+        then psIndentLevel st + psOnside st
+        else max (psColumn st) (psIndentLevel st + psOnside st)
 
 -- | Get the current line number.
 getLineNum :: Printer s Int64
@@ -288,6 +298,9 @@ getLineNum = gets psLine
 -- | Output a newline.
 newline :: Printer s ()
 newline = do
+    modify (\s -> s { psIndentLevel = psIndentLevel s + psOnside s
+                    , psOnside = 0
+                    })
     state <- get
     guard $ psOutputRestriction state /= NoOverflowOrLinebreak
     penalty <- psLinePenalty state True (psColumn state)
