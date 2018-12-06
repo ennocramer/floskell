@@ -45,16 +45,17 @@ module Floskell.Flex.Printers
     , comma
     ) where
 
-import           Control.Applicative  ( (<|>) )
-import           Control.Monad        ( when )
+import           Control.Applicative        ( (<|>) )
+import           Control.Monad              ( when )
+import           Control.Monad.State.Strict ( gets )
 
-import           Data.ByteString      ( ByteString )
-import           Data.List            ( intersperse )
+import           Data.ByteString            ( ByteString )
+import           Data.List                  ( intersperse )
 
 import           Floskell.Flex.Config
-import           Floskell.Pretty      ( brackets, cut, int, newline, parens
-                                      , space, string, write )
-import qualified Floskell.Pretty      as P
+import           Floskell.Pretty            ( brackets, cut, int, newline
+                                            , parens, space, string, write )
+import qualified Floskell.Pretty            as P
 import           Floskell.Types
 
 -- | Query part of the pretty printer config
@@ -62,7 +63,10 @@ getConfig :: (a -> b) -> Printer a b
 getConfig f = f <$> P.getState
 
 oneline :: Printer s a -> Printer s a
-oneline = P.withOutputRestriction NoOverflowOrLinebreak
+oneline p = do
+    eol <- gets psEolComment
+    when eol $ newline
+    P.withOutputRestriction NoOverflowOrLinebreak p
 
 linebreak :: Printer s ()
 linebreak = return () <|> newline
