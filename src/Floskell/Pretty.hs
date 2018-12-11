@@ -34,6 +34,7 @@ module Floskell.Pretty
     , withCaseContext
     , rhsSeparator
     , prettyInfixOp
+    , prettyInfixOp'
       -- * Interspersing
     , inter
     , spaced
@@ -509,6 +510,12 @@ instance Pretty Pat where
                                            write (case boxed of
                                                       Unboxed -> " #)"
                                                       Boxed -> ")"))
+        PUnboxedSum _ before after pat ->
+            depend (write "(# ")
+                   (do
+                        inter space $ replicate before (write "|") ++
+                            [ pretty pat ] ++ replicate after (write "|")
+                        write " #)")
         PList _ ps -> brackets (commas (map pretty ps))
         PParen _ e -> parens (pretty e)
         PRec _ qname fields -> do
@@ -534,6 +541,7 @@ instance Pretty Pat where
                                       pretty e
                                       write " -> ")
                                  (pretty p)
+        PSplice _ splice -> pretty splice
         PQuasiQuote _ name str -> brackets (depend (do
                                                         write "$"
                                                         string name
@@ -567,6 +575,14 @@ prettyInfixOp op = case op of
         Symbol _ s -> string s
     Special _ s -> pretty s
 
+-- | Pretty print a name (maybe promoted) for being an infix operator.
+prettyInfixOp' :: MaybePromotedName NodeInfo -> Printer s ()
+prettyInfixOp' op = case op of
+    PromotedName _ q -> do
+        write "'"
+        prettyInfixOp q
+    UnpromotedName _ q -> prettyInfixOp q
+
 instance Pretty Type where
     prettyInternal x = case x of
         TyForall _ mbinds ctx ty -> depend (case mbinds of
@@ -588,6 +604,10 @@ instance Pretty Type where
                                            write (case boxed of
                                                       Unboxed -> " #)"
                                                       Boxed -> ")"))
+        TyUnboxedSum _ types -> depend (write "(# ")
+                                       (do
+                                               inter (write " | ") $ map pretty types
+                                               write " #)")
         TyList _ t -> brackets (pretty t)
         TyParArray _ t -> brackets (do
                                         write ":"
@@ -601,7 +621,7 @@ instance Pretty Type where
                                         pretty a
                                         space)
                                    (depend (do
-                                                prettyInfixOp op
+                                                prettyInfixOp' op
                                                 space)
                                            (pretty b))
         TyKind _ ty k -> parens (do
@@ -635,7 +655,6 @@ instance Pretty Exp where
 
 -- | Render an expression.
 exp :: Exp NodeInfo -> Printer s ()
-exp (ExprHole{}) = write "_"
 exp (InfixApp _ a op b) = depend (do
                                       pretty a
                                       space
@@ -694,6 +713,12 @@ exp (Tuple _ boxed exps) = depend (write (case boxed of
                                        write (case boxed of
                                                   Unboxed -> " #)"
                                                   Boxed -> ")"))
+exp (UnboxedSum _ before after e) =
+    depend (write "(# ")
+           (do
+                inter space $ replicate before (write "|") ++
+                    [ pretty e ] ++ replicate after (write "|")
+                write " #)")
 exp (TupleSection _ boxed mexps) =
     depend (write (case boxed of
                        Unboxed -> "(# "
@@ -913,7 +938,7 @@ decl (TypeFamDecl _ declhead result injectivity) = do
             space
             pretty i
         Nothing -> return ()
-decl (DataDecl _ dataornew ctx dhead condecls mderivs) = do
+decl (DataDecl _ dataornew ctx dhead condecls derivs) = do
     depend (do
                 pretty dataornew
                 space)
@@ -925,11 +950,9 @@ decl (DataDecl _ dataornew ctx dhead condecls mderivs) = do
                              [ x ] -> singleCons x
                              xs -> multiCons xs))
     indentSpaces <- getIndentSpaces
-    case mderivs of
-        Nothing -> return ()
-        Just derivs -> do
-            newline
-            column indentSpaces (pretty derivs)
+    forM_ derivs $ \deriv -> do
+        newline
+        column indentSpaces (pretty deriv)
   where
     singleCons x = do
         write " ="
@@ -956,14 +979,24 @@ decl (InlineSig _ inline _ name) = do
 decl x = pretty' x
 
 instance Pretty Deriving where
-    prettyInternal (Deriving _ heads) = do
+    prettyInternal (Deriving _ mstrat heads) = do
         write "deriving"
         space
+        case mstrat of
+            Nothing -> return ()
+            Just strat -> do
+                pretty strat
+                space
         let heads' = if length heads == 1 then map stripParens heads else heads
         parens (commas (map pretty heads'))
       where
         stripParens (IParen _ iRule) = stripParens iRule
         stripParens x = x
+
+instance Pretty DerivStrategy where
+  prettyInternal (DerivStock _) = write "stock"
+  prettyInternal (DerivAnyclass _) = write "anyclass"
+  prettyInternal (DerivNewtype _) = write "newtype"
 
 instance Pretty Alt where
     prettyInternal x = case x of
@@ -1206,6 +1239,7 @@ instance Pretty DeclHead where
 
 instance Pretty SpecialCon where
     prettyInternal s = case s of
+        ExprHole _ -> write "_"
         UnitCon _ -> write "()"
         ListCon _ -> write "[]"
         FunCon _ -> write "->"
@@ -1220,6 +1254,9 @@ instance Pretty SpecialCon where
 
 instance Pretty Overlap where
     prettyInternal (Overlap _) = write "{-# OVERLAP #-}"
+    prettyInternal (Overlaps _) = write "{-# OVERLAPS #-}"
+    prettyInternal (Overlapping _) = write "{-# OVERLAPPING #-}"
+    prettyInternal (Overlappable _) = write "{-# OVERLAPPABLE #-}"
     prettyInternal (NoOverlap _) = write "{-# NO_OVERLAP #-}"
     prettyInternal (Incoherent _) = write "{-# INCOHERENT #-}"
 

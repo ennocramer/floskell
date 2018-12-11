@@ -48,7 +48,7 @@ library
                    , containers
                    , unordered-containers
                    , data-default
-                   , haskell-src-exts >= 1.19
+                   , haskell-src-exts >= 1.20
                    , monad-loops
                    , monad-dijkstra
                    , mtl
@@ -59,7 +59,7 @@ library
 
 executable floskell
   hs-source-dirs:    src/main
-  ghc-options:       -Wall -O2
+  ghc-options:       -Wall -O2 -Wno-missing-home-modules -optP-Wno-nonportable-include-path
   main-is:           Main.hs
   build-depends:     base >= 4 && < 5
                    , floskell

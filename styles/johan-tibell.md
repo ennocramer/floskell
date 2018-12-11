@@ -288,12 +288,12 @@ data instance  List () = NilList Int
 
 data instance  List Char = CharNil
                          | CharCons Char (List Char)
-                         deriving (Eq, Ord, Show)
+                             deriving (Eq, Ord, Show)
 
 data instance  List Int :: * where
         IntNil :: List Int
         IntCons :: Int -> List Int
-deriving (Eq, Ord, Show)
+    deriving (Eq, Ord, Show)
 ```
 
 ### ClassDecl and InstDecl
@@ -341,6 +341,12 @@ instance Semigroup a =>
 deriving instance Eq a => Eq (Sum a)
 
 deriving instance {-# OVERLAP #-} Eq a => Eq (Sum a)
+
+deriving stock instance {-# OVERLAPS #-} Eq a => Eq (Sum a)
+
+deriving anyclass instance {-# OVERLAPPING #-} Eq a => Eq (Sum a)
+
+deriving newtype instance {-# OVERLAPPABLE #-} Eq a => Eq (Sum a)
 ```
 
 ### InfixDecl
@@ -420,12 +426,15 @@ pattern IsTrue <- ((== "True") . show -> True)
 pattern ExNumPat :: () => Show b => b -> T
 
 pattern ExNumPat x = MkT x
+
+pattern Foo, Bar :: Show a => a
 ```
 
 ### FunBind and PatBind
 
 ``` haskell
 {-# LANGUAGE UnboxedTuples #-}
+{-# LANGUAGE UnboxedSums #-}
 {-# LANGUAGE RecordWildCards #-}
 
 pi = 3.14
@@ -443,6 +452,10 @@ maybe _ f (Some x) = f x
 fst (x,_) = x
 
 fst' (# x,_ #) = x
+
+fstPrism (# x | | #) = Just x
+fstPrism (# | _ | #) = Nothing
+fstPrism (# | | _ #) = Nothing
 
 empty [] = True
 empty _ = False
@@ -555,10 +568,11 @@ foo, bar, baz "no longer supported"
 
 ## Exp
 
-### Var, Con, Lit, Tuple, List, and ExpTypeSig
+### Var, Con, Lit, Tuple, UnboxedSum, List, and ExpTypeSig
 
 ``` haskell
 {-# LANGUAGE UnboxedTuples #-}
+{-# LANGUAGE UnboxedSums #-}
 
 foo = foo
 
@@ -587,6 +601,14 @@ foo = (# 1, 2 #)
 foo = 
     (#  1 -- the one
       , 2 #)
+
+foo = (# 1 #)
+
+foo = (# | 1 | | #)
+
+foo = 
+    (# | 1 -- the one
+                     | | #)
 
 foo = []
 
@@ -822,7 +844,7 @@ mkExp :: Q Exp
 mkExp = [|a|]
 
 fst :: $(mkType)
-fst (a,b) = $(mkExp)
+fst $(mkPat) = $(mkExp)
 
 html = [html|<p>Lorem Ipsum Dolor Amet Sit</p>|]
 

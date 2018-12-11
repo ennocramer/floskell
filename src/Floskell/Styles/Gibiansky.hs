@@ -347,8 +347,11 @@ context ctx = prettyNoExt ctx
 
 -- | Format deriving clauses with spaces and commas between class constraints.
 derivings :: Extend Deriving
-derivings (Deriving _ instHeads) = do
+derivings (Deriving _ mstrat instHeads) = do
     write "deriving "
+    forM_ mstrat $ \strat -> do
+        pretty strat
+        space
     go instHeads
   where
     go insts

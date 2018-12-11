@@ -98,14 +98,16 @@ opName :: QOp a -> ByteString
 opName op = case op of
     (QVarOp _ qname) -> opName' qname
     (QConOp _ qname) -> opName' qname
-  where
-    opName' (Qual _ _ (Ident _ _)) = "``"
-    opName' (Qual _ _ (Symbol _ _)) = ""
-    opName' (UnQual _ (Ident _ _)) = "``"
-    opName' (UnQual _ (Symbol _ str)) = BS8.pack str
-    opName' (Special _ (FunCon _)) = "->"
-    opName' (Special _ (Cons _)) = ":"
-    opName' (Special _ _) = ""
+
+-- | Return the configuration name of an operator
+opName' :: QName a -> ByteString
+opName' (Qual _ _ (Ident _ _)) = "``"
+opName' (Qual _ _ (Symbol _ _)) = ""
+opName' (UnQual _ (Ident _ _)) = "``"
+opName' (UnQual _ (Symbol _ str)) = BS8.pack str
+opName' (Special _ (FunCon _)) = "->"
+opName' (Special _ (Cons _)) = ":"
+opName' (Special _ _) = ""
 
 lined :: (Annotated ast, Pretty ast) => [ast NodeInfo] -> Printer FlexConfig ()
 lined = inter newline . map (cut . pretty)
@@ -488,17 +490,17 @@ instance Pretty Decl where
             newline
             lined typeeqns
 
-    prettyPrint (DataDecl _ dataornew mcontext declhead qualcondecls mderiving) = do
+    prettyPrint (DataDecl _ dataornew mcontext declhead qualcondecls derivings) = do
         depend' (pretty dataornew) $ do
             mapM_ pretty mcontext
             pretty declhead
             unless (null qualcondecls) $ withLayout cfgLayoutDeclaration flex vertical
-        mapM_ pretty mderiving
+        mapM_ pretty derivings
       where
         flex = list' Declaration "=" "|" qualcondecls
         vertical = listV' Declaration "=" "|" qualcondecls
 
-    prettyPrint (GDataDecl _ dataornew mcontext declhead mkind gadtdecls mderiving) = do
+    prettyPrint (GDataDecl _ dataornew mcontext declhead mkind gadtdecls derivings) = do
         depend' (pretty dataornew) $ do
             mapM_ pretty mcontext
             pretty declhead
@@ -508,7 +510,7 @@ instance Pretty Decl where
             write " where"
             newline
             lined gadtdecls
-        mapM_ pretty mderiving
+        mapM_ pretty derivings
 
     prettyPrint (DataFamDecl _ mcontext declhead mresultsig) =
         depend "data family" $ do
@@ -521,16 +523,16 @@ instance Pretty Decl where
         operator Declaration "="
         pretty ty'
 
-    prettyPrint (DataInsDecl _ dataornew ty qualcondecls mderiving) = do
+    prettyPrint (DataInsDecl _ dataornew ty qualcondecls derivings) = do
         depend' (pretty dataornew >> write " instance") $ do
             pretty ty
             withLayout cfgLayoutDeclaration flex vertical
-        mapM_ pretty mderiving
+        mapM_ pretty derivings
       where
         flex = list' Declaration "=" "|" qualcondecls
         vertical = listV' Declaration "=" "|" qualcondecls
 
-    prettyPrint (GDataInsDecl _ dataornew ty mkind gadtdecls mderiving) = do
+    prettyPrint (GDataInsDecl _ dataornew ty mkind gadtdecls derivings) = do
         depend' (pretty dataornew >> write " instance") $ do
             pretty ty
             mayM_ mkind $ \kind -> do
@@ -539,7 +541,7 @@ instance Pretty Decl where
             write " where"
             newline
             lined gadtdecls
-        mapM_ pretty mderiving
+        mapM_ pretty derivings
 
     prettyPrint (ClassDecl _ mcontext declhead fundeps mclassdecls) = do
         depend "class" $ do
@@ -558,9 +560,12 @@ instance Pretty Decl where
             write " where"
             withIndent cfgIndentClass $ prettyDecls (\d _ -> skipBlankInstDecl d) decls
 
-    prettyPrint (DerivDecl _ moverlap instrule) = depend "deriving instance" $ do
-        mayM_ moverlap $ withPostfix space pretty
-        pretty instrule
+    prettyPrint (DerivDecl _ mderivstrategy moverlap instrule) =
+        depend "deriving" $ do
+            mayM_ mderivstrategy $ withPostfix space pretty
+            write "instance "
+            mayM_ moverlap $ withPostfix space pretty
+            pretty instrule
 
     prettyPrint (InfixDecl _ assoc mint ops) = do
         pretty assoc
@@ -576,8 +581,8 @@ instance Pretty Decl where
 
     prettyPrint (TypeSig _ names ty) = prettyTypesig Declaration names ty
 
-    prettyPrint (PatSynSig _ name mtyvarbinds mcontext mcontext' ty) = depend "pattern" $ do
-        pretty name
+    prettyPrint (PatSynSig _ names mtyvarbinds mcontext mcontext' ty) = depend "pattern" $ do
+        inter comma $ map pretty names
         operator Declaration "::"
         mapM_ prettyForall mtyvarbinds
         mayM_ mcontext pretty
@@ -774,24 +779,25 @@ instance Pretty InstDecl where
         operator Declaration "="
         pretty ty'
 
-    prettyPrint (InsData _ dataornew ty qualcondecls mderiving) =
+    prettyPrint (InsData _ dataornew ty qualcondecls derivings) =
         depend' (pretty dataornew) $ do
             pretty ty
             unless (null qualcondecls) $ list' Declaration "=" "|" qualcondecls
-            mapM_ pretty mderiving
+            mapM_ pretty derivings
 
-    prettyPrint (InsGData _ dataornew ty mkind gadtdecls mderiving) =
+    prettyPrint (InsGData _ dataornew ty mkind gadtdecls derivings) =
         depend' (pretty dataornew) $ do
             pretty ty
             mayM_ mkind $ withPrefix space pretty
             unless (null gadtdecls) $ list' Declaration "=" "|" gadtdecls
-            mapM_ pretty mderiving
+            mapM_ pretty derivings
 
 instance Pretty Deriving where
-    prettyPrint (Deriving _ instrules) = do
+    prettyPrint (Deriving _ mderivstrategy instrules) = do
         newline
         indented $ do
             write "deriving "
+            mayM_ mderivstrategy $ withPostfix space pretty
             case instrules of
                 [ i@IRule{} ] -> pretty i
                 _ -> withLayout cfgLayoutDeriving flex vertical
@@ -948,6 +954,8 @@ instance Pretty Type where
         Unboxed -> list Type "(#" "#)" "," tys
         Boxed -> list Type "(" ")" "," tys
 
+    prettyPrint (TyUnboxedSum _ tys) = list Type "(#" "#)" "|" tys
+
     prettyPrint (TyList _ ty) = group Type "[" "]" $ pretty ty
 
     prettyPrint (TyParArray _ ty) = group Type "[:" ":]" $ pretty ty
@@ -963,10 +971,14 @@ instance Pretty Type where
 
     prettyPrint (TyParen _ ty) = parens $ pretty ty
 
-    prettyPrint (TyInfix _ ty qname ty') = do
+    prettyPrint (TyInfix _ ty op ty') = do
         pretty ty
-        pretty $ QVarOp noNodeInfo qname
+        withOperatorFormatting Type opname (prettyHSE op) (return ())
         pretty ty'
+      where
+        opname = opName' $ case op of
+            PromotedName _ qname -> qname
+            UnpromotedName _ qname -> qname
 
     prettyPrint (TyKind _ ty kind) = do
         pretty ty
@@ -1128,6 +1140,10 @@ instance Pretty Exp where
     prettyPrint (Tuple _ boxed exprs) = case boxed of
         Boxed -> list Expression "(" ")" "," exprs
         Unboxed -> list Expression "(#" "#)" "," exprs
+
+    prettyPrint (UnboxedSum _ before after expr) =
+        group Expression "(#" "#)" . inter space $ replicate before (write "|") ++
+            [ pretty expr ] ++ replicate after (write "|")
 
     prettyPrint (TupleSection _ boxed mexprs) = case boxed of
         Boxed -> list Expression "(" ")" "," $ map MayAst mexprs
@@ -1318,8 +1334,6 @@ instance Pretty Exp where
             then write " { }"
             else withIndent cfgIndentCase $ lined alts
 
-    prettyPrint (ExprHole _) = write "_"
-
 instance Pretty Alt where
     prettyPrint (Alt _ pat rhs mbinds) = do
         pretty pat
@@ -1360,6 +1374,10 @@ instance Pretty Pat where
     prettyPrint (PTuple _ boxed pats) = case boxed of
         Boxed -> list Pattern "(" ")" "," pats
         Unboxed -> list Pattern "(#" "#)" "," pats
+
+    prettyPrint (PUnboxedSum _ before after pat) =
+        group Pattern "(#" "#)" . inter space $ replicate before (write "|") ++
+            [ pretty pat ] ++ replicate after (write "|")
 
     prettyPrint (PList _ pats) = list Pattern "[" "]" "," pats
 
@@ -1419,6 +1437,8 @@ instance Pretty Pat where
         write "<["
         inter space $ map pretty rpats
         write "%>"
+
+    prettyPrint (PSplice _ splice) = pretty splice
 
     prettyPrint (PQuasiQuote _ str str') = do
         write "[$"
@@ -1628,6 +1648,8 @@ instance Pretty BooleanFormula where
     prettyPrint (ParenFormula _ booleanformula) = parens $ pretty booleanformula
 
 -- Stick with HSE
+instance Pretty DerivStrategy
+
 instance Pretty DataOrNew
 
 instance Pretty BangType

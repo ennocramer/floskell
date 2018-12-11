@@ -336,7 +336,7 @@ decl (PatBind _ pat rhs' mbinds) = withCaseContext False $ do
     forM_ mbinds bindingGroup
 
 -- | Handle records specially for a prettier display (see guide).
-decl (DataDecl _ dataornew ctx dhead condecls@[ _ ] mderivs) | any isRecord
+decl (DataDecl _ dataornew ctx dhead condecls@[ _ ] derivs) | any isRecord
                                                                    condecls = do
                                                                    depend (do
                                                                                pretty dataornew
@@ -346,9 +346,7 @@ decl (DataDecl _ dataornew ctx dhead condecls@[ _ ] mderivs) | any isRecord
                                                                                   (do
                                                                                        pretty dhead
                                                                                        multiCons condecls))
-                                                                   case mderivs of
-                                                                       Nothing -> return ()
-                                                                       Just derivs -> pretty derivs
+                                                                   inter newline $ map pretty derivs
   where
     multiCons xs = depend (write " =")
                           (inter (write "|")

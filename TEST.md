@@ -270,6 +270,9 @@ instance Semigroup a => Monoid (Maybe a) where
 ``` haskell
 deriving instance Eq a => Eq (Sum a)
 deriving instance {-# OVERLAP #-} Eq a => Eq (Sum a)
+deriving stock instance {-# OVERLAPS #-} Eq a => Eq (Sum a)
+deriving anyclass instance {-# OVERLAPPING #-} Eq a => Eq (Sum a)
+deriving newtype instance {-# OVERLAPPABLE #-} Eq a => Eq (Sum a)
 ```
 
 ### InfixDecl
@@ -328,12 +331,15 @@ pattern IsTrue <- ((== "True") . show -> True)
 
 pattern ExNumPat :: () => Show b => b -> T
 pattern ExNumPat x = MkT x
+
+pattern Foo, Bar :: Show a => a
 ```
 
 ### FunBind and PatBind
 
 ``` haskell
 {-# LANGUAGE UnboxedTuples #-}
+{-# LANGUAGE UnboxedSums #-}
 {-# LANGUAGE RecordWildCards #-}
 
 pi = 3.14
@@ -350,6 +356,10 @@ maybe _ f (Some x) = f x
 
 fst (x, _) = x
 fst' (# x, _ #) = x
+
+fstPrism (# x | | #) = Just x
+fstPrism (# | _ | #) = Nothing
+fstPrism (# | | _ #) = Nothing
 
 empty [] = True
 empty _ = False
@@ -424,10 +434,11 @@ foreign export ccall callback :: Int -> Int
 
 ## Exp
 
-### Var, Con, Lit, Tuple, List, and ExpTypeSig
+### Var, Con, Lit, Tuple, UnboxedSum, List, and ExpTypeSig
 
 ``` haskell
 {-# LANGUAGE UnboxedTuples #-}
+{-# LANGUAGE UnboxedSums #-}
 
 foo = foo
 
@@ -449,6 +460,12 @@ foo = (# #)
 foo = (# 1, 2 #)
 foo = (# 1 -- the one
  , 2 #)
+
+
+foo = (# 1 #)
+foo = (# | 1 | | #)
+foo = (# | 1 -- the one
+      | | #)
 
 foo = []
 foo = [1]
@@ -632,7 +649,7 @@ mkExp :: Q Exp
 mkExp = [e|a|]
 
 fst :: $(mkType)
-fst (a, b) = $(mkExp)
+fst $(mkPat) = $(mkExp)
 
 html = [html|<p>Lorem Ipsum Dolor Amet Sit</p>|]
 

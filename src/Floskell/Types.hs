@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE DeriveDataTypeable         #-}
@@ -38,6 +39,7 @@ import           Data.Data
 import           Data.Int                       ( Int64 )
 import           Data.Maybe                     ( listToMaybe )
 import           Data.Text                      ( Text )
+import           Data.Semigroup                 as Sem
 
 import           Floskell.Buffer                ( Buffer )
 import qualified Floskell.Buffer                as Buffer
@@ -52,9 +54,15 @@ data OutputRestriction = Anything | NoOverflow | NoOverflowOrLinebreak
 newtype Penalty = Penalty Int
     deriving (Eq, Ord, Num, Show)
 
+instance Sem.Semigroup Penalty where
+    (<>) = (+)
+
 instance Monoid Penalty where
     mempty = 0
-    mappend = (+)
+
+#if !(MIN_VERSION_base(4,11,0))
+    mappend = (<>)
+#endif
 
 defaultLinePenalty :: Bool -> Int64 -> Printer s Penalty
 defaultLinePenalty eol col = do

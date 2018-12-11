@@ -464,12 +464,12 @@ typeInfixExpr :: Type NodeInfo -> Printer State ()
 -- existing line breaks, but do not add new ones.
 typeInfixExpr (TyInfix _ arg1 op arg2)
     | deltaBefore /= 0 && deltaAfter /= 0 =
-          align $ inter newline [ pretty arg1, prettyInfixOp op, pretty arg2 ]
+          align $ inter newline [ pretty arg1, prettyInfixOp' op, pretty arg2 ]
     | deltaBefore /= 0 || deltaAfter /= 0 = pretty arg1 >>
           preserveLinebreak deltaBefore
-                            (prettyInfixOp op >>
+                            (prettyInfixOp' op >>
                                  preserveLinebreak deltaAfter (pretty arg2))
-    | otherwise = spaced [ pretty arg1, prettyInfixOp op, pretty arg2 ]
+    | otherwise = spaced [ pretty arg1, prettyInfixOp' op, pretty arg2 ]
   where
     preserveLinebreak delta p =
         if delta > 0 then newline >> indentFull p else space >> p
@@ -618,7 +618,7 @@ extDecl (ClassDecl _ mcontext declhead fundeps mdecls) = do
             newline
             indentFull $ preserveLineSpacing decls
 -- Align data constructors
-extDecl decl@(DataDecl _ dataOrNew mcontext declHead constructors mderiv) = do
+extDecl decl@(DataDecl _ dataOrNew mcontext declHead constructors derivs) = do
     mapM_ pretty mcontext
     pretty dataOrNew
     space
@@ -628,7 +628,7 @@ extDecl decl@(DataDecl _ dataOrNew mcontext declHead constructors mderiv) = do
         if isEnum decl || isSingletonType decl
         then attemptSingleLine single multi
         else multi
-    maybeM_ mderiv $ \deriv -> indentFull $ newline >> pretty deriv
+    forM_ derivs $ \deriv -> indentFull $ newline >> pretty deriv
   where
     single = do
         write "= "
@@ -697,8 +697,11 @@ extFieldDecl other = prettyNoExt other
 
 -- Derived instances separated by comma and space, no line breaking
 extDeriving :: Extend Deriving
-extDeriving (Deriving _ instHeads) = do
+extDeriving (Deriving _ mstrat instHeads) = do
     write "deriving "
+    maybeM_ mstrat $ \strat -> do
+        pretty strat
+        space
     case instHeads of
         [ x ] -> pretty x
         xs -> parens $ inter (write ", ") $ map pretty xs
