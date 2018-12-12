@@ -28,7 +28,7 @@ module Floskell.Flex.Config
 import           Data.Aeson         ( FromJSON(..), ToJSON(..)
                                     , genericParseJSON, genericToJSON )
 import qualified Data.Aeson         as JSON
-import           Data.Aeson.Types   as JSON ( Options(..), camelTo
+import           Data.Aeson.Types   as JSON ( Options(..), camelTo2
                                             , typeMismatch )
 import           Data.ByteString    ( ByteString )
 import           Data.Default       ( Default(..) )
@@ -243,11 +243,11 @@ readMaybe str = case reads str of
 
 enumOptions :: Int -> Options
 enumOptions n =
-    JSON.defaultOptions { constructorTagModifier = JSON.camelTo '-' . drop n }
+    JSON.defaultOptions { constructorTagModifier = JSON.camelTo2 '-' . drop n }
 
 recordOptions :: Int -> Options
 recordOptions n =
-    JSON.defaultOptions { fieldLabelModifier = JSON.camelTo '-' . drop n
+    JSON.defaultOptions { fieldLabelModifier = JSON.camelTo2 '-' . drop n
                         , unwrapUnaryRecords = True
                         }
 

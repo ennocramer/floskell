@@ -1,126 +1,78 @@
-# Copy these contents into the root directory of your Github project in a file
-# named .travis.yml
+sudo: true
+language: minimal
 
-# Use new container infrastructure to enable caching
-sudo: false
+git:
+  depth: 5
 
-# Choose a lightweight base image; we provide our own build tools.
-language: c
-
-# Caching so the next build will be fast too.
 cache:
   directories:
-  - $HOME/.ghc
-  - $HOME/.cabal
-  - $HOME/.stack
+  - "$HOME/.cabal"
+  - "$HOME/.stack"
+  - "$TRAVIS_BUILD_DIR/.stack-work"
 
-# The different configurations we want to test. We have BUILD=cabal which uses
-# cabal-install, and BUILD=stack which uses Stack. More documentation on each
-# of those below.
-#
-# We set the compiler values here to tell Travis to use a different
-# cache file per set of arguments.
-#
-# If you need to have different apt packages for each combination in the
-# matrix, you can use a line such as:
-#     addons: {apt: {packages: [libfcgi-dev,libgmp-dev]}}
 matrix:
   include:
 
-#   - env: BUILD=stack ARGS="--resolver lts-2"
-#     compiler: ": #stack 7.8.4"
-#     addons: {apt: {packages: [ghc-7.8.4], sources: [hvr-ghc]}}
+  - name: "Stack LTS-7 (GHC-8.0.1)"
+    env: BUILD=stack RESOLVER=lts-7
 
-  - env: BUILD=stack ARGS="--resolver lts-3"
-    compiler: ": #stack 7.10.2"
-    addons: {apt: {packages: [ghc-7.10.2], sources: [hvr-ghc]}}
+  - name: "Stack LTS-9 (GHC-8.0.2)"
+    env: BUILD=stack RESOLVER=lts-9
 
-  - env: BUILD=stack ARGS="--resolver lts-5"
-    compiler: ": #stack 7.10.3"
-    addons: {apt: {packages: [ghc-7.10.3], sources: [hvr-ghc]}}
+  - name: "Stack LTS-11 (GHC-8.2.2)"
+    env: BUILD=stack RESOLVER=lts-11
 
-  - env: BUILD=stack ARGS="--resolver lts-7"
-    compiler: ": #stack 8.0.1"
-    addons: {apt: {packages: [ghc-8.0.1], sources: [hvr-ghc]}}
+  - name: "Stack LTS-12 (GHC-8.4.4)"
+    env: BUILD=stack RESOLVER=lts-12
 
-  - env: BUILD=stack ARGS="--resolver lts-8"
-    compiler: ": #stack 8.0.2"
-    addons: {apt: {packages: [ghc-8.0.2], sources: [hvr-ghc]}}
+  - name: "Stack Nightly"
+    env: BUILD=stack RESOLVER=nightly
 
-  # Build on OS X in addition to Linux
-  - env: BUILD=stack ARGS=""
-    compiler: ": #stack default osx"
+  - name: "Cabal GHC-HEAD"
+    env: BUILD=cabal
+    addons: {apt: {packages: [cabal-install-head,ghc-head], sources: [hvr-ghc]}}
+
+  - name: "Stack LTS-12 (GHC-8.4.4) [OSX]"
+    env: BUILD=stack RESOLVER=lts-12
     os: osx
 
-before_install:
-# Using compiler above sets CC to an invalid value, so unset it
-- unset CC
-
-# We want to always allow newer versions of packages when building on GHC HEAD
-- CABALARGS=""
-- if [ "x$GHCVER" = "xhead" ]; then CABALARGS=--allow-newer; fi
-
-# Download and unpack the stack executable
-- export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$HOME/.local/bin:/opt/alex/$ALEXVER/bin:/opt/happy/$HAPPYVER/bin:$HOME/.cabal/bin:$PATH
-- mkdir -p ~/.local/bin
-- |
-  if [ `uname` = "Darwin" ]
-  then
-    travis_retry curl --insecure -L https://www.stackage.org/stack/osx-x86_64 | tar xz --strip-components=1 --include '*/stack' -C ~/.local/bin
-  else
-    travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
-  fi
-
-  # Use the more reliable S3 mirror of Hackage
-  mkdir -p $HOME/.cabal
-  echo 'remote-repo: hackage.haskell.org:http://hackage.fpcomplete.com/' > $HOME/.cabal/config
-  echo 'remote-repo-cache: $HOME/.cabal/packages' >> $HOME/.cabal/config
-
-  if [ "$CABALVER" != "1.16" ]
-  then
-    echo 'jobs: $ncpus' >> $HOME/.cabal/config
-  fi
-
-# Get the list of packages from the stack.yaml file
-- PACKAGES=$(stack --install-ghc query locals | grep '^ *path' | sed 's@^ *path:@@')
+  allow_failures:
+  - name: "Cabal GHC-HEAD"
+  - name: "Stack Nightly"
 
 install:
-- echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"
-- if [ -f configure.ac ]; then autoreconf -i; fi
-- |
-  set -ex
-  case "$BUILD" in
-    stack)
-      stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
-      ;;
-    cabal)
+  - |
+    if [ $BUILD = cabal ]; then
+      export PATH="/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$PATH"
+
       cabal --version
-      travis_retry cabal update
-      cabal install --only-dependencies --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
-      ;;
-  esac
-  set +ex
+      ghc --version
+      cabal new-update
+      cabal new-build all --enable-tests --enable-benchmarks --only-dependencies $CABALARGS
+    else
+      mkdir -p ~/.local/bin
+      export PATH="$HOME/.local/bin:$PATH"
+
+      # install stack
+      curl -L "https://www.stackage.org/stack/${TRAVIS_OS_NAME}-x86_64" | tar xz --strip-components=1 -C ~/.local/bin/
+
+      # build project with stack
+      if [ -n "$RESOLVER" ]; then
+        ARGS="--resolver $RESOLVER"
+      fi
+      stack --version
+      stack $ARGS --no-terminal setup
+      stack $ARGS ghc -- --version
+      stack $ARGS --no-terminal build --test --bench --only-dependencies
+    fi
 
 script:
-- |
-  set -ex
-  case "$BUILD" in
-    stack)
-      stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
-      ;;
-    cabal)
-      cabal install --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
-
-      ORIGDIR=$(pwd)
-      for dir in $PACKAGES
-      do
-        cd $dir
-        cabal check || [ "$CABALVER" == "1.16" ]
-        cabal sdist
-        SRC_TGZ=$(cabal info . | awk '{print $2;exit}').tar.gz && \
-          (cd dist && cabal install --force-reinstalls "$SRC_TGZ")
-        cd $ORIGDIR
-      done
-      ;;
-  esac
-  set +ex
+  - |
+    if [ $BUILD = cabal ]; then
+      cabal new-test all --enable-tests --enable-benchmarks $CABALARGS
+    else
+      if [ -n "$RESOLVER" ]; then
+        ARGS="--resolver $RESOLVER"
+      fi
+      stack $ARGS --no-terminal build --test --bench --no-run-benchmarks --haddock --no-haddock-deps
+    fi
