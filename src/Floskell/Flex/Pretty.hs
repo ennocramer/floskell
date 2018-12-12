@@ -388,7 +388,7 @@ prettyInfixApp nameFn ctx (lhs, args) = withLayout cfgLayoutInfixApp flex vertic
                 withOperatorFormatting ctx (nameFn op) (prettyHSE op) $ do
                     pretty rhs
                     forM_ args' $ \(op', rhs') -> do
-                        withOperatorFormattingV Expression (nameFn op') (prettyHSE op') (return ())
+                        withOperatorFormattingV ctx (nameFn op') (prettyHSE op') (return ())
                         pretty rhs'
             _ -> return ()
 
