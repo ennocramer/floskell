@@ -188,69 +188,70 @@ sepSpace = do
     when (sp /= WsNone) space
 
 operator :: LayoutContext -> ByteString -> Printer FlexConfig ()
-operator ctx op = alignOnOperator ctx op $ return ()
+operator ctx op = withOperatorFormatting ctx op (write op) id
 
 operatorH :: LayoutContext -> ByteString -> Printer FlexConfig ()
-operatorH ctx op = alignOnOperatorH ctx op $ return ()
+operatorH ctx op = withOperatorFormattingH ctx op (write op) id
 
 operatorV :: LayoutContext -> ByteString -> Printer FlexConfig ()
-operatorV ctx op = alignOnOperatorV ctx op $ return ()
+operatorV ctx op = withOperatorFormattingV ctx op (write op) id
 
 alignOnOperator :: LayoutContext
                 -> ByteString
                 -> Printer FlexConfig a
                 -> Printer FlexConfig a
-alignOnOperator ctx op = withOperatorFormatting ctx op (write op)
+alignOnOperator ctx op p =
+    withOperatorFormatting ctx op (write op) (aligned . (*> p))
 
 alignOnOperatorH :: LayoutContext
                  -> ByteString
                  -> Printer FlexConfig a
                  -> Printer FlexConfig a
-alignOnOperatorH ctx op = withOperatorFormattingH ctx op (write op)
+alignOnOperatorH ctx op p =
+    withOperatorFormattingH ctx op (write op) (aligned . (*> p))
 
 alignOnOperatorV :: LayoutContext
                  -> ByteString
                  -> Printer FlexConfig a
                  -> Printer FlexConfig a
-alignOnOperatorV ctx op = withOperatorFormattingV ctx op (write op)
+alignOnOperatorV ctx op p =
+    withOperatorFormattingV ctx op (write op) (aligned . (*> p))
 
 withOperatorFormatting :: LayoutContext
                        -> ByteString
                        -> Printer FlexConfig ()
+                       -> (Printer FlexConfig () -> Printer FlexConfig a)
                        -> Printer FlexConfig a
-                       -> Printer FlexConfig a
-withOperatorFormatting ctx op opp p = do
+withOperatorFormatting ctx op opp fn = do
     force <- getConfig (wsForceLinebreak . cfgOpWs ctx op . cfgOp)
     if force then vert else hor <|> vert
   where
-    hor = withOperatorFormattingH ctx op opp p
-    vert = withOperatorFormattingV ctx op opp p
+    hor = withOperatorFormattingH ctx op opp fn
+    vert = withOperatorFormattingV ctx op opp fn
 
 withOperatorFormattingH :: LayoutContext
                         -> ByteString
                         -> Printer FlexConfig ()
+                        -> (Printer FlexConfig () -> Printer FlexConfig a)
                         -> Printer FlexConfig a
-                        -> Printer FlexConfig a
-withOperatorFormattingH ctx op opp p = do
+withOperatorFormattingH ctx op opp fn = do
     ws <- getConfig (cfgOpWs ctx op . cfgOp)
     when (wsSpace Before ws) space
-    aligned $ do
+    fn $ do
         opp
         when (wsSpace After ws) space
-        p
 
 withOperatorFormattingV :: LayoutContext
                         -> ByteString
                         -> Printer FlexConfig ()
+                        -> (Printer FlexConfig () -> Printer FlexConfig a)
                         -> Printer FlexConfig a
-                        -> Printer FlexConfig a
-withOperatorFormattingV ctx op opp p = do
+withOperatorFormattingV ctx op opp fn = do
     ws <- getConfig (cfgOpWs ctx op . cfgOp)
     if wsLinebreak Before ws then newline else when (wsSpace Before ws) space
-    aligned $ do
+    fn $ do
         opp
         if wsLinebreak After ws then newline else when (wsSpace After ws) space
-        p
 
 comma :: Printer FlexConfig ()
 comma = operator Expression ","

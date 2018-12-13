@@ -328,8 +328,8 @@ $( bar baz )
 ``` haskell
 id :: a -> a
 sort :: Ord a => [ a ] -> [ a ]
-long :: ( IsString a, Monad m ) => ByteString -> ByteString -> ByteString
-    -> ByteString -> ByteString -> a -> m ()
+long :: ( IsString a, Monad m ) => ByteString
+    -> ByteString -> ByteString -> ByteString -> ByteString -> a -> m ()
 mktime :: Int -- hours
     -> Int -- minutes
     -> Int -- seconds
@@ -434,8 +434,8 @@ foreign export ccall callback :: Int -> Int
 
 {-# RULES "map/map" forall f g xs. map f (map g xs) = map (f . g) xs #-}
 
-{-# RULES "map/append" [2] forall f xs ys. map f (xs ++ ys) = map f xs
-          ++ map f ys #-}
+{-# RULES "map/append" [2] forall f xs ys. map f (xs ++ ys)
+          = map f xs ++ map f ys #-}
 
 {-# DEPRECATED #-}
 {-# DEPRECATED foo "use bar instead" #-}
@@ -573,7 +573,7 @@ foo = [ ( x, y ) | x <- xs
       ]
 
 foo = [ ( x, y ) -- zip
-      | x <- xs -- first list
+       | x <- xs -- first list
        | y <- ys -- second list
       ]
 
@@ -582,7 +582,7 @@ foo = [: ( x, y ) | x <- xs
       :]
 
 foo = [: ( x, y ) -- zip
-      | x <- xs -- first list
+       | x <- xs -- first list
        | y <- ys -- second list
       :]
 

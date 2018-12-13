@@ -337,7 +337,7 @@ prettyTypesig ctx names ty = withLayout cfgLayoutTypesig flex vertical
         forM_ mtyvarbinds $ \tyvarbinds -> do
             write "forall "
             inter space $ map pretty tyvarbinds
-            withOperatorFormattingV Type "=>" (write ". ") (return ())
+            withOperatorFormattingV Type "=>" (write ". ") id
         forM_ mcontext $ \context -> do
             case context of
                 (CxSingle _ asst) -> pretty asst
@@ -377,20 +377,21 @@ prettyInfixApp nameFn ctx (lhs, args) = withLayout cfgLayoutInfixApp flex vertic
     flex = do
         pretty lhs
         forM_ args $ \(op, arg) -> do
-            withOperatorFormatting ctx (nameFn op) (prettyHSE op) (return ())
+            withOperatorFormatting ctx (nameFn op) (prettyHSE op) id
             pretty arg
 
     vertical = do
         pretty lhs
         case args of
             [(op, rhs)] -> do
-                withOperatorFormatting ctx (nameFn op) (prettyHSE op) (return ())
+                withOperatorFormatting ctx (nameFn op) (prettyHSE op) id
                 pretty rhs
             (op, rhs) : args' -> do
-                withOperatorFormatting ctx (nameFn op) (prettyHSE op) $ do
+                withOperatorFormatting ctx (nameFn op) (prettyHSE op) $ \p -> aligned $ do
+                    p
                     pretty rhs
                     forM_ args' $ \(op', rhs') -> do
-                        withOperatorFormattingV ctx (nameFn op') (prettyHSE op') (return ())
+                        withOperatorFormattingV ctx (nameFn op') (prettyHSE op') id
                         pretty rhs'
             _ -> return ()
 
@@ -973,7 +974,7 @@ instance Pretty Type where
 
     prettyPrint (TyInfix _ ty op ty') = do
         pretty ty
-        withOperatorFormatting Type opname (prettyHSE op) (return ())
+        withOperatorFormatting Type opname (prettyHSE op) id
         pretty ty'
       where
         opname = opName' $ case op of
@@ -1563,7 +1564,7 @@ instance Pretty FieldUpdate where
     prettyPrint (FieldWildcard _) = write ".."
 
 instance Pretty QOp where
-    prettyPrint qop = withOperatorFormatting Expression (opName qop) (prettyHSE qop) (return ())
+    prettyPrint qop = withOperatorFormatting Expression (opName qop) (prettyHSE qop) id
 
 instance Pretty Op where
     prettyPrint (VarOp l name) = prettyPrint (QVarOp l (UnQual noNodeInfo name))
