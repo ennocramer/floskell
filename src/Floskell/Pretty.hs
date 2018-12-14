@@ -155,12 +155,19 @@ printComments loc' ast = do
         commentsWithLocation = filter correctLocation (nodeInfoComments info)
     comments <- preprocessor $ map comInfoComment commentsWithLocation
 
-    forM_ comments $ \comment -> do
-        -- Preceeding comments must have a newline before them.
-        hasNewline <- gets psNewline
-        when (not hasNewline && loc' == Before) newline
+    unless (null comments) $ do
+        -- Preceeding comments must have a newline before them, but not break onside indent.
+        nl <- gets psNewline
+        onside' <- gets psOnside
+        when nl $ modify $ \s -> s { psOnside = 0 }
+        when (loc' == Before && not nl) newline
 
-        printComment (Just $ srcInfoSpan $ nodeInfoSpan info) comment
+        forM_ comments $ printComment (Just $ srcInfoSpan $ nodeInfoSpan info)
+
+        -- Write newline before restoring onside indent.
+        eol <- gets psEolComment
+        when (loc' == Before && eol && onside' > 0) newline
+        when nl $ modify $ \s -> s { psOnside = onside' }
   where
     info = ann ast
 
