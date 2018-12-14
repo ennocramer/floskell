@@ -277,29 +277,46 @@ prettyImports is = do
     samePrefix left right = prefix left == prefix right
     prefix = takeWhile (/= '.') . moduleName . importModule
 
-skipBlankDecl :: Decl a -> Bool
-skipBlankDecl TypeSig{} = True
-skipBlankDecl DeprPragmaDecl{} = True
-skipBlankDecl WarnPragmaDecl{} = True
-skipBlankDecl AnnPragma{} = True
-skipBlankDecl MinimalPragma{} = True
-skipBlankDecl InlineSig{} = True
-skipBlankDecl InlineConlikeSig{} = True
-skipBlankDecl SpecSig{} = True
-skipBlankDecl SpecInlineSig{} = True
-skipBlankDecl InstSig{} = True
-skipBlankDecl PatSynSig{} = True
-skipBlankDecl _ = False
+skipBlank :: Annotated ast
+          => (ast NodeInfo -> ast NodeInfo -> Bool)
+          -> ast NodeInfo
+          -> ast NodeInfo
+          -> Bool
+skipBlank skip a b =
+    skip a b && null (comments After a) && null (comments Before b)
+  where
+    comments loc ast =
+        filter ((== Just loc) . comInfoLocation) . nodeInfoComments $ ann ast
 
-skipBlankClassDecl :: ClassDecl a -> Bool
-skipBlankClassDecl (ClsDecl _ decl) = skipBlankDecl decl
-skipBlankClassDecl ClsTyDef{} = True
-skipBlankClassDecl ClsDefSig{} = True
-skipBlankClassDecl _ = False
+skipBlankAfterDecl :: Decl a -> Bool
+skipBlankAfterDecl a = case a of
+    TypeSig{} -> True
+    DeprPragmaDecl{} -> True
+    WarnPragmaDecl{} -> True
+    AnnPragma{} -> True
+    MinimalPragma{} -> True
+    InlineSig{} -> True
+    InlineConlikeSig{} -> True
+    SpecSig{} -> True
+    SpecInlineSig{} -> True
+    InstSig{} -> True
+    PatSynSig{} -> True
+    _ -> False
 
-skipBlankInstDecl :: InstDecl a -> Bool
-skipBlankInstDecl (InsDecl _ decl) = skipBlankDecl decl
-skipBlankInstDecl _ = False
+skipBlankDecl :: Decl NodeInfo -> Decl NodeInfo -> Bool
+skipBlankDecl = skipBlank $ \a _ -> skipBlankAfterDecl a
+
+skipBlankClassDecl :: ClassDecl NodeInfo -> ClassDecl NodeInfo -> Bool
+skipBlankClassDecl = skipBlank $ \a _ -> case a of
+    (ClsDecl _ decl) -> skipBlankAfterDecl decl
+    ClsTyDef{} -> True
+    ClsDefSig{} -> True
+    _ -> False
+
+skipBlankInstDecl :: InstDecl NodeInfo -> InstDecl NodeInfo -> Bool
+skipBlankInstDecl = skipBlank $ \a _ -> case a of
+    (InsDecl _ decl) -> skipBlankAfterDecl decl
+    _ -> False
 
 prettyDecls :: (Annotated ast, Pretty ast)
             => (ast NodeInfo -> ast NodeInfo -> Bool)
@@ -404,7 +421,7 @@ instance Pretty Module where
         catMaybes [ ifNotEmpty prettyPragmas pragmas
                   , pretty <$> mhead
                   , ifNotEmpty prettyImports imports
-                  , ifNotEmpty (prettyDecls (\d _ -> skipBlankDecl d)) decls
+                  , ifNotEmpty (prettyDecls skipBlankDecl) decls
                   ]
       where
         ifNotEmpty f xs = if null xs then Nothing else Just (f xs)
@@ -543,7 +560,7 @@ instance Pretty Decl where
             unless (null fundeps) $ list' Declaration "|" "," fundeps
         mayM_ mclassdecls $ \decls -> do
             write " where"
-            withIndent cfgIndentClass $ prettyDecls (\d _ -> skipBlankClassDecl d) decls
+            withIndent cfgIndentClass $ prettyDecls skipBlankClassDecl decls
 
     prettyPrint (InstDecl _ moverlap instrule minstdecls) = do
         depend "instance" $ do
@@ -551,7 +568,7 @@ instance Pretty Decl where
             pretty instrule
         mayM_ minstdecls $ \decls -> do
             write " where"
-            withIndent cfgIndentClass $ prettyDecls (\d _ -> skipBlankInstDecl d) decls
+            withIndent cfgIndentClass $ prettyDecls skipBlankInstDecl decls
 
     prettyPrint (DerivDecl _ mderivstrategy moverlap instrule) =
         depend "deriving" $ do
@@ -716,7 +733,7 @@ instance Pretty Binds where
     prettyPrint (BDecls _ decls) = do
         newline
         write "  where"
-        withIndent cfgIndentWhere $ prettyDecls (\d _ -> skipBlankDecl d) decls
+        withIndent cfgIndentWhere $ prettyDecls skipBlankDecl decls
 
     prettyPrint (IPBinds _ ipbinds) = do
         newline
