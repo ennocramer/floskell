@@ -355,13 +355,14 @@ prettyApp :: (Annotated ast1, Annotated ast2, Pretty ast1, Pretty ast2)
           => ast1 NodeInfo
           -> [ast2 NodeInfo]
           -> Printer FlexConfig ()
-prettyApp fn args =
-    if null args then pretty fn else withLayout cfgLayoutApp flex vertical
+prettyApp fn args = withLayout cfgLayoutApp flex vertical
   where
     flex = do
         pretty fn
-        spaceOrNewline
-        inter spaceOrNewline $ map pretty args
+        forM_ args $ \arg -> cut $ do
+            spaceOrNewline
+            pretty arg
+
     vertical = do
         pretty fn
         space
@@ -376,24 +377,15 @@ prettyInfixApp nameFn ctx (lhs, args) = withLayout cfgLayoutInfixApp flex vertic
   where
     flex = do
         pretty lhs
-        forM_ args $ \(op, arg) -> do
+        forM_ args $ \(op, arg) -> cut $ do
             withOperatorFormatting ctx (nameFn op) (prettyHSE op) id
             pretty arg
 
     vertical = do
         pretty lhs
-        case args of
-            [(op, rhs)] -> do
-                withOperatorFormatting ctx (nameFn op) (prettyHSE op) id
-                pretty rhs
-            (op, rhs) : args' -> do
-                withOperatorFormatting ctx (nameFn op) (prettyHSE op) $ \p -> aligned $ do
-                    p
-                    pretty rhs
-                    forM_ args' $ \(op', rhs') -> do
-                        withOperatorFormattingV ctx (nameFn op') (prettyHSE op') id
-                        pretty rhs'
-            _ -> return ()
+        forM_ args $ \(op, arg) -> do
+            withOperatorFormattingV ctx (nameFn op) (prettyHSE op) id
+            pretty arg
 
 prettyPragma :: ByteString -> Printer FlexConfig () -> Printer FlexConfig ()
 prettyPragma name = prettyPragma' name . Just
