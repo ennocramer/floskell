@@ -926,12 +926,12 @@ instance Pretty Rhs where
             operatorV Declaration "="
             pretty expr
 
-    prettyPrint (GuardedRhss _ guardedrhss) = aligned $ lined guardedrhss
+    prettyPrint (GuardedRhss _ guardedrhss) = withIndent cfgIndentMultiIf $ lined guardedrhss
 
 instance Pretty GuardedRhs where
     prettyPrint (GuardedRhs _ stmts expr) = do
-        operator Declaration "|"
         onside $ do
+            operatorSectionR Pattern "|" $ write "|"
             inter comma $ map pretty stmts
             operator Declaration "="
             pretty expr
@@ -1723,8 +1723,8 @@ newtype GuardedAlt l = GuardedAlt (GuardedRhs l)
 
 instance Pretty GuardedAlt where
     prettyPrint (GuardedAlt (GuardedRhs _ stmts expr)) = cut $ do
-        operatorH Expression "|"
         onside $ do
+            operatorSectionR Pattern "|" $ write "|"
             inter comma $ map pretty stmts
             operator Expression "->"
             pretty expr

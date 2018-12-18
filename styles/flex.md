@@ -98,9 +98,10 @@ caseExpr xs = case xs of
     (x : _) -> Just x
 
 guarded :: Int -> Int
-guarded x | x == 0 = 1
-          | x == 1 = 1
-          | otherwise = guarded (x - 2) + guarded (x - 1)
+guarded x
+    | x == 0 = 1
+    | x == 1 = 1
+    | otherwise = guarded (x - 2) + guarded (x - 1)
 
 someLongFunctionNameWithALotOfParameters :: ( MonadIO m, MonadRandom m )
     => String -> (String -> String) -> m ()
@@ -636,14 +637,14 @@ foo = if null xs -- condition
     else Some $ head xs -- it's not
 
 foo = if
-     | null xs -> None
-     | otherwise -> Some $ head xs
+    | null xs -> None
+    | otherwise -> Some $ head xs
 
 foo = if
-     | null xs -> 
+    | null xs -> 
         -- it's empty
         None
-     | otherwise -> 
+    | otherwise -> 
         -- it's not
         Some $ head x
 
