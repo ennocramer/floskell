@@ -1202,12 +1202,10 @@ instance Pretty Exp where
 
     prettyPrint (LeftSection _ expr qop) = parens $ do
         pretty expr
-        space
-        prettyHSE qop
+        operatorSectionL Expression (opName qop) $ prettyHSE qop
 
     prettyPrint (RightSection _ qop expr) = parens $ do
-        prettyHSE qop
-        space
+        operatorSectionR Expression (opName qop) $ prettyHSE qop
         pretty expr
 
     prettyPrint (RecConstr _ qname fieldupdates) = do
@@ -1222,7 +1220,7 @@ instance Pretty Exp where
 
     prettyPrint (EnumFrom _ expr) = group Expression "[" "]" $ do
         pretty expr
-        operator Expression ".."
+        operatorSectionL Expression ".." $ write ".."
 
     prettyPrint (EnumFromTo _ expr expr') = group Expression "[" "]" $ do
         pretty expr
@@ -1233,7 +1231,7 @@ instance Pretty Exp where
         pretty expr
         comma
         pretty expr'
-        operator Expression ".."
+        operatorSectionL Expression ".." $ write ".."
 
     prettyPrint (EnumFromThenTo _ expr expr' expr'') = group Expression "[" "]" $ do
         pretty expr

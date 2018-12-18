@@ -42,6 +42,8 @@ module Floskell.Flex.Printers
     , withOperatorFormatting
     , withOperatorFormattingH
     , withOperatorFormattingV
+    , operatorSectionL
+    , operatorSectionR
     , comma
     ) where
 
@@ -252,6 +254,24 @@ withOperatorFormattingV ctx op opp fn = do
     fn $ do
         opp
         if wsLinebreak After ws then newline else when (wsSpace After ws) space
+
+operatorSectionL :: LayoutContext
+                 -> ByteString
+                 -> Printer FlexConfig ()
+                 -> Printer FlexConfig ()
+operatorSectionL ctx op opp = do
+    ws <- getConfig (cfgOpWs ctx op . cfgOp)
+    when (wsSpace Before ws) space
+    opp
+
+operatorSectionR :: LayoutContext
+                 -> ByteString
+                 -> Printer FlexConfig ()
+                 -> Printer FlexConfig ()
+operatorSectionR ctx op opp = do
+    ws <- getConfig (cfgOpWs ctx op . cfgOp)
+    opp
+    when (wsSpace After ws) space
 
 comma :: Printer FlexConfig ()
 comma = operator Expression ","

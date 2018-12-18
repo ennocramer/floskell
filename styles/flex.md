@@ -545,11 +545,11 @@ foo = (arg `op`)
 ### EnumFrom, EnumFromTo, EnumFromThen, EnumFromThenTo, ParArrayFromTo, ParArrayFromThenTo
 
 ``` haskell
-foo = [ 1 ..  ]
+foo = [ 1 .. ]
 
 foo = [ 1 .. 10 ]
 
-foo = [ 1, 2 ..  ]
+foo = [ 1, 2 .. ]
 
 foo = [ 1, 2 .. 10 ]
 
