@@ -44,23 +44,33 @@ runs eq xs = let (ys, zs) = run eq xs
              in
                  ys : runs eq zs
 
-flattenApp :: (a -> Maybe (a, a)) -> a -> [a]
-flattenApp fn = go
+flattenApp :: Annotated ast
+           => (ast NodeInfo -> Maybe (ast NodeInfo, ast NodeInfo))
+           -> ast NodeInfo
+           -> [ast NodeInfo]
+flattenApp fn = go . amap (\info -> info { nodeInfoComments = [] })
   where
     go x = case fn x of
-        Just (lhs, rhs) -> let lhs' = flattenApp fn lhs
-                               rhs' = flattenApp fn rhs
+        Just (lhs, rhs) -> let lhs' = go $ copyComments Before x lhs
+                               rhs' = go $ copyComments After x rhs
                            in
                                lhs' ++ rhs'
-        Nothing -> [x]
+        Nothing -> [ x ]
 
-flattenInfix :: (a -> Maybe (a, b, a)) -> a -> (a, [(b, a)])
-flattenInfix fn x = case fn x of
-    Just (lhs, op, rhs) -> let (lhs', ops) = flattenInfix fn lhs
-                               (lhs'', ops') = flattenInfix fn rhs
-                           in
-                               (lhs', ops ++ (op, lhs'') : ops')
-    Nothing -> (x, [])
+flattenInfix :: (Annotated ast1, Annotated ast2)
+             => (ast1 NodeInfo
+                 -> Maybe (ast1 NodeInfo, ast2 NodeInfo, ast1 NodeInfo))
+             -> ast1 NodeInfo
+             -> (ast1 NodeInfo, [(ast2 NodeInfo, ast1 NodeInfo)])
+flattenInfix fn = go . amap (\info -> info { nodeInfoComments = [] })
+  where
+    go x = case fn x of
+        Just (lhs, op, rhs) -> let (lhs', ops) = go $ copyComments Before x lhs
+                                   (lhs'', ops') =
+                                       go $ copyComments After x rhs
+                               in
+                                   (lhs', ops ++ (op, lhs'') : ops')
+        Nothing -> (x, [])
 
 -- | Syntax shortcut for Pretty Printers.
 type PrettyPrinter f = f NodeInfo -> Printer FlexConfig ()
@@ -92,6 +102,26 @@ compareAST :: (Functor ast, Ord (ast ()))
            -> ast NodeInfo
            -> Ordering
 compareAST a b = void a `compare` void b
+
+-- | Return comments with matching location.
+filterComments :: Annotated a
+               => (Maybe ComInfoLocation -> Bool)
+               -> a NodeInfo
+               -> [ComInfo]
+filterComments f = filter (f . comInfoLocation) . nodeInfoComments . ann
+
+-- | Copy comments from one AST node to another.
+copyComments :: (Annotated ast1, Annotated ast2)
+             => ComInfoLocation
+             -> ast1 NodeInfo
+             -> ast2 NodeInfo
+             -> ast2 NodeInfo
+copyComments loc from to = amap updateComments to
+  where
+    updateComments info = info { nodeInfoComments = oldComments ++ newComments
+                               }
+    oldComments = filterComments (/= Just loc) to
+    newComments = filterComments (== Just loc) from
 
 -- | Return the configuration name of an operator
 opName :: QOp a -> ByteString
@@ -140,9 +170,8 @@ listVinternal ctx sep xs = aligned $ do
                 cut $ prettyPrint x'
                 printComments After x'
   where
-    printCommentsSimple loc ast = let comments = map comInfoComment .
-                                          filter ((== Just loc) . comInfoLocation) .
-                                              nodeInfoComments $ ann ast
+    printCommentsSimple loc ast = let comments = map comInfoComment $
+                                          filterComments (== Just loc) ast
                                   in
                                       forM_ comments $ \comment -> do
                                           printComment (Just $ srcInfoSpan $
@@ -286,8 +315,7 @@ skipBlank :: Annotated ast
 skipBlank skip a b =
     skip a b && null (comments After a) && null (comments Before b)
   where
-    comments loc ast =
-        filter ((== Just loc) . comInfoLocation) . nodeInfoComments $ ann ast
+    comments loc ast = filterComments (== Just loc) ast
 
 skipBlankAfterDecl :: Decl a -> Bool
 skipBlankAfterDecl a = case a of

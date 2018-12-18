@@ -523,7 +523,9 @@ foo = 1 :: Int
 ``` haskell
 foo = foldl fn init list
 
-foo = foldl fn init list
+foo = foldl fn -- reducer
+    init -- initial value
+    list
 
 foo = 1 + 2
 
