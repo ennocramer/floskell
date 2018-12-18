@@ -93,6 +93,7 @@ data IndentConfig = IndentConfig { cfgIndentOnside         :: !Int
                                  , cfgIndentMultiIf        :: !Indent
                                  , cfgIndentWhere          :: !Indent
                                  , cfgIndentExportSpecList :: !Indent
+                                 , cfgIndentImportSpecList :: !Indent
                                  }
     deriving (Generic)
 
@@ -106,6 +107,7 @@ instance Default IndentConfig where
                        , cfgIndentMultiIf = IndentBy 4
                        , cfgIndentWhere = IndentBy 4
                        , cfgIndentExportSpecList = Align
+                       , cfgIndentImportSpecList = Align
                        }
 
 data LayoutConfig = LayoutConfig { cfgLayoutExportSpecList :: !Layout

@@ -234,19 +234,20 @@ listAutoWrap _ open close _ [] = do
     write open
     write close
 
-listAutoWrap ctx open close sep (x : xs) = groupH ctx open close . aligned $ do
-    ws <- getConfig (cfgOpWs ctx sep . cfgOp)
-    let correction = if wsLinebreak After ws
-                     then 0
-                     else BS.length sep + if wsSpace After ws then 1 else 0
-    col <- getNextColumn
-    pretty x
-    forM_ xs $ \x' -> do
-        printComments Before x'
-        cut $ do
-            column (col - fromIntegral correction) $ operator ctx sep
-            prettyPrint x'
-            printComments After x'
+listAutoWrap ctx open close sep (x : xs) =
+    aligned . groupH ctx open close . aligned $ do
+        ws <- getConfig (cfgOpWs ctx sep . cfgOp)
+        let correction = if wsLinebreak After ws
+                         then 0
+                         else BS.length sep + if wsSpace After ws then 1 else 0
+        col <- getNextColumn
+        pretty x
+        forM_ xs $ \x' -> do
+            printComments Before x'
+            cut $ do
+                column (col - fromIntegral correction) $ operator ctx sep
+                prettyPrint x'
+                printComments After x'
 
 ------------------------------------------------------------------------
 -- Module
@@ -434,7 +435,7 @@ instance Pretty ModuleHead where
         depend "module" $ do
             pretty name
             mayM_ mwarning $ withPrefix spaceOrNewline pretty
-        mayM_ mexports $ \exports -> withIndent cfgIndentExportSpecList (pretty exports)
+        mayM_ mexports pretty
         write " where"
 
 instance Pretty WarningText where
@@ -445,8 +446,11 @@ instance Pretty ExportSpecList where
     prettyPrint (ExportSpecList _ exports) =
         withLayout cfgLayoutExportSpecList flex vertical
       where
-        flex = listAutoWrap Other "(" ")" "," exports
-        vertical = listV Other "(" ")" "," exports
+        flex = do
+            space
+            listAutoWrap Other "(" ")" "," exports
+        vertical = withIndent cfgIndentExportSpecList $
+            listV Other "(" ")" "," exports
 
 instance Pretty ExportSpec
 
@@ -463,17 +467,20 @@ instance Pretty ImportDecl where
         mayM_ importAs $ \name -> do
             write " as "
             pretty name
-        mayM_ importSpecs $ withPrefix space pretty
+        mayM_ importSpecs pretty
 
 instance Pretty ImportSpecList where
     prettyPrint (ImportSpecList _ hiding specs) = do
         sortP <- getConfig (cfgModuleSortImportLists . cfgModule)
         let specs' = if sortP then sortOn HSE.prettyPrint specs else specs
-        when hiding $ write "hiding "
+        when hiding $ write " hiding"
         withLayout cfgLayoutImportSpecList (flex specs') (vertical specs')
       where
-        flex = listAutoWrap Other "(" ")" ","
-        vertical = listV Other "(" ")" ","
+        flex imports = do
+            space
+            listAutoWrap Other "(" ")" "," imports
+        vertical imports = withIndent cfgIndentImportSpecList $
+            listAutoWrap Other "(" ")" "," imports
 
 instance Pretty ImportSpec
 
