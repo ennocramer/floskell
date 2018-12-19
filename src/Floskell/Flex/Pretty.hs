@@ -884,7 +884,7 @@ instance Pretty ConDecl where
     prettyPrint (RecDecl _ name fielddecls) = do
         pretty name
         sepSpace
-        withLayout cfgLayoutRecDecl flex vertical
+        withLayout cfgLayoutRecord flex vertical
       where
         flex = listH Declaration "{" "}" "," fielddecls
         vertical = listV Declaration "{" "}" "," fielddecls
@@ -903,7 +903,7 @@ instance Pretty GadtDecl where
         pretty name
         operator Declaration "::"
         mayM_ mfielddecls $ \decls -> do
-            withLayout cfgLayoutRecDecl (flex decls) (vertical decls)
+            withLayout cfgLayoutRecord (flex decls) (vertical decls)
             operator Type "->"
         pretty ty
       where
@@ -1231,12 +1231,18 @@ instance Pretty Exp where
     prettyPrint (RecConstr _ qname fieldupdates) = do
         pretty qname
         sepSpace
-        list Expression "{" "}" "," fieldupdates
+        withLayout cfgLayoutRecord flex vertical
+      where
+        flex = listH Expression "{" "}" "," fieldupdates
+        vertical = listV Expression "{" "}" "," fieldupdates
 
     prettyPrint (RecUpdate _ expr fieldupdates) = do
         pretty expr
         sepSpace
-        list Expression "{" "}" "," fieldupdates
+        withLayout cfgLayoutRecord flex vertical
+      where
+        flex = listH Expression "{" "}" "," fieldupdates
+        vertical = listV Expression "{" "}" "," fieldupdates
 
     prettyPrint (EnumFrom _ expr) = group Expression "[" "]" $ do
         pretty expr
