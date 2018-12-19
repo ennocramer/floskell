@@ -353,6 +353,22 @@ prettyDecls :: (Annotated ast, Pretty ast)
             -> Printer FlexConfig ()
 prettyDecls fn = inter blankline . map lined . runs fn
 
+prettySimpleDecl :: (Annotated ast1, Pretty ast1, Annotated ast2, Pretty ast2)
+                 => ast1 NodeInfo
+                 -> ByteString
+                 -> ast2 NodeInfo
+                 -> Printer FlexConfig ()
+prettySimpleDecl lhs op rhs = withLayout cfgLayoutDeclaration flex vertical
+  where
+    flex = do
+        pretty lhs
+        operator Declaration op
+        pretty rhs
+    vertical = do
+        pretty lhs
+        operatorV Declaration op
+        pretty rhs
+
 prettyForall :: (Annotated ast, Pretty ast)
              => [ast NodeInfo]
              -> Printer FlexConfig ()
@@ -515,10 +531,8 @@ instance Pretty ImportSpec
 instance Pretty Assoc
 
 instance Pretty Decl where
-    prettyPrint (TypeDecl _ declhead ty) = depend "type" $ do
-        pretty declhead
-        operator Declaration "="
-        pretty ty
+    prettyPrint (TypeDecl _ declhead ty) =
+        depend "type" $ prettySimpleDecl declhead "=" ty
 
     prettyPrint (TypeFamDecl _ declhead mresultsig minjectivityinfo) =
         depend "type family" $ do
@@ -563,10 +577,8 @@ instance Pretty Decl where
             pretty declhead
             mapM_ pretty mresultsig
 
-    prettyPrint (TypeInsDecl _ ty ty') = depend "type instance" $ do
-        pretty ty
-        operator Declaration "="
-        pretty ty'
+    prettyPrint (TypeInsDecl _ ty ty') =
+        depend "type instance" $ prettySimpleDecl ty "=" ty'
 
     prettyPrint (DataInsDecl _ dataornew ty qualcondecls derivings) = do
         depend' (pretty dataornew >> write " instance") $ do
@@ -642,10 +654,7 @@ instance Pretty Decl where
         mapM_ pretty mbinds
 
     prettyPrint (PatSyn _ pat pat' patternsyndirection) = do
-        depend "pattern" $ do
-            pretty pat
-            operator Declaration sep
-            pretty pat'
+        depend "pattern" $ prettySimpleDecl pat sep pat'
         case patternsyndirection of
             ExplicitBidirectional _ decls ->
                 pretty (BDecls noNodeInfo decls)
@@ -776,10 +785,7 @@ instance Pretty Binds where
         withIndent cfgIndentWhere $ lined ipbinds
 
 instance Pretty IPBind where
-    prettyPrint (IPBind _ ipname expr) = do
-        pretty ipname
-        operator Declaration "="
-        pretty expr
+    prettyPrint (IPBind _ ipname expr) = onside $ prettySimpleDecl ipname "=" expr
 
 instance Pretty InjectivityInfo where
     prettyPrint (InjectivityInfo _ name names) = do
@@ -789,13 +795,23 @@ instance Pretty InjectivityInfo where
         inter space $ map pretty names
 
 instance Pretty ResultSig where
-    prettyPrint (KindSig _ kind) = do
-        operator Declaration "::"
-        pretty kind
+    prettyPrint (KindSig _ kind) = withLayout cfgLayoutDeclaration flex vertical
+      where
+        flex = do
+            operator Declaration "::"
+            pretty kind
+        vertical = do
+            operatorV Declaration "::"
+            pretty kind
 
-    prettyPrint (TyVarSig _ tyvarbind) = do
-        operator Declaration "="
-        pretty tyvarbind
+    prettyPrint (TyVarSig _ tyvarbind) = withLayout cfgLayoutDeclaration flex vertical
+      where
+        flex = do
+            operator Declaration "="
+            pretty tyvarbind
+        vertical = do
+            operatorV Declaration "="
+            pretty tyvarbind
 
 instance Pretty ClassDecl where
     prettyPrint (ClsDecl _ decl) = pretty decl
@@ -819,10 +835,7 @@ instance Pretty ClassDecl where
 instance Pretty InstDecl where
     prettyPrint (InsDecl _ decl) = pretty decl
 
-    prettyPrint (InsType _ ty ty') = depend "type" $ do
-        pretty ty
-        operator Declaration "="
-        pretty ty'
+    prettyPrint (InsType _ ty ty') = depend "type" $ prettySimpleDecl ty "=" ty'
 
     prettyPrint (InsData _ dataornew ty qualcondecls derivings) =
         depend' (pretty dataornew) $ do
@@ -929,11 +942,18 @@ instance Pretty Rhs where
     prettyPrint (GuardedRhss _ guardedrhss) = withIndent cfgIndentMultiIf $ lined guardedrhss
 
 instance Pretty GuardedRhs where
-    prettyPrint (GuardedRhs _ stmts expr) = do
-        onside $ do
+    prettyPrint (GuardedRhs _ stmts expr) =
+        onside $ withLayout cfgLayoutDeclaration flex vertical
+      where
+        flex = do
             operatorSectionR Pattern "|" $ write "|"
             inter comma $ map pretty stmts
             operator Declaration "="
+            pretty expr
+        vertical = do
+            operatorSectionR Pattern "|" $ write "|"
+            inter comma $ map pretty stmts
+            operatorV Declaration "="
             pretty expr
 
 instance Pretty Context where
