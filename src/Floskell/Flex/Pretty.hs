@@ -151,7 +151,7 @@ listVinternal ctx sep xs = aligned $ do
     ws <- getConfig (cfgOpWs ctx sep . cfgOp)
     nl <- gets psNewline
     col <- getNextColumn
-    let correction = if wsLinebreak After ws
+    let correction = if wsLinebreak After ws || length xs < 2
                      then 0
                      else BS.length sep + if wsSpace After ws then 1 else 0
         extraIndent = if nl then correction else 0
@@ -224,33 +224,26 @@ list ctx open close sep xs = oneline hor <|> ver
 listH' :: (Annotated ast, Pretty ast)
        => LayoutContext
        -> ByteString
-       -> ByteString
        -> [ast NodeInfo]
        -> Printer FlexConfig ()
-listH' ctx op sep xs = do
-    operator ctx op
-    inter (operatorH ctx sep) $ map pretty xs
+listH' ctx sep = inter (operatorH ctx sep) . map pretty
 
 listV' :: (Annotated ast, Pretty ast)
        => LayoutContext
        -> ByteString
-       -> ByteString
        -> [ast NodeInfo]
        -> Printer FlexConfig ()
-listV' ctx op sep xs = do
-    operator ctx op
-    listVinternal ctx sep xs
+listV' ctx sep = listVinternal ctx sep
 
 list' :: (Annotated ast, Pretty ast)
       => LayoutContext
       -> ByteString
-      -> ByteString
       -> [ast NodeInfo]
       -> Printer FlexConfig ()
-list' ctx op sep xs = oneline hor <|> ver
+list' ctx sep xs = oneline hor <|> ver
   where
-    hor = listH' ctx op sep xs
-    ver = listV' ctx op sep xs
+    hor = listH' ctx sep xs
+    ver = listV' ctx sep xs
 
 listAutoWrap :: (Annotated ast, Pretty ast)
              => LayoutContext
@@ -368,6 +361,14 @@ prettySimpleDecl lhs op rhs = withLayout cfgLayoutDeclaration flex vertical
         pretty lhs
         operatorV Declaration op
         pretty rhs
+
+prettyConDecls :: (Annotated ast, Pretty ast)
+               => [ast NodeInfo]
+               -> Printer FlexConfig ()
+prettyConDecls condecls = withLayout cfgLayoutConDecls flex vertical
+  where
+    flex = listH' Declaration "|" condecls
+    vertical = listV' Declaration "|" condecls
 
 prettyForall :: (Annotated ast, Pretty ast)
              => [ast NodeInfo]
@@ -556,8 +557,12 @@ instance Pretty Decl where
             unless (null qualcondecls) $ withLayout cfgLayoutDeclaration flex vertical
         mapM_ pretty derivings
       where
-        flex = list' Declaration "=" "|" qualcondecls
-        vertical = listV' Declaration "=" "|" qualcondecls
+        flex = do
+            operator Declaration "="
+            prettyConDecls qualcondecls
+        vertical = do
+            operatorV Declaration "="
+            prettyConDecls qualcondecls
 
     prettyPrint (GDataDecl _ dataornew mcontext declhead mkind gadtdecls derivings) = do
         depend' (pretty dataornew) $ do
@@ -586,8 +591,12 @@ instance Pretty Decl where
             withLayout cfgLayoutDeclaration flex vertical
         mapM_ pretty derivings
       where
-        flex = list' Declaration "=" "|" qualcondecls
-        vertical = listV' Declaration "=" "|" qualcondecls
+        flex = do
+            operator Declaration "="
+            prettyConDecls qualcondecls
+        vertical = do
+            operatorV Declaration "="
+            prettyConDecls qualcondecls
 
     prettyPrint (GDataInsDecl _ dataornew ty mkind gadtdecls derivings) = do
         depend' (pretty dataornew >> write " instance") $ do
@@ -604,7 +613,9 @@ instance Pretty Decl where
         depend "class" $ do
             mapM_ pretty mcontext
             pretty declhead
-            unless (null fundeps) $ list' Declaration "|" "," fundeps
+            unless (null fundeps) $ do
+                operator Declaration "|"
+                list' Declaration "," fundeps
         mayM_ mclassdecls $ \decls -> do
             write " where"
             withIndent cfgIndentClass $ prettyDecls skipBlankClassDecl decls
@@ -840,15 +851,29 @@ instance Pretty InstDecl where
     prettyPrint (InsData _ dataornew ty qualcondecls derivings) =
         depend' (pretty dataornew) $ do
             pretty ty
-            unless (null qualcondecls) $ list' Declaration "=" "|" qualcondecls
+            unless (null qualcondecls) $ withLayout cfgLayoutDeclaration flex vertical
             mapM_ pretty derivings
+          where
+            flex = do
+                operator Declaration "="
+                prettyConDecls qualcondecls
+            vertical = do
+                operatorV Declaration "="
+                prettyConDecls qualcondecls
 
     prettyPrint (InsGData _ dataornew ty mkind gadtdecls derivings) =
         depend' (pretty dataornew) $ do
             pretty ty
             mayM_ mkind $ withPrefix space pretty
-            unless (null gadtdecls) $ list' Declaration "=" "|" gadtdecls
+            unless (null gadtdecls) $ withLayout cfgLayoutDeclaration flex vertical
             mapM_ pretty derivings
+          where
+            flex = do
+                operator Declaration "="
+                prettyConDecls gadtdecls
+            vertical = do
+                operatorV Declaration "="
+                prettyConDecls gadtdecls
 
 instance Pretty Deriving where
     prettyPrint (Deriving _ mderivstrategy instrules) = do
@@ -871,10 +896,10 @@ instance Pretty ConDecl where
         pretty name
         unless (null types) $ do
             space
-            withLayout cfgLayoutConDecl flex vertical
+            oneline hor <|> ver
       where
-        flex = inter space $ map pretty types
-        vertical = aligned $ lined types
+        hor = inter space $ map pretty types
+        ver = aligned $ lined types
 
     prettyPrint (InfixConDecl _ ty name ty') = do
         pretty ty
@@ -1280,17 +1305,20 @@ instance Pretty Exp where
 
     prettyPrint (ListComp _ expr qualstmts) = group Expression "[" "]" $ do
         pretty expr
-        list' Expression "|" "," qualstmts
+        operator Expression "|"
+        list' Expression "," qualstmts
 
     prettyPrint (ParComp _ expr qualstmtss) = group Expression "[" "]" $ do
         pretty expr
-        aligned . inter newline . flip map qualstmtss $ \qualstmts ->
-            cut $ list' Expression "|" "," qualstmts
+        aligned . inter newline . flip map qualstmtss $ \qualstmts -> cut $ do
+            operator Expression "|"
+            list' Expression "," qualstmts
 
     prettyPrint (ParArrayComp _ expr qualstmtss) = group Expression "[:" ":]" $ do
         pretty expr
-        aligned . inter newline . flip map qualstmtss $ \qualstmts ->
-            cut $ list' Expression "|" "," qualstmts
+        aligned . inter newline . flip map qualstmtss $ \qualstmts -> cut $ do
+            operator Expression "|"
+            list' Expression "," qualstmts
 
     prettyPrint (ExpTypeSig _ expr typ) = prettyTypesig Expression [ expr ] typ
 

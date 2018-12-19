@@ -576,7 +576,7 @@ foo = [ ( x, y ) | x <- xs
       ]
 
 foo = [ ( x, y ) -- zip
-       | x <- xs -- first list
+      | x <- xs -- first list
        | y <- ys -- second list
       ]
 
@@ -585,7 +585,7 @@ foo = [: ( x, y ) | x <- xs
       :]
 
 foo = [: ( x, y ) -- zip
-       | x <- xs -- first list
+      | x <- xs -- first list
        | y <- ys -- second list
       :]
 

@@ -114,7 +114,7 @@ data LayoutConfig = LayoutConfig { cfgLayoutExportSpecList :: !Layout
                                  , cfgLayoutImportSpecList :: !Layout
                                  , cfgLayoutDeriving       :: !Layout
                                  , cfgLayoutDeclaration    :: !Layout
-                                 , cfgLayoutConDecl        :: !Layout
+                                 , cfgLayoutConDecls       :: !Layout
                                  , cfgLayoutRecord         :: !Layout
                                  , cfgLayoutTypesig        :: !Layout
                                  , cfgLayoutLet            :: !Layout
@@ -129,7 +129,7 @@ instance Default LayoutConfig where
                        , cfgLayoutImportSpecList = Flex
                        , cfgLayoutDeriving = Flex
                        , cfgLayoutDeclaration = Flex
-                       , cfgLayoutConDecl = TryOneline
+                       , cfgLayoutConDecls = TryOneline
                        , cfgLayoutRecord = TryOneline
                        , cfgLayoutTypesig = Flex
                        , cfgLayoutLet = Flex
