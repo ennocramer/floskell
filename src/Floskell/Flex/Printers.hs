@@ -238,7 +238,9 @@ withOperatorFormattingH :: LayoutContext
                         -> Printer FlexConfig a
 withOperatorFormattingH ctx op opp fn = do
     ws <- getConfig (cfgOpWs ctx op . cfgOp)
-    when (wsSpace Before ws) space
+    nl <- gets psNewline
+    eol <- gets psEolComment
+    when (wsSpace Before ws && not nl && not eol) space
     fn $ do
         opp
         when (wsSpace After ws) space
@@ -250,7 +252,9 @@ withOperatorFormattingV :: LayoutContext
                         -> Printer FlexConfig a
 withOperatorFormattingV ctx op opp fn = do
     ws <- getConfig (cfgOpWs ctx op . cfgOp)
-    if wsLinebreak Before ws then newline else when (wsSpace Before ws) space
+    nl <- gets psNewline
+    eol <- gets psEolComment
+    if wsLinebreak Before ws then newline else when (wsSpace Before ws && not nl && not eol) space
     fn $ do
         opp
         if wsLinebreak After ws then newline else when (wsSpace After ws) space
