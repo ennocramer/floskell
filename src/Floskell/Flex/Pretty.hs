@@ -1303,22 +1303,45 @@ instance Pretty Exp where
         operator Expression ".."
         pretty expr''
 
-    prettyPrint (ListComp _ expr qualstmts) = group Expression "[" "]" $ do
-        pretty expr
-        operator Expression "|"
-        list' Expression "," qualstmts
-
-    prettyPrint (ParComp _ expr qualstmtss) = group Expression "[" "]" $ do
-        pretty expr
-        aligned . inter newline . flip map qualstmtss $ \qualstmts -> cut $ do
+    prettyPrint (ListComp _ expr qualstmts) =
+        withLayout cfgLayoutListComp flex vertical
+      where
+        flex = group Expression "[" "]" $ do
+            pretty expr
             operator Expression "|"
             list' Expression "," qualstmts
+        vertical = groupV Expression "[" "]" $ do
+            pretty expr
+            operatorV Expression "|"
+            listV' Expression "," qualstmts
 
-    prettyPrint (ParArrayComp _ expr qualstmtss) = group Expression "[:" ":]" $ do
-        pretty expr
-        aligned . inter newline . flip map qualstmtss $ \qualstmts -> cut $ do
-            operator Expression "|"
-            list' Expression "," qualstmts
+    prettyPrint (ParComp _ expr qualstmtss) =
+        withLayout cfgLayoutListComp flex vertical
+      where
+        flex = group Expression "[" "]" $ do
+            pretty expr
+            forM_ qualstmtss $ \qualstmts -> cut $ do
+                operator Expression "|"
+                list' Expression "," qualstmts
+        vertical = groupV Expression "[" "]" $ do
+            pretty expr
+            forM_ qualstmtss $ \qualstmts -> cut $ do
+                operatorV Expression "|"
+                listV' Expression "," qualstmts
+
+    prettyPrint (ParArrayComp _ expr qualstmtss) =
+        withLayout cfgLayoutListComp flex vertical
+      where
+        flex = group Expression "[:" ":]" $ do
+            pretty expr
+            forM_ qualstmtss $ \qualstmts -> cut $ do
+                operator Expression "|"
+                list' Expression "," qualstmts
+        vertical = groupV Expression "[:" ":]" $ do
+            pretty expr
+            forM_ qualstmtss $ \qualstmts -> cut $ do
+                operatorV Expression "|"
+                listV' Expression "," qualstmts
 
     prettyPrint (ExpTypeSig _ expr typ) = prettyTypesig Expression [ expr ] typ
 

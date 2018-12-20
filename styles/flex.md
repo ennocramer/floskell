@@ -571,22 +571,18 @@ foo = [ ( x, y ) -- cartesian product
       , y <- ys -- second list
       ]
 
-foo = [ ( x, y ) | x <- xs
-                 | y <- ys
-      ]
+foo = [ ( x, y ) | x <- xs | y <- ys ]
 
 foo = [ ( x, y ) -- zip
       | x <- xs -- first list
-       | y <- ys -- second list
+      | y <- ys -- second list
       ]
 
-foo = [: ( x, y ) | x <- xs
-                  | y <- ys
-      :]
+foo = [: ( x, y ) | x <- xs | y <- ys :]
 
 foo = [: ( x, y ) -- zip
       | x <- xs -- first list
-       | y <- ys -- second list
+      | y <- ys -- second list
       :]
 
 foo = [ ( x, y ) | x <- xs

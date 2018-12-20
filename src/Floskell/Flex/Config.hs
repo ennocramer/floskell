@@ -88,12 +88,12 @@ data IndentConfig = IndentConfig { cfgIndentOnside         :: !Int
                                  , cfgIndentCase           :: !Indent
                                  , cfgIndentClass          :: !Indent
                                  , cfgIndentDo             :: !Indent
+                                 , cfgIndentExportSpecList :: !Indent
                                  , cfgIndentIf             :: !Indent
+                                 , cfgIndentImportSpecList :: !Indent
                                  , cfgIndentLet            :: !Indent
                                  , cfgIndentMultiIf        :: !Indent
                                  , cfgIndentWhere          :: !Indent
-                                 , cfgIndentExportSpecList :: !Indent
-                                 , cfgIndentImportSpecList :: !Indent
                                  }
     deriving (Generic)
 
@@ -102,40 +102,42 @@ instance Default IndentConfig where
                        , cfgIndentCase = IndentBy 4
                        , cfgIndentClass = IndentBy 4
                        , cfgIndentDo = IndentBy 4
+                       , cfgIndentExportSpecList = Align
                        , cfgIndentIf = IndentBy 0
+                       , cfgIndentImportSpecList = Align
                        , cfgIndentLet = Align
                        , cfgIndentMultiIf = IndentBy 4
                        , cfgIndentWhere = IndentBy 4
-                       , cfgIndentExportSpecList = Align
-                       , cfgIndentImportSpecList = Align
                        }
 
-data LayoutConfig = LayoutConfig { cfgLayoutExportSpecList :: !Layout
-                                 , cfgLayoutImportSpecList :: !Layout
-                                 , cfgLayoutDeriving       :: !Layout
-                                 , cfgLayoutDeclaration    :: !Layout
+data LayoutConfig = LayoutConfig { cfgLayoutApp            :: !Layout
                                  , cfgLayoutConDecls       :: !Layout
+                                 , cfgLayoutDeclaration    :: !Layout
+                                 , cfgLayoutDeriving       :: !Layout
+                                 , cfgLayoutExportSpecList :: !Layout
+                                 , cfgLayoutIf             :: !Layout
+                                 , cfgLayoutImportSpecList :: !Layout
+                                 , cfgLayoutInfixApp       :: !Layout
+                                 , cfgLayoutLet            :: !Layout
+                                 , cfgLayoutListComp       :: !Layout
                                  , cfgLayoutRecord         :: !Layout
                                  , cfgLayoutTypesig        :: !Layout
-                                 , cfgLayoutLet            :: !Layout
-                                 , cfgLayoutIf             :: !Layout
-                                 , cfgLayoutApp            :: !Layout
-                                 , cfgLayoutInfixApp       :: !Layout
                                  }
     deriving (Generic)
 
 instance Default LayoutConfig where
-    def = LayoutConfig { cfgLayoutExportSpecList = Flex
-                       , cfgLayoutImportSpecList = Flex
-                       , cfgLayoutDeriving = Flex
-                       , cfgLayoutDeclaration = Flex
+    def = LayoutConfig { cfgLayoutApp = Flex
                        , cfgLayoutConDecls = TryOneline
+                       , cfgLayoutDeclaration = Flex
+                       , cfgLayoutDeriving = Flex
+                       , cfgLayoutExportSpecList = Flex
+                       , cfgLayoutIf = Flex
+                       , cfgLayoutImportSpecList = Flex
+                       , cfgLayoutInfixApp = Flex
+                       , cfgLayoutLet = Flex
+                       , cfgLayoutListComp = Flex
                        , cfgLayoutRecord = TryOneline
                        , cfgLayoutTypesig = Flex
-                       , cfgLayoutLet = Flex
-                       , cfgLayoutIf = Flex
-                       , cfgLayoutApp = Flex
-                       , cfgLayoutInfixApp = Flex
                        }
 
 newtype OpConfig = OpConfig { unOpConfig :: ConfigMap Whitespace }
