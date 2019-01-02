@@ -19,29 +19,41 @@ import qualified Data.ByteString.Lazy    as BL
 
 import           Data.Int                ( Int64 )
 
-data Buffer = Buffer { bufferData   :: !Builder -- ^ The current output.
-                     , bufferLine   :: !Int64   -- ^ Current line number.
-                     , bufferColumn :: !Int64   -- ^ Current column number.
-                     }
+data Buffer =
+    Buffer { bufferData        :: !Builder -- ^ The current output.
+           , bufferDataNoSpace :: !Builder -- ^ The current output without trailing spaces.
+           , bufferLine        :: !Int64   -- ^ Current line number.
+           , bufferColumn      :: !Int64   -- ^ Current column number.
+           }
 
 -- | An empty output buffer.
 empty :: Buffer
-empty = Buffer { bufferData = mempty, bufferLine = 0, bufferColumn = 0 }
+empty = Buffer { bufferData = mempty
+               , bufferDataNoSpace = mempty
+               , bufferLine = 0
+               , bufferColumn = 0
+               }
 
 -- | Append a ByteString to the output buffer.  It is an error for the
 -- string to contain newlines.
 write :: BS.ByteString -> Buffer -> Buffer
 write str buf =
-    buf { bufferData = bufferData buf `mappend` BB.byteString str
+    buf { bufferData = newBufferData
+        , bufferDataNoSpace = if str == " " then bufferData buf else newBufferData
         , bufferColumn = bufferColumn buf + fromIntegral (BS.length str)
         }
+  where
+    newBufferData = bufferData buf `mappend` BB.byteString str
 
 -- | Append a newline to the output buffer.
 newline :: Buffer -> Buffer
-newline buf = buf { bufferData = bufferData buf `mappend` BB.char7 '\n'
+newline buf = buf { bufferData = newBufferData
+                  , bufferDataNoSpace = newBufferData
                   , bufferLine = bufferLine buf + 1
                   , bufferColumn = 0
                   }
+  where
+    newBufferData = bufferDataNoSpace buf `mappend` BB.char7 '\n'
 
 -- | Return the current line number, counting from 0.
 line :: Buffer -> Int64

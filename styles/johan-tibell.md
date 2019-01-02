@@ -80,7 +80,7 @@ instance Functor f =>
 -- Values
 origin
     :: Point
-origin = 
+origin =
     Point
     { pointX = 0
     , pointY = 0
@@ -88,7 +88,7 @@ origin =
     }
 
 lorem :: [String]
-lorem = 
+lorem =
     [ "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     , "Curabitur nec ante nec mauris ornare suscipit."
     , "In ac vulputate libero."
@@ -110,7 +110,7 @@ hello = do
     greetings n = "Hello " ++ n ++ "!"
 
 letExpr :: Point -> String
-letExp x = 
+letExp x =
     let y = 1
         z = 2
     in if x > 0
@@ -118,13 +118,13 @@ letExp x =
            else z
 
 ifExpr :: Bool -> Bool
-ifExpr b = 
+ifExpr b =
     if b == True
         then False
         else True
 
 caseExpr :: [a] -> Maybe a
-caseExpr xs = 
+caseExpr xs =
     case xs of
         [] -> Nothing
         (x:_) -> Just x
@@ -590,7 +590,7 @@ foo = ()
 
 foo = (1, 2)
 
-foo = 
+foo =
     ( 1 -- the one
     , 2)
 
@@ -598,7 +598,7 @@ foo = (# #)
 
 foo = (# 1, 2 #)
 
-foo = 
+foo =
     (#  1 -- the one
       , 2 #)
 
@@ -606,7 +606,7 @@ foo = (# 1 #)
 
 foo = (# | 1 | | #)
 
-foo = 
+foo =
     (# | 1 -- the one
                      | | #)
 
@@ -616,7 +616,7 @@ foo = [1]
 
 foo = [1, 2]
 
-foo = 
+foo =
     [ 1 -- the one
     , 2]
 
@@ -666,12 +666,12 @@ foo = [:1, 2 .. 10:]
 ``` haskell
 {-# LANGUAGE TransformListComp #-}
 
-foo = 
+foo =
     [ (x, y)
-    | x <- xs 
+    | x <- xs
     , y <- ys ]
 
-foo = 
+foo =
     [ (x, y) -- cartesian product
     | x <- xs -- first list
     , y <- ys -- second list
@@ -685,13 +685,13 @@ foo = [:(x, y)| x <- xs| y <- ys:]
 
 foo = [:(x, y)| x <- xs| y <- ys:]
 
-foo = 
+foo =
     [ (x, y)
-    | x <- xs 
-    , y <- ys 
-    , then reverse 
-    , then sortWith by (x + y) 
-    , then group using permutations 
+    | x <- xs
+    , y <- ys
+    , then reverse
+    , then sortWith by (x + y)
+    , then group using permutations
     , then group by (x + y) using groupWith ]
 ```
 
@@ -700,25 +700,25 @@ foo =
 ``` haskell
 {-# LANGUAGE RecordWildCards #-}
 
-foo = 
+foo =
     Point
     { x = 1
     , y = 2
     }
 
-foo = 
+foo =
     Point
     { x = 1 -- the one
     , y
     , ..
     }
 
-foo = 
+foo =
     bar
     { x = 1
     }
 
-foo = 
+foo =
     bar
     { x = 1 -- the one
     , y
@@ -731,33 +731,33 @@ foo =
 ``` haskell
 {-# LANGUAGE MultiWayIf #-}
 
-foo = 
+foo =
     let x = x
     in x
 
-foo = 
+foo =
     let x = x -- bottom
     in 
        -- bottom
        x
 
-foo = 
+foo =
     if null xs
         then None
         else Some $ head xs
 
-foo = 
+foo =
     if null xs -- condition
         then None -- it's empty
         else Some $ head xs -- it's not
 
-foo = 
+foo =
     if | null xs ->
            None
        | otherwise ->
            Some $ head xs
 
-foo = 
+foo =
     if | null xs ->
            -- it's empty
            None
@@ -766,17 +766,17 @@ foo =
            Some $
            head x
 
-foo = 
+foo =
     case x of
         True -> False
         False -> True
 
-foo = 
+foo =
     case xs of
-        [] -> 
+        [] ->
             -- it's empty
             None
-        x:_ -> 
+        x:_ ->
             -- it's not
             Some
                 x
@@ -808,19 +808,19 @@ foo = mdo return ()
 ``` haskell
 {-# LANGUAGE LambdaCase #-}
 
-foo = 
+foo =
     \x -> 
          x
 
-foo = 
+foo =
     \ ~x -> 
           x
 
-foo = 
+foo =
     \ !x -> 
           x
 
-foo d = 
+foo d =
     \case
         Nothing -> d
         Some x -> x

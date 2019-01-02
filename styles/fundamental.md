@@ -75,14 +75,14 @@ class Fundep a b | a -> b where
 
 instance Functor f =>
          Functor (Wrap f) where
-  fmap f (Wrap x) = 
+  fmap f (Wrap x) =
     Wrap $ fmap
              f
              x
 
 -- Values
 origin :: Point
-origin = 
+origin =
   Point {pointX = 
              0
         ,pointY = 
@@ -91,7 +91,7 @@ origin =
              "Origin"}
 
 lorem :: [String]
-lorem = 
+lorem =
   ["Lorem ipsum dolor sit amet, consectetur adipiscing elit."
   ,"Curabitur nec ante nec mauris ornare suscipit."
   ,"In ac vulputate libero."
@@ -100,7 +100,7 @@ lorem =
 
 -- Functions
 facs :: [Int]
-facs = 
+facs =
   [1
   ,1] ++ zipWith
            (+)
@@ -108,46 +108,46 @@ facs =
 
 hello :: MonadIO m =>
          m ()
-hello = 
+hello =
   do name <- liftIO
                getLine
      liftIO . putStrLn $ greetings
                            name
-  where greetings n = 
+  where greetings n =
           "Hello " ++ n ++ "!"
 
 letExpr :: Point -> String
-letExp x = 
-  let y = 
+letExp x =
+  let y =
         1
-      z = 
+      z =
         2
   in if x > 0
         then y
         else z
 
 ifExpr :: Bool -> Bool
-ifExpr b = 
+ifExpr b =
   if b == True
      then False
      else True
 
 caseExpr :: [a] -> Maybe a
-caseExpr xs = 
+caseExpr xs =
   case xs of
-    [] -> 
+    [] ->
       Nothing
-    (x:_) -> 
+    (x:_) ->
       Just
         x
 
 guarded :: Int -> Int
 guarded x
-  | x == 0 = 
+  | x == 0 =
     1
-  | x == 1 = 
+  | x == 1 =
     1
-  | otherwise = 
+  | otherwise =
     guarded
       (x - 2) + guarded
                   (x - 1)
@@ -155,7 +155,7 @@ guarded x
 someLongFunctionNameWithALotOfParameters :: (MonadIO m
                                             ,MonadRandom m) =>
                                             String -> (String -> String) -> m ()
-someLongFunctionNameWithALotOfParameters = 
+someLongFunctionNameWithALotOfParameters =
   undefined
 ```
 
@@ -338,27 +338,27 @@ class ToJSON a where
   default toJSON :: (Generic a
                     ,GToJSON (Rep a)) =>
                     a -> Value
-  toJSON = 
+  toJSON =
     genericToJSON
       defaultOptions
 
 instance ToJSON ()
 
 instance Bounded Bool where
-  minBound = 
+  minBound =
     False
-  maxBound = 
+  maxBound =
     True
 
 instance Semigroup a =>
          Monoid (Maybe a) where
-  mempty = 
+  mempty =
     Nothing
-  Nothing `mappend` m = 
+  Nothing `mappend` m =
     m
-  m `mappend` Nothing = 
+  m `mappend` Nothing =
     m
-  Just m1 `mappend` Just m2 = 
+  Just m1 `mappend` Just m2 =
     Just
       (m1 `mappend` m2)
 ```
@@ -456,74 +456,74 @@ pattern Foo, Bar :: Show a => a
 {-# LANGUAGE UnboxedSums #-}
 {-# LANGUAGE RecordWildCards #-}
 
-pi = 
+pi =
   3.14
 
-id x = 
+id x =
   x
 
-not False = 
+not False =
   True
-not _ = 
+not _ =
   False
 
-head (x:_) = 
+head (x:_) =
   x
 
-maybe x _ Nothing = 
+maybe x _ Nothing =
   x
-maybe _ f (Some x) = 
+maybe _ f (Some x) =
   f
     x
 
-fst (x,_) = 
+fst (x,_) =
   x
 
-fst' (# x,_ #) = 
+fst' (# x,_ #) =
   x
 
-fstPrism (# x | | #) = 
+fstPrism (# x | | #) =
   Just
     x
-fstPrism (# | _ | #) = 
+fstPrism (# | _ | #) =
   Nothing
-fstPrism (# | | _ #) = 
+fstPrism (# | | _ #) =
   Nothing
 
-empty [] = 
+empty [] =
   True
-empty _ = 
+empty _ =
   False
 
-unSum (Sum {getSum = s}) = 
+unSum (Sum {getSum = s}) =
   s
 
 mag2 Point {x
-           ,y} = 
+           ,y} =
   sqr
     x + sqr
           y
-mag2 Point {..} = 
+mag2 Point {..} =
   sqr
     x + sqr
           y
 
-strict !x = 
+strict !x =
   x
 
-irrefutable ~x = 
+irrefutable ~x =
   x
 
-(//) a b = 
+(//) a b =
   undefined
 
-a // b = 
+a // b =
   undefined
 
-main = 
+main =
   do greet
        "World"
-  where greet who = 
+  where greet who =
           putStrLn $ "Hello, " ++ who ++ "!"
 ```
 
@@ -621,130 +621,130 @@ foo, bar, baz "no longer supported"
 {-# LANGUAGE UnboxedTuples #-}
 {-# LANGUAGE UnboxedSums #-}
 
-foo = 
+foo =
   foo
 
-foo = 
+foo =
   Nothing
 
-foo = 
+foo =
   123
 
-foo = 
+foo =
   'x'
 
-foo = 
+foo =
   ""
 
-foo = 
+foo =
   "Lorem Ipsum Dolor Amet Sit"
 
-foo = 
+foo =
   ()
 
-foo = 
+foo =
   (1
   ,2)
 
-foo = 
+foo =
   (1 -- the one
   ,2)
 
-foo = 
+foo =
   (# #)
 
-foo = 
+foo =
   (# 1
     ,2 #)
 
-foo = 
+foo =
   (# 1 -- the one
     ,2 #)
 
-foo = 
+foo =
   (# 1 #)
 
-foo = 
+foo =
   (# | 1 | | #)
 
-foo = 
+foo =
   (# | 1 -- the one
                    | | #)
 
-foo = 
+foo =
   []
 
-foo = 
+foo =
   [1]
 
-foo = 
+foo =
   [1
   ,2]
 
-foo = 
+foo =
   [1 -- the one
   ,2]
 
-foo = 
+foo =
   1 :: Int
 ```
 
 ### App, InfixApp, NegApp, LeftSection, RightSection
 
 ``` haskell
-foo = 
+foo =
   foldl
     fn
     init
     list
 
-foo = 
+foo =
   foldl
     fn
     init
     list
 
-foo = 
+foo =
   1 + 2
 
-foo = 
+foo =
   fn `map` list
 
-foo = 
+foo =
   -3
 
-foo = 
+foo =
   (+ arg)
 
-foo = 
+foo =
   (`op` arg)
 
-foo = 
+foo =
   (arg +)
 
-foo = 
+foo =
   (arg `op`)
 ```
 
 ### EnumFrom, EnumFromTo, EnumFromThen, EnumFromThenTo, ParArrayFromTo, ParArrayFromThenTo
 
 ``` haskell
-foo = 
+foo =
   [1 ..]
 
-foo = 
+foo =
   [1 .. 10]
 
-foo = 
+foo =
   [1,2 ..]
 
-foo = 
+foo =
   [1,2 .. 10]
 
-foo = 
+foo =
   [:1 .. 10:]
 
-foo = 
+foo =
   [:1, 2 .. 10:]
 ```
 
@@ -753,32 +753,32 @@ foo =
 ``` haskell
 {-# LANGUAGE TransformListComp #-}
 
-foo = 
+foo =
   [(x
    ,y)
   |x <- xs
   ,y <- ys]
 
-foo = 
+foo =
   [(x
    ,y) -- cartesian product
   |x <- xs -- first list
   ,y <- ys -- second list
    ]
 
-foo = 
+foo =
   [(x, y)| x <- xs| y <- ys]
 
-foo = 
+foo =
   [(x, y)| x <- xs| y <- ys]
 
-foo = 
+foo =
   [:(x, y)| x <- xs| y <- ys:]
 
-foo = 
+foo =
   [:(x, y)| x <- xs| y <- ys:]
 
-foo = 
+foo =
   [(x
    ,y)
   |x <- xs
@@ -794,23 +794,23 @@ foo =
 ``` haskell
 {-# LANGUAGE RecordWildCards #-}
 
-foo = 
+foo =
   Point {x = 
              1
         ,y = 
              2}
 
-foo = 
+foo =
   Point {x = 
              1 -- the one
         ,y
         ,..}
 
-foo = 
+foo =
   bar {x = 
            1}
 
-foo = 
+foo =
   bar {x = 
            1 -- the one
       ,y
@@ -822,33 +822,33 @@ foo =
 ``` haskell
 {-# LANGUAGE MultiWayIf #-}
 
-foo = 
-  let x = 
+foo =
+  let x =
         x
   in x
 
-foo = 
-  let x = 
+foo =
+  let x =
         x -- bottom
   in 
      -- bottom
      x
 
-foo = 
+foo =
   if null
        xs
      then None
      else Some $ head
                    xs
 
-foo = 
+foo =
   if null
        xs -- condition
      then None -- it's empty
      else Some $ head
                    xs -- it's not
 
-foo = 
+foo =
   if | null
         xs ->
        None
@@ -856,7 +856,7 @@ foo =
        Some $ head
                 xs
 
-foo = 
+foo =
   if | null
         xs ->
        -- it's empty
@@ -866,19 +866,19 @@ foo =
        Some $ head
                 x
 
-foo = 
+foo =
   case x of
-    True -> 
+    True ->
       False
-    False -> 
+    False ->
       True
 
-foo = 
+foo =
   case xs of
-    [] -> 
+    [] ->
       -- it's empty
       None
-    x:_ -> 
+    x:_ ->
       -- it's not
       Some
         x
@@ -889,24 +889,24 @@ foo =
 ``` haskell
 {-# LANGUAGE RecursiveDo #-}
 
-foo = 
+foo =
   do return
        ()
 
-foo = 
+foo =
   do return
        ()
 
-foo = 
+foo =
   do this <- that
-     let this' = 
+     let this' =
            tail
              this
      if this -- condition
         then that
         else those
 
-foo = 
+foo =
   mdo return
         ()
 ```
@@ -916,23 +916,23 @@ foo =
 ``` haskell
 {-# LANGUAGE LambdaCase #-}
 
-foo = 
+foo =
   \x -> 
      x
 
-foo = 
+foo =
   \ ~x -> 
       x
 
-foo = 
+foo =
   \ !x -> 
       x
 
-foo d = 
+foo d =
   \case
-    Nothing -> 
+    Nothing ->
       d
-    Some x -> 
+    Some x ->
       x
 ```
 
@@ -942,29 +942,29 @@ foo d =
 {-# LANGUAGE TemplateHaskell #-}
 
 mkDecl :: Q Decl
-mkDecl = 
+mkDecl =
   [d| id x = x |]
 
 mkType :: Q Type
-mkType = 
+mkType =
   [t|(a,b) -> a|]
 
 mkPat :: Q Pat
-mkPat = 
+mkPat =
   [p|(a,b)|]
 
 mkExp :: Q Exp
-mkExp = 
+mkExp =
   [|a|]
 
 fst :: $(mkType)
-fst $(mkPat) = 
+fst $(mkPat) =
   $(mkExp)
 
-html = 
+html =
   [html|<p>Lorem Ipsum Dolor Amet Sit</p>|]
 
-foo = 
+foo =
   mkSomething
     'id
     'Nothing

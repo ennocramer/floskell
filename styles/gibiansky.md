@@ -607,7 +607,7 @@ foo = [:1, 2 .. 10:]
 {-# LANGUAGE TransformListComp #-}
 
 foo = [ (x, y)
-      | x <- xs 
+      | x <- xs
       , y <- ys ]
 
 foo = [ (x, y) -- cartesian product
@@ -624,11 +624,11 @@ foo = [:(x, y)| x <- xs| y <- ys:]
 foo = [:(x, y)| x <- xs| y <- ys:]
 
 foo = [ (x, y)
-      | x <- xs 
-      , y <- ys 
-      , then reverse 
-      , then sortWith by (x + y) 
-      , then group using permutations 
+      | x <- xs
+      , y <- ys
+      , then reverse
+      , then sortWith by (x + y)
+      , then group using permutations
       , then group by (x + y) using groupWith ]
 ```
 
@@ -680,10 +680,10 @@ foo = if null xs -- condition
 foo = if | null xs -> None
          | otherwise -> Some $ head xs
 
-foo = if | null xs -> 
+foo = if | null xs ->
           -- it's empty
           None
-         | otherwise -> 
+         | otherwise ->
           -- it's not
           Some $ head x
 

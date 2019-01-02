@@ -196,7 +196,7 @@ type Fun a b = a -> b
 ### DataDecl and GDataDecl
 
 ``` haskell
-data Void 
+data Void
 
 data Unit = Unit
 
@@ -212,16 +212,16 @@ data Enum = One   -- Foo
           | Two   -- Bar
           | Three -- Baz
 
-data Foo 
+data Foo
     deriving ()
 
-data Foo 
+data Foo
     deriving Show
 
-data Foo 
+data Foo
     deriving (Show)
 
-data Foo 
+data Foo
     deriving (Eq, Ord)
 
 data Expr :: * -> * where
@@ -610,7 +610,7 @@ foo = [:1, 2 .. 10:]
 {-# LANGUAGE TransformListComp #-}
 
 foo = [ (x, y)
-      | x <- xs 
+      | x <- xs
       , y <- ys ]
 
 foo = [ (x, y) -- cartesian product
@@ -627,11 +627,11 @@ foo = [:(x, y)| x <- xs| y <- ys:]
 foo = [:(x, y)| x <- xs| y <- ys:]
 
 foo = [ (x, y)
-      | x <- xs 
-      , y <- ys 
-      , then reverse 
-      , then sortWith by (x + y) 
-      , then group using permutations 
+      | x <- xs
+      , y <- ys
+      , then reverse
+      , then sortWith by (x + y)
+      , then group using permutations
       , then group by (x + y) using groupWith ]
 ```
 

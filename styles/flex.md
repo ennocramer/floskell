@@ -28,7 +28,7 @@ Module: Style.Haskell.Example
 
 Haskell Code Style Example.
 -}
-module Style.Haskell.Example ( 
+module Style.Haskell.Example (
                                -- * Types
                                Enum(..), Either(..), Point(..)
                                -- * Functions
@@ -127,7 +127,7 @@ module Main ( foo, bar, baz, main ) where
 With exports and comments
 
 ``` haskell
-module Main ( 
+module Main (
               -- * Main Program
               main
               -- * Functions
@@ -637,10 +637,10 @@ foo = if
     | otherwise -> Some $ head xs
 
 foo = if
-    | null xs -> 
+    | null xs ->
         -- it's empty
         None
-    | otherwise -> 
+    | otherwise ->
         -- it's not
         Some $ head x
 
@@ -649,10 +649,10 @@ foo = case x of
     False -> True
 
 foo = case xs of
-    [] -> 
+    [] ->
         -- it's empty
         None
-    x : _ -> 
+    x : _ ->
         -- it's not
         Some x
 ```
