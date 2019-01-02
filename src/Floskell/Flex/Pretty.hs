@@ -6,12 +6,13 @@
 module Floskell.Flex.Pretty where
 
 import           Control.Applicative          ( (<|>) )
-import           Control.Monad                ( forM_, unless, void, when )
-import           Control.Monad.State.Strict   ( gets )
+import           Control.Monad                ( forM_, guard, unless, void, when )
+import           Control.Monad.State.Strict   ( get, gets )
 
 import           Data.ByteString              ( ByteString )
 import qualified Data.ByteString              as BS
 import qualified Data.ByteString.Char8        as BS8
+import qualified Data.ByteString.Lazy         as BL
 
 import           Data.List                    ( groupBy, sortBy, sortOn )
 import           Data.Maybe                   ( catMaybes )
@@ -19,6 +20,7 @@ import           Data.Maybe                   ( catMaybes )
 import           Floskell.Flex.Config
 import           Floskell.Flex.Printers
 
+import qualified Floskell.Buffer              as Buffer
 import           Floskell.Pretty              ( column, getNextColumn
                                               , printComment, printComments )
 import           Floskell.Types
@@ -43,6 +45,18 @@ runs _ [] = []
 runs eq xs = let (ys, zs) = run eq xs
              in
                  ys : runs eq zs
+
+stopImportModule :: TabStop
+stopImportModule = TabStop "import-module"
+
+stopImportSpec :: TabStop
+stopImportSpec = TabStop "import-spec"
+
+stopRecordField :: TabStop
+stopRecordField = TabStop "record"
+
+stopRhs :: TabStop
+stopRhs = TabStop "rhs"
 
 flattenApp :: Annotated ast
            => (ast NodeInfo -> Maybe (ast NodeInfo, ast NodeInfo))
@@ -271,11 +285,83 @@ listAutoWrap ctx open close sep (x : xs) =
                 prettyPrint x'
                 printComments After x'
 
+measure :: Printer s a -> Printer s (Maybe Int)
+measure p = do
+    s <- get
+    let s' = s { psBuffer = Buffer.empty, psEolComment = False }
+    return $ case execPrinter (oneline p) s' of
+        Nothing -> Nothing
+        Just (_, s'') -> Just . fromIntegral .
+            (\x -> x - psIndentLevel s) . BL.length . Buffer.toLazyByteString $ psBuffer s''
+
+measureDecl :: Decl NodeInfo -> Printer FlexConfig (Maybe [Int])
+measureDecl (PatBind _ pat _ Nothing) = fmap (: []) <$> measure (pretty pat)
+measureDecl (FunBind _ matches) = sequence <$> traverse measureMatch matches
+  where
+    measureMatch (Match _ name pats _ Nothing) = measure $ do
+        pretty name
+        space
+        inter space $ map pretty pats
+    measureMatch (InfixMatch  _ pat name pats _ Nothing) = measure $ do
+        pretty pat
+        pretty $ VarOp noNodeInfo name
+        inter space $ map pretty pats
+    measureMatch _ = return Nothing
+measureDecl _ = return Nothing
+
+measureClassDecl :: ClassDecl NodeInfo -> Printer FlexConfig (Maybe [Int])
+measureClassDecl (ClsDecl _ decl) = measureDecl decl
+measureClassDecl _ = return Nothing
+
+measureInstDecl :: InstDecl NodeInfo -> Printer FlexConfig (Maybe [Int])
+measureInstDecl (InsDecl _ decl) = measureDecl decl
+measureInstDecl _ = return Nothing
+
+withComputedTabStop :: TabStop
+                    -> (AlignConfig -> Bool)
+                    -> (a -> Printer FlexConfig (Maybe [Int]))
+                    -> [a]
+                    -> Printer FlexConfig b
+                    -> Printer FlexConfig b
+withComputedTabStop name predicate fn xs p = do
+    enabled <- getConfig (predicate . cfgAlign)
+    (limAbs, limRel) <- getConfig (cfgAlignLimits . cfgAlign)
+    mtabss <- sequence <$> traverse fn xs
+    let tab = do
+        tabss <- mtabss
+        let tabs = concat tabss
+            maxtab = maximum tabs
+            mintab = minimum tabs
+            delta = maxtab - mintab
+            diff = delta * 100 `div` maxtab
+        guard enabled
+        guard $ delta <= limAbs || diff <= limRel
+        return maxtab
+    withTabStops [ (name, tab) ] p
+
 ------------------------------------------------------------------------
 -- Module
 -- | Extract the name as a String from a ModuleName
 moduleName :: ModuleName a -> String
 moduleName (ModuleName _ s) = s
+
+nameLength :: Name a -> Int
+nameLength (Ident _ i) = length i
+nameLength (Symbol _ s) = 2 + length s
+
+qnameLength :: QName a -> Int
+qnameLength (Qual _ mname name) = length (moduleName mname) + nameLength name + 1
+qnameLength (UnQual _ name) = nameLength name
+qnameLength (Special _ con) = case con of
+    UnitCon _ -> 2
+    ListCon _ -> 2
+    FunCon _ -> 2
+    TupleCon _ boxed n -> 2 + n + case boxed of
+        Boxed -> 2
+        Unboxed -> 0
+    Cons _ -> 1
+    UnboxedSingleCon _ -> 5
+    ExprHole _ -> 1
 
 prettyPragmas :: [ModulePragma NodeInfo] -> Printer FlexConfig ()
 prettyPragmas ps = do
@@ -292,13 +378,21 @@ prettyPragmas ps = do
 prettyImports :: [ImportDecl NodeInfo] -> Printer FlexConfig ()
 prettyImports is = do
     sortP <- getConfig (cfgModuleSortImports . cfgModule)
-    if sortP
+    alignP <- getConfig (cfgAlignImports . cfgAlign)
+    withTabStops (if alignP then stops else noStops) $
+        if sortP
         then inter blankline . map lined .
             groupBy samePrefix $ sortOn (moduleName . importModule) is
         else lined is
   where
     samePrefix left right = prefix left == prefix right
     prefix = takeWhile (/= '.') . moduleName . importModule
+    stops = [ (stopImportModule, Just beforeName)
+            , (stopImportSpec, Just afterName)
+            ]
+    beforeName = 16
+    afterName = 16 + 1 + maximum (map (length . moduleName . importModule) is)
+    noStops = [ (stopImportModule, Nothing), (stopImportSpec, Nothing) ]
 
 skipBlank :: Annotated ast
           => (ast NodeInfo -> ast NodeInfo -> Bool)
@@ -389,11 +483,13 @@ prettyTypesig ctx names ty = withLayout cfgLayoutTypesig flex vertical
     flex = do
         inter comma $ map pretty names
         onside $ do
+            atTabStop stopRecordField
             operator ctx "::"
             pretty ty
 
     vertical = do
         inter comma $ map pretty names
+        atTabStop stopRecordField
         onside . alignOnOperator ctx "::" $ pretty' ty
 
     pretty' (TyForall _ mtyvarbinds mcontext ty') = do
@@ -450,6 +546,21 @@ prettyInfixApp nameFn ctx (lhs, args) = withLayout cfgLayoutInfixApp flex vertic
             withOperatorFormattingV ctx (nameFn op) (prettyHSE op) id
             pretty arg
 
+prettyRecord :: (Annotated ast, Pretty ast)
+             => (ast NodeInfo -> Printer FlexConfig (Maybe Int))
+             -> LayoutContext
+             -> [ast NodeInfo]
+             -> Printer FlexConfig ()
+prettyRecord len ctx fields = withLayout cfgLayoutRecord flex vertical
+  where
+    flex = groupH ctx "{" "}" $ inter (operatorH ctx ",") $ map pretty fields
+    vertical = groupV ctx "{" "}" $
+        withComputedTabStop stopRecordField
+                            cfgAlignRecordFields
+                            (fmap (fmap pure) . len)
+                            fields $
+            listVinternal ctx "," fields
+
 prettyPragma :: ByteString -> Printer FlexConfig () -> Printer FlexConfig ()
 prettyPragma name = prettyPragma' name . Just
 
@@ -501,18 +612,23 @@ instance Pretty ExportSpec
 
 instance Pretty ImportDecl where
     prettyPrint ImportDecl{..} = do
-        alignP <- getConfig (cfgModuleAlignImports . cfgModule)
-        write "import "
-        when importSrc $ write "{-# SOURCE #-} "
-        when importSafe $ write "safe "
-        if importQualified
-            then write "qualified "
-            else when (alignP && not importSrc && not importSafe) $ write "          "
+        inter space .
+            map write $ filter (not . BS.null)
+                               [ "import"
+                               , if importSrc then "{-# SOURCE #-}" else ""
+                               , if importSafe then "safe" else ""
+                               , if importQualified then "qualified" else ""
+                               ]
+        atTabStop stopImportModule
+        space
         string $ moduleName importModule
         mayM_ importAs $ \name -> do
+            atTabStop stopImportSpec
             write " as "
             pretty name
-        mayM_ importSpecs pretty
+        mayM_ importSpecs $ \specs -> do
+            atTabStop stopImportSpec
+            pretty specs
 
 instance Pretty ImportSpecList where
     prettyPrint (ImportSpecList _ hiding specs) = do
@@ -618,7 +734,9 @@ instance Pretty Decl where
                 list' Declaration "," fundeps
         mayM_ mclassdecls $ \decls -> do
             write " where"
-            withIndent cfgIndentClass $ prettyDecls skipBlankClassDecl decls
+            withIndent cfgIndentClass $
+                withComputedTabStop stopRhs cfgAlignClass measureClassDecl decls $
+                    prettyDecls skipBlankClassDecl decls
 
     prettyPrint (InstDecl _ moverlap instrule minstdecls) = do
         depend "instance" $ do
@@ -626,7 +744,9 @@ instance Pretty Decl where
             pretty instrule
         mayM_ minstdecls $ \decls -> do
             write " where"
-            withIndent cfgIndentClass $ prettyDecls skipBlankInstDecl decls
+            withIndent cfgIndentClass $
+                withComputedTabStop stopRhs cfgAlignClass measureInstDecl decls $
+                    prettyDecls skipBlankInstDecl decls
 
     prettyPrint (DerivDecl _ mderivstrategy moverlap instrule) =
         depend "deriving" $ do
@@ -661,6 +781,7 @@ instance Pretty Decl where
 
     prettyPrint (PatBind _ pat rhs mbinds) = do
         pretty pat
+        atTabStop stopRhs
         pretty rhs
         mapM_ pretty mbinds
 
@@ -788,7 +909,9 @@ instance Pretty Binds where
     prettyPrint (BDecls _ decls) = do
         newline
         write "  where"
-        withIndent cfgIndentWhere $ prettyDecls skipBlankDecl decls
+        withIndent cfgIndentWhere $
+            withComputedTabStop stopRhs cfgAlignWhere measureDecl decls $
+                prettyDecls skipBlankDecl decls
 
     prettyPrint (IPBinds _ ipbinds) = do
         newline
@@ -909,10 +1032,9 @@ instance Pretty ConDecl where
     prettyPrint (RecDecl _ name fielddecls) = do
         pretty name
         sepSpace
-        withLayout cfgLayoutRecord flex vertical
+        prettyRecord len Declaration fielddecls
       where
-        flex = listH Declaration "{" "}" "," fielddecls
-        vertical = listV Declaration "{" "}" "," fielddecls
+        len (FieldDecl _ names _) = measure $ inter comma $ map pretty names
 
 instance Pretty FieldDecl where
     prettyPrint (FieldDecl _ names ty) = prettyTypesig Declaration names ty
@@ -928,12 +1050,11 @@ instance Pretty GadtDecl where
         pretty name
         operator Declaration "::"
         mayM_ mfielddecls $ \decls -> do
-            withLayout cfgLayoutRecord (flex decls) (vertical decls)
+            prettyRecord len Declaration decls
             operator Type "->"
         pretty ty
       where
-        flex = listH Declaration "{" "}" ","
-        vertical = listV Declaration "{" "}" ","
+        len (FieldDecl _ names _) = measure $ inter comma $ map pretty names
 
 instance Pretty Match where
     prettyPrint (Match _ name pats rhs mbinds) = do
@@ -942,6 +1063,7 @@ instance Pretty Match where
             unless (null pats) $ do
                 space
                 inter space $ map pretty pats
+            atTabStop stopRhs
             pretty rhs
         mapM_ pretty mbinds
 
@@ -950,6 +1072,7 @@ instance Pretty Match where
             pretty pat
             pretty $ VarOp noNodeInfo name
             inter space $ map pretty pats
+            atTabStop stopRhs
             pretty rhs
         mapM_ pretty mbinds
 
@@ -1256,18 +1379,20 @@ instance Pretty Exp where
     prettyPrint (RecConstr _ qname fieldupdates) = do
         pretty qname
         sepSpace
-        withLayout cfgLayoutRecord flex vertical
+        prettyRecord len Expression fieldupdates
       where
-        flex = listH Expression "{" "}" "," fieldupdates
-        vertical = listV Expression "{" "}" "," fieldupdates
+        len (FieldUpdate _ n _) = measure $ pretty n
+        len (FieldPun _ n) = measure $ pretty n
+        len (FieldWildcard _) = measure $ write ".."
 
     prettyPrint (RecUpdate _ expr fieldupdates) = do
         pretty expr
         sepSpace
-        withLayout cfgLayoutRecord flex vertical
+        prettyRecord len Expression fieldupdates
       where
-        flex = listH Expression "{" "}" "," fieldupdates
-        vertical = listV Expression "{" "}" "," fieldupdates
+        len (FieldUpdate _ n _) = measure $ pretty n
+        len (FieldPun _ n) = measure $ pretty n
+        len (FieldWildcard _) = measure $ write ".."
 
     prettyPrint (EnumFrom _ expr) = group Expression "[" "]" $ do
         pretty expr
@@ -1675,6 +1800,7 @@ instance Pretty Stmt where
 instance Pretty FieldUpdate where
     prettyPrint (FieldUpdate _ qname expr) = do
         pretty qname
+        atTabStop stopRecordField
         operator Expression "="
         pretty expr
 
@@ -1821,7 +1947,8 @@ newtype CompactBinds l = CompactBinds (Binds l)
     deriving (Functor, Annotated)
 
 instance Pretty CompactBinds where
-    prettyPrint (CompactBinds (BDecls _ decls)) = aligned $ lined decls
+    prettyPrint (CompactBinds (BDecls _ decls)) = aligned $
+        withComputedTabStop stopRhs cfgAlignLet measureDecl decls $ lined decls
     prettyPrint (CompactBinds (IPBinds _ ipbinds)) = aligned $ lined ipbinds
 
 newtype MayAst a l = MayAst (Maybe (a l))

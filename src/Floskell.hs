@@ -33,6 +33,7 @@ import qualified Data.ByteString.UTF8        as UTF8
 import qualified Data.ByteString.Unsafe      as S
 import           Data.Function               ( on )
 import           Data.List
+import qualified Data.Map.Strict             as Map
 import           Data.Maybe
 import           Data.Monoid
 
@@ -210,6 +211,7 @@ runPrinterStyle mode' (Style _name _author _desc st extenders config preprocesso
                                (PrintState Buffer.empty
                                            0
                                            0
+                                           Map.empty
                                            st
                                            extenders
                                            config

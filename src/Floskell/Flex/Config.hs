@@ -10,6 +10,7 @@ module Floskell.Flex.Config
     , Layout(..)
     , ConfigMap(..)
     , PenaltyConfig(..)
+    , AlignConfig(..)
     , IndentConfig(..)
     , LayoutConfig(..)
     , OpConfig(..)
@@ -83,6 +84,24 @@ instance Default PenaltyConfig where
                         , penaltyOverfull = 10
                         , penaltyOverfullOnce = 200
                         }
+
+data AlignConfig = AlignConfig { cfgAlignLimits       :: !(Int, Int)
+                               , cfgAlignClass        :: !Bool
+                               , cfgAlignImports      :: !Bool
+                               , cfgAlignLet          :: !Bool
+                               , cfgAlignRecordFields :: !Bool
+                               , cfgAlignWhere        :: !Bool
+                               }
+    deriving (Generic)
+
+instance Default AlignConfig where
+    def = AlignConfig { cfgAlignLimits = (10, 25)
+                      , cfgAlignClass = False
+                      , cfgAlignImports = False
+                      , cfgAlignLet = False
+                      , cfgAlignRecordFields = False
+                      , cfgAlignWhere = False
+                      }
 
 data IndentConfig = IndentConfig { cfgIndentOnside         :: !Int
                                  , cfgIndentCase           :: !Indent
@@ -165,7 +184,6 @@ instance Default GroupConfig where
 data ModuleConfig = ModuleConfig { cfgModuleSortPragmas          :: !Bool
                                  , cfgModuleSplitLanguagePragmas :: !Bool
                                  , cfgModuleSortImports          :: !Bool
-                                 , cfgModuleAlignImports         :: !Bool
                                  , cfgModuleSortImportLists      :: !Bool
                                  }
     deriving (Generic)
@@ -174,11 +192,11 @@ instance Default ModuleConfig where
     def = ModuleConfig { cfgModuleSortPragmas = False
                        , cfgModuleSplitLanguagePragmas = False
                        , cfgModuleSortImports = False
-                       , cfgModuleAlignImports = False
                        , cfgModuleSortImportLists = False
                        }
 
 data FlexConfig = FlexConfig { cfgPenalty :: !PenaltyConfig
+                             , cfgAlign   :: !AlignConfig
                              , cfgIndent  :: !IndentConfig
                              , cfgLayout  :: !LayoutConfig
                              , cfgOp      :: !OpConfig
@@ -189,6 +207,7 @@ data FlexConfig = FlexConfig { cfgPenalty :: !PenaltyConfig
 
 instance Default FlexConfig where
     def = FlexConfig { cfgPenalty = def
+                     , cfgAlign = def
                      , cfgIndent = def
                      , cfgLayout = def
                      , cfgOp = def
@@ -352,6 +371,12 @@ instance ToJSON PenaltyConfig where
 
 instance FromJSON PenaltyConfig where
     parseJSON = genericParseJSON (recordOptions 7)
+
+instance ToJSON AlignConfig where
+    toJSON = genericToJSON (recordOptions 8)
+
+instance FromJSON AlignConfig where
+    parseJSON = genericParseJSON (recordOptions 8)
 
 instance ToJSON IndentConfig where
     toJSON = genericToJSON (recordOptions 9)

@@ -14,6 +14,9 @@ module Floskell.Flex.Printers
     , blankline
     , spaceOrNewline
       -- *
+    , withTabStops
+    , atTabStop
+      -- *
     , mayM_
     , withPrefix
     , withPostfix
@@ -49,10 +52,12 @@ module Floskell.Flex.Printers
 
 import           Control.Applicative        ( (<|>) )
 import           Control.Monad              ( when )
-import           Control.Monad.State.Strict ( gets )
+import           Control.Monad.State.Strict ( gets, modify )
 
 import           Data.ByteString            ( ByteString )
+import qualified Data.ByteString            as BS
 import           Data.List                  ( intersperse )
+import qualified Data.Map.Strict            as Map
 
 import           Floskell.Flex.Config
 import           Floskell.Pretty            ( brackets, cut, int, newline
@@ -78,6 +83,31 @@ blankline = newline >> newline
 
 spaceOrNewline :: Printer s ()
 spaceOrNewline = space <|> newline
+
+withTabStops :: [(TabStop, Maybe Int)] -> Printer s a -> Printer s a
+withTabStops stops p = do
+    col <- P.getNextColumn
+    oldstops <- gets psTabStops
+    modify $ \s ->
+        s { psTabStops = foldr (\(k, v) ->
+                                    Map.alter (const $ fmap (\x -> col +
+                                                                 fromIntegral x)
+                                                            v)
+                                              k)
+                               (psTabStops s)
+                               stops
+          }
+    res <- p
+    modify $ \s -> s { psTabStops = oldstops }
+    return res
+
+atTabStop :: TabStop -> Printer FlexConfig ()
+atTabStop tabstop = do
+    mstop <- gets (Map.lookup tabstop . psTabStops)
+    mayM_ mstop $ \stop -> do
+        col <- P.getNextColumn
+        let padding = max 0 $ fromIntegral (stop - col)
+        write (BS.replicate padding 32)
 
 mayM_ :: Maybe a -> (a -> Printer s ()) -> Printer s ()
 mayM_ Nothing _ = return ()

@@ -297,7 +297,7 @@ getNextColumn = do
     return $
         if psEolComment st
         then psIndentLevel st + psOnside st
-        else max (psColumn st) (psIndentLevel st + psOnside st)
+        else max (psColumn st) (psIndentLevel st)
 
 -- | Get the current line number.
 getLineNum :: Printer s Int64

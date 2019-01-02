@@ -10,6 +10,7 @@
 module Floskell.Types
     ( OutputRestriction(..)
     , Penalty(..)
+    , TabStop(..)
     , defaultLinePenalty
     , Printer(..)
     , execPrinter
@@ -37,6 +38,7 @@ import           Control.Monad.State.Strict     ( MonadState(..), StateT
 
 import           Data.Data
 import           Data.Int                       ( Int64 )
+import           Data.Map.Strict                ( Map )
 import           Data.Maybe                     ( listToMaybe )
 import           Data.Text                      ( Text )
 import           Data.Semigroup                 as Sem
@@ -53,6 +55,9 @@ data OutputRestriction = Anything | NoOverflow | NoOverflowOrLinebreak
 
 newtype Penalty = Penalty Int
     deriving (Eq, Ord, Num, Show)
+
+newtype TabStop = TabStop String
+    deriving (Eq, Ord, Show)
 
 instance Sem.Semigroup Penalty where
     (<>) = (+)
@@ -88,6 +93,7 @@ data PrintState s =
     PrintState { psBuffer              :: !Buffer -- ^ Output buffer
                , psIndentLevel         :: !Int64 -- ^ Current indentation level.
                , psOnside              :: !Int64 -- ^ Extra indentation is necessary with next line break.
+               , psTabStops            :: !(Map TabStop Int64) -- ^ Tab stops for alignment.
                , psUserState           :: !s -- ^ User state.
                , psExtenders           :: ![Extender s] -- ^ Extenders.
                , psConfig              :: !Config -- ^ Config which styles may or may not pay attention to.
