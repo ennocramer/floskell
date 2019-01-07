@@ -83,6 +83,21 @@ getConfig f = f <$> gets psUserState
 getOption :: (OptionConfig -> Bool) -> Printer Bool
 getOption f = getConfig (f . cfgOptions)
 
+-- | Line penalty calculation
+linePenalty :: Bool -> Int64 -> Printer Penalty
+linePenalty eol col = do
+    indentLevel <- gets psIndentLevel
+    config <- getConfig cfgPenalty
+    let maxcol = penaltyMaxLineLength config
+    let pLinebreak = onlyIf eol $ penaltyLinebreak config
+    let pIndent = fromIntegral indentLevel * (penaltyIndent config)
+    let pOverfull = onlyIf (col > fromIntegral maxcol) $
+            penaltyOverfull config * fromIntegral (col - fromIntegral maxcol) +
+                penaltyOverfullOnce config
+    return . fromIntegral $ pLinebreak + pIndent + pOverfull
+  where
+    onlyIf cond penalty = if cond then penalty else 0
+
 -- | Try only the first (i.e. locally best) solution to the given
 -- pretty printer.  Use this function to improve performance whenever
 -- the formatting of an AST node has no effect on the penalty of any
@@ -119,7 +134,7 @@ write x = do
             buffer = psBuffer state
             newCol = Buffer.column buffer + fromIntegral (BS.length out)
         guard $ psOutputRestriction state == Anything || newCol < fromIntegral (penaltyMaxLineLength (cfgPenalty (psUserState state)))
-        penalty <- psLinePenalty state False newCol
+        penalty <- linePenalty False newCol
         when (penalty /= mempty) $ cost mempty penalty
         modify (\s -> s { psBuffer = Buffer.write out buffer
                         , psEolComment = False
@@ -147,7 +162,7 @@ newline = do
                     })
     state <- get
     guard $ psOutputRestriction state /= NoOverflowOrLinebreak
-    penalty <- psLinePenalty state True (psColumn state)
+    penalty <- linePenalty True (psColumn state)
     when (penalty /= mempty) $ cost penalty mempty
     modify (\s -> s { psBuffer = Buffer.newline (psBuffer state)
                     , psEolComment = False

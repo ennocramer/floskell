@@ -78,7 +78,6 @@ data PrintState =
                , psTabStops            :: !(Map TabStop Int64) -- ^ Tab stops for alignment.
                , psUserState           :: !FlexConfig -- ^ User state.
                , psEolComment          :: !Bool -- ^ An end of line comment has just been outputted.
-               , psLinePenalty         :: Bool -> Int64 -> Printer Penalty
                , psOutputRestriction   :: OutputRestriction
                }
 
@@ -97,7 +96,6 @@ data Style =
           , styleAuthor       :: !Text -- ^ Author of the printer (as opposed to the author of the style).
           , styleDescription  :: !Text -- ^ Description of the style.
           , styleInitialState :: !FlexConfig -- ^ User state, if needed.
-          , styleLinePenalty  :: Bool -> Int64 -> Printer Penalty
           }
 
 -- | Information for each node in the AST.

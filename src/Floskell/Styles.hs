@@ -3,10 +3,7 @@
 
 module Floskell.Styles ( styles ) where
 
-import           Control.Monad.State.Strict   ( gets )
-
-import           Data.Int                     ( Int64 )
-import qualified Data.Map                     as Map
+import qualified Data.Map        as Map
 
 import           Floskell.Config
 import           Floskell.Types
@@ -324,8 +321,7 @@ base :: Style
 base = Style { styleName = "base"
              , styleAuthor = "Enno Cramer"
              , styleDescription = "Configurable formatting style"
-             , styleInitialState = defaultFlexConfig
-             , styleLinePenalty = linePenalty
+             , styleInitialState = safeFlexConfig $ defaultFlexConfig
              }
 
 chrisDone :: Style
@@ -333,7 +329,6 @@ chrisDone = Style { styleName = "chris-done"
                   , styleAuthor = "Chris Done"
                   , styleDescription = "Chris Done's style"
                   , styleInitialState = chrisDoneCfg
-                  , styleLinePenalty = linePenalty
                   }
 
 cramer :: Style
@@ -341,7 +336,6 @@ cramer = Style { styleName = "cramer"
                , styleAuthor = "Enno Cramer"
                , styleDescription = "Enno Cramer's style"
                , styleInitialState = cramerCfg
-               , styleLinePenalty = linePenalty
                }
 
 gibiansky :: Style
@@ -349,7 +343,6 @@ gibiansky = Style { styleName = "gibiansky"
                   , styleAuthor = "Andrew Gibiansky"
                   , styleDescription = "Andrew Gibiansky's style"
                   , styleInitialState = gibianskyCfg
-                  , styleLinePenalty = linePenalty
                   }
 
 johanTibell :: Style
@@ -357,25 +350,8 @@ johanTibell = Style { styleName = "johan-tibell"
                     , styleAuthor = "Johan Tibell"
                     , styleDescription = "Johan Tibell's style"
                     , styleInitialState = johanTibellCfg
-                    , styleLinePenalty = linePenalty
                     }
 
 -- | Styles list, useful for programmatically choosing.
 styles :: [Style]
 styles = [ base, chrisDone, johanTibell, gibiansky, cramer ]
-
-
--- | Line penalty calculation
-linePenalty :: Bool -> Int64 -> Printer Penalty
-linePenalty eol col = do
-    indent <- gets psIndentLevel
-    maxcol <- gets (penaltyMaxLineLength . cfgPenalty . psUserState)
-    config <- gets (cfgPenalty . psUserState)
-    let pLinebreak = onlyIf eol $ penaltyLinebreak config
-    let pIndent = fromIntegral indent * (penaltyIndent config)
-    let pOverfull = onlyIf (col > fromIntegral maxcol) $
-            penaltyOverfull config * fromIntegral (col - fromIntegral maxcol) +
-                penaltyOverfullOnce config
-    return . fromIntegral $ pLinebreak + pIndent + pOverfull
-  where
-    onlyIf cond penalty = if cond then penalty else 0
