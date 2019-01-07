@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 
-module Floskell.Flex.Config
+module Floskell.Config
     ( Indent(..)
     , LayoutContext(..)
     , Location(..)

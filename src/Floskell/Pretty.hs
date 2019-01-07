@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE RecordWildCards            #-}
 
-module Floskell.Flex.Pretty where
+module Floskell.Pretty where
 
 import           Control.Applicative            ( (<|>) )
 import           Control.Monad                  ( forM_, guard, replicateM_
@@ -19,8 +19,8 @@ import           Data.List                      ( groupBy, sortBy, sortOn )
 import           Data.Maybe                     ( catMaybes, fromMaybe )
 
 import qualified Floskell.Buffer                as Buffer
-import           Floskell.Flex.Config
-import           Floskell.Flex.Printers
+import           Floskell.Config
+import           Floskell.Printers
 
 import           Floskell.Types
 

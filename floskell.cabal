@@ -31,12 +31,12 @@ library
   ghc-options:       -Wall -O2
   exposed-modules:   Floskell
                      Floskell.Buffer
-                     Floskell.Types
                      Floskell.Comments
-                     Floskell.Flex.Config
-                     Floskell.Flex.Printers
-                     Floskell.Flex.Pretty
+                     Floskell.Config
+                     Floskell.Pretty
+                     Floskell.Printers
                      Floskell.Styles
+                     Floskell.Types
   build-depends:     base >= 4.7 && <5
                    , aeson
                    , containers

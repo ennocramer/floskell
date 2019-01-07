@@ -8,7 +8,7 @@ import           Control.Monad.State.Strict   ( gets )
 import           Data.Int                     ( Int64 )
 import qualified Data.Map                     as Map
 
-import           Floskell.Flex.Config
+import           Floskell.Config
 import           Floskell.Types
 
 chrisDoneCfg :: FlexConfig

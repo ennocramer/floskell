@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Floskell.Flex.Printers
+module Floskell.Printers
     ( getConfig
     , getOption
     , cut
@@ -72,7 +72,7 @@ import qualified Data.Map.Strict                as Map
 import           Data.Monoid                    ( (<>) )
 
 import qualified Floskell.Buffer                as Buffer
-import           Floskell.Flex.Config
+import           Floskell.Config
 import           Floskell.Types
 
 -- | Query part of the pretty printer config

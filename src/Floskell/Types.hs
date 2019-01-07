@@ -37,7 +37,7 @@ import           Data.Semigroup                 as Sem
 
 import           Floskell.Buffer                ( Buffer )
 import qualified Floskell.Buffer                as Buffer
-import           Floskell.Flex.Config           ( FlexConfig(..), Location(..) )
+import           Floskell.Config                ( FlexConfig(..), Location(..) )
 
 import           Language.Haskell.Exts.Comments
 import           Language.Haskell.Exts.SrcLoc

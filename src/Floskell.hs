@@ -30,7 +30,7 @@ import           Data.Monoid
 
 import qualified Floskell.Buffer             as Buffer
 import           Floskell.Comments
-import           Floskell.Flex.Pretty        ( pretty, printComment )
+import           Floskell.Pretty             ( pretty, printComment )
 import           Floskell.Styles             ( styles )
 import           Floskell.Types
 
