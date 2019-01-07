@@ -342,7 +342,6 @@ makeFlex cfg = Style { styleName = "flex"
                      , styleDefConfig = defaultConfig { configMaxColumns = 80
                                                       , configIndentSpaces = 4
                                                       }
-                     , styleCommentPreprocessor = return
                      , styleLinePenalty = linePenalty
                      }
 
@@ -355,7 +354,6 @@ chrisDone = Style { styleName = "chris-done"
                   , styleDefConfig = defaultConfig { configMaxColumns = 80
                                                    , configIndentSpaces = 4
                                                    }
-                  , styleCommentPreprocessor = return
                   , styleLinePenalty = linePenalty
                   }
 
@@ -368,7 +366,6 @@ cramer = Style { styleName = "cramer"
                , styleDefConfig = defaultConfig { configMaxColumns = 80
                                                 , configIndentSpaces = 4
                                                 }
-               , styleCommentPreprocessor = return
                , styleLinePenalty = linePenalty
                }
 
@@ -381,7 +378,6 @@ gibiansky = Style { styleName = "gibiansky"
                   , styleDefConfig = defaultConfig { configMaxColumns = 80
                                                    , configIndentSpaces = 4
                                                    }
-                  , styleCommentPreprocessor = return
                   , styleLinePenalty = linePenalty
                   }
 
@@ -394,7 +390,6 @@ johanTibell = Style { styleName = "johan-tibell"
                     , styleDefConfig = defaultConfig { configMaxColumns = 80
                                                      , configIndentSpaces = 4
                                                      }
-                    , styleCommentPreprocessor = return
                     , styleLinePenalty = linePenalty
                     }
 

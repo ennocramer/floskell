@@ -146,11 +146,9 @@ fitsOnOneLineOr single multi = cut $ withOutputRestriction NoOverflowOrLinebreak
 -- | Print comments of a node.
 printComments :: Annotated ast => ComInfoLocation -> ast NodeInfo -> Printer s ()
 printComments loc' ast = do
-    preprocessor <- gets psCommentPreprocessor
-
     let correctLocation comment = comInfoLocation comment == Just loc'
         commentsWithLocation = filter correctLocation (nodeInfoComments info)
-    comments <- preprocessor $ map comInfoComment commentsWithLocation
+        comments = map comInfoComment commentsWithLocation
 
     unless (null comments) $ do
         -- Preceeding comments must have a newline before them, but not break onside indent.

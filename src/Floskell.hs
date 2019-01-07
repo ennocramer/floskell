@@ -80,7 +80,7 @@ reformat style language langextensions mfilepath x = preserveTrailingNewline x .
             case parseModuleWithComments mode'' (UTF8.toString code) of
                 ParseOk (m, comments) ->
                     fmap (addPrefix prefix)
-                         (prettyPrint mode' style m comments)
+                         (prettyPrint style m comments)
                 ParseFailed loc e -> Left $
                     Exts.prettyPrint (loc { srcLine = srcLine loc + offset }) ++
                         ": " ++ e
@@ -170,36 +170,31 @@ cppSplitBlocks inp = map (classify . unlines') .
         if cppLine text then CPPDirectives text else HaskellSource ofs text
 
 -- | Print the module.
-prettyPrint :: ParseMode
-            -> Style
+prettyPrint :: Style
             -> Module SrcSpanInfo
             -> [Comment]
             -> Either a L.ByteString
-prettyPrint mode' style m comments =
+prettyPrint style m comments =
     let (cs, ast) = annotateComments (fromMaybe m $ applyFixities baseFixities
                                                                   m)
                                      comments
         csComments = map comInfoComment cs
     in
         case style of
-            style@(Style{styleCommentPreprocessor = preprocessor}) ->
-                Right (runPrinterStyle mode'
-                                       style
+            style ->
+                Right (runPrinterStyle style
                                        -- For the time being, assume that all "free-floating" comments come at the beginning.
                                        -- If they were not at the beginning, they would be after some ast node.
                                        -- Thus, print them before going for the ast.
                                        (do
-                                            comments <- preprocessor (reverse csComments)
-                                            mapM_ (printComment Nothing)
-                                                  comments
+                                            mapM_ (printComment Nothing) (reverse csComments)
                                             pretty ast))
 
 -- | Pretty print the given printable thing.
-runPrinterStyle :: ParseMode
-                -> Style
+runPrinterStyle :: Style
                 -> (forall s. Printer s ())
                 -> L.ByteString
-runPrinterStyle mode' (Style _name _author _desc st extenders config preprocessor penalty) m =
+runPrinterStyle (Style _name _author _desc st extenders config penalty) m =
     maybe (error "Printer failed with mzero call.")
           (Buffer.toLazyByteString . psBuffer)
           (snd <$> execPrinter m
@@ -212,8 +207,6 @@ runPrinterStyle mode' (Style _name _author _desc st extenders config preprocesso
                                            config
                                            False
                                            False
-                                           mode'
-                                           preprocessor
                                            penalty
                                            Anything))
 

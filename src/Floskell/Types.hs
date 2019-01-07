@@ -45,7 +45,6 @@ import           Floskell.Buffer                ( Buffer )
 import qualified Floskell.Buffer                as Buffer
 
 import           Language.Haskell.Exts.Comments
-import           Language.Haskell.Exts.Parser
 import           Language.Haskell.Exts.SrcLoc
 
 data OutputRestriction = Anything | NoOverflow | NoOverflowOrLinebreak
@@ -89,10 +88,6 @@ data PrintState s =
                , psConfig              :: !Config -- ^ Config which styles may or may not pay attention to.
                , psEolComment          :: !Bool -- ^ An end of line comment has just been outputted.
                , psInsideCase          :: !Bool -- ^ Whether we're in a case statement, used for Rhs printing.
-               , psParseMode           :: !ParseMode -- ^ Mode used to parse the original AST.
-               , psCommentPreprocessor :: forall t.
-                                       [Comment]
-                                       -> Printer t [Comment] -- ^ Preprocessor applied to comments on an AST before printing.
                , psLinePenalty         :: Bool -> Int64 -> Printer s Penalty
                , psOutputRestriction   :: OutputRestriction
                }
@@ -125,9 +120,6 @@ data Style =
                     , styleInitialState        :: !s -- ^ User state, if needed.
                     , styleExtenders           :: ![Extender s] -- ^ Extenders to the printer.
                     , styleDefConfig           :: !Config -- ^ Default config to use for this style.
-                    , styleCommentPreprocessor :: forall t.
-                                               [Comment]
-                                               -> Printer t [Comment] -- ^ Preprocessor to use for comments.
                     , styleLinePenalty         :: Bool
                                                -> Int64
                                                -> Printer s Penalty
