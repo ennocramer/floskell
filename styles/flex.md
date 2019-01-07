@@ -435,8 +435,8 @@ foreign export ccall callback :: Int -> Int
 
 {-# RULES "map/map" forall f g xs. map f (map g xs) = map (f . g) xs #-}
 
-{-# RULES "map/append" [2] forall f xs ys. map f (xs ++ ys) = map f xs ++ map f
-          ys #-}
+{-# RULES "map/append" [2] forall f xs ys. map f (xs ++ ys)
+          = map f xs ++ map f ys #-}
 
 {-# DEPRECATED #-}
 {-# DEPRECATED foo "use bar instead" #-}

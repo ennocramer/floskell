@@ -67,9 +67,9 @@ module Floskell.Pretty
     , pretty'
     ) where
 
-import           Control.Applicative            ( (<|>), empty )
+import           Control.Applicative            ( (<|>) )
 
-import           Control.Monad.Search           ( cost, cost' )
+import           Control.Monad.Search           ( cost, winner )
 import           Control.Monad.State.Strict     hiding ( state )
 
 import qualified Data.ByteString                as S
@@ -129,10 +129,7 @@ prettyNoExt = prettyInternal
 -- following AST node, such as top-level declarations or case
 -- branches.
 cut :: Printer s a -> Printer s a
-cut p = do
-    s <- get
-    maybe empty (\(c, (x, s')) -> cost' c >> put s' >> return x) $
-        runPrinter p s
+cut = winner
 
 withOutputRestriction :: OutputRestriction -> Printer s a -> Printer s a
 withOutputRestriction r p = do

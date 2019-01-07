@@ -32,14 +32,13 @@ import           Control.Applicative
 import           Control.Monad
 
 import           Control.Monad.Search           ( MonadSearch, Search
-                                                , runSearch )
+                                                , runSearchBest )
 import           Control.Monad.State.Strict     ( MonadState(..), StateT
                                                 , execStateT, gets, runStateT )
 
 import           Data.Data
 import           Data.Int                       ( Int64 )
 import           Data.Map.Strict                ( Map )
-import           Data.Maybe                     ( listToMaybe )
 import           Data.Text                      ( Text )
 import           Data.Semigroup                 as Sem
 
@@ -83,10 +82,10 @@ newtype Printer s a =
     deriving (Applicative, Monad, Functor, MonadState (PrintState s), MonadSearch Penalty, MonadPlus, Alternative)
 
 execPrinter :: Printer s a -> PrintState s -> Maybe (Penalty, PrintState s)
-execPrinter m s = listToMaybe . runSearch $ execStateT (unPrinter m) s
+execPrinter m s = runSearchBest $ execStateT (unPrinter m) s
 
 runPrinter :: Printer s a -> PrintState s -> Maybe (Penalty, (a, PrintState s))
-runPrinter m s = listToMaybe . runSearch $ runStateT (unPrinter m) s
+runPrinter m s = runSearchBest $ runStateT (unPrinter m) s
 
 -- | The state of the pretty printer.
 data PrintState s =
