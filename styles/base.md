@@ -189,8 +189,8 @@ newtype RWS r w s = RWS (ReaderT r (WriterT w (StateT s Identity)))
     deriving ( Functor, Applicative, Monad )
 
 data Enum = One   -- Foo
-          | Two   -- Bar
-          | Three -- Baz
+    | Two   -- Bar
+    | Three -- Baz
 
 data Foo
     deriving ()
@@ -627,16 +627,12 @@ foo = [ ( x, y ) | x <- xs
 foo = Point { x = 1, y = 2 }
 
 foo = Point { x = 1 -- the one
-            , y
-            , ..
-            }
+    , y, .. }
 
 foo = bar { x = 1 }
 
 foo = bar { x = 1 -- the one
-          , y
-          , ..
-          }
+    , y, .. }
 ```
 
 ### Let, If, MultiIf, and Case

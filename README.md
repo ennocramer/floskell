@@ -42,7 +42,7 @@ To enable it, add the following to your init file:
 (add-hook 'haskell-mode-hook #'floskell-mode)
 ```
 
-By default it uses the style called `flex`, if you want to use
+By default it uses the style called `base`, if you want to use
 another, run `M-x customize-variable floskell-style`. If you want to
 configure per-project, make a file called `.dir-locals.el` in the
 project root directory like this:

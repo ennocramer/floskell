@@ -23,10 +23,7 @@ import qualified Data.Text                       as T
 import           Data.Version                    ( showVersion )
 
 import           Floskell                        ( reformat, styles )
-import           Floskell.Flex.Config            ( FlexConfig
-                                                 , defaultFlexConfig )
-import           Floskell.Styles                 ( makeFlex )
-import           Floskell.Types                  ( Style(styleName, styleDefConfig)
+import           Floskell.Types                  ( Style(styleName, styleDefConfig, styleInitialState)
                                                  , configMaxColumns )
 
 import           Foreign.C.Error                 ( Errno(..), eXDEV )
@@ -77,7 +74,6 @@ data Config = Config { cfgStyle      :: Style
                      , cfgLineLength :: Maybe Int
                      , cfgLanguage   :: Language
                      , cfgExtensions :: [Extension]
-                     , cfgFlex       :: FlexConfig
                      }
 
 instance ToJSON Config where
@@ -86,7 +82,7 @@ instance ToJSON Config where
                     , "line-length" .= configMaxColumns (styleDefConfig cfgStyle)
                     , "language" .= show cfgLanguage
                     , "extensions" .= map showExt cfgExtensions
-                    , "flex" .= cfgFlex
+                    , "formatting" .= styleInitialState cfgStyle
                     ]
       where
         showExt (EnableExtension x) = show x
@@ -94,19 +90,20 @@ instance ToJSON Config where
         showExt (UnknownExtension x) = x
 
 instance FromJSON Config where
-    parseJSON (JSON.Object o) = Config <$> (maybe (cfgStyle defaultConfig)
-                                                  lookupStyle <$>
-                                                o .:? "style")
-        <*> o .:? "line-length"
-        <*> (maybe (cfgLanguage defaultConfig) lookupLanguage <$>
-                 o .:? "language")
-        <*> (maybe (cfgExtensions defaultConfig) (map lookupExtension) <$>
-                 o .:? "extensions")
-        <*> (maybe (cfgFlex defaultConfig) updateFlexConfig <$>
-                 o .:? "flex")
+    parseJSON (JSON.Object o) = do
+        style <- maybe (cfgStyle defaultConfig) lookupStyle <$> o .:? "style"
+        lineLength <- o .:? "line-length"
+        language <- maybe (cfgLanguage defaultConfig) lookupLanguage <$>
+                        o .:? "language"
+        extensions <- maybe (cfgExtensions defaultConfig) (map lookupExtension) <$>
+                          o .:? "extensions"
+        let flex = styleInitialState style
+        flex' <- maybe flex (updateFlexConfig flex) <$> o .:? "formatting"
+        let style' = style { styleInitialState = flex' }
+        return $ Config style' lineLength language extensions
       where
-        updateFlexConfig v = case JSON.fromJSON $
-            mergeJSON (toJSON defaultFlexConfig) v of
+        updateFlexConfig cfg v = case JSON.fromJSON $
+            mergeJSON (toJSON cfg) v of
             JSON.Error e -> error e
             JSON.Success x -> x
 
@@ -120,7 +117,7 @@ instance FromJSON Config where
 
 -- | Default program configuration.
 defaultConfig :: Config
-defaultConfig = Config (head styles) Nothing Haskell2010 [] defaultFlexConfig
+defaultConfig = Config (head styles) Nothing Haskell2010 []
 
 -- | Main entry point.
 main :: IO ()
@@ -256,8 +253,7 @@ readConfig file = do
 -- | Update the program configuration from the program options.
 mergeConfig :: Config -> Options -> Config
 mergeConfig cfg@Config{..} Options{..} =
-    cfg { cfgStyle = setLineLength optLineLength . updateFlexStyle cfgFlex $
-            maybe cfgStyle lookupStyle optStyle
+    cfg { cfgStyle = setLineLength optLineLength $ maybe cfgStyle lookupStyle optStyle
         , cfgLanguage = maybe cfgLanguage lookupLanguage optLanguage
         , cfgExtensions = cfgExtensions ++ map lookupExtension optExtensions
         }
@@ -267,9 +263,6 @@ mergeConfig cfg@Config{..} Options{..} =
         s { styleDefConfig = (styleDefConfig s) { configMaxColumns = fromIntegral l
                                                 }
           }
-
-    updateFlexStyle conf style =
-        if styleName style == "flex" then makeFlex conf else style
 
 -- | Lookup a style by name.
 lookupStyle :: String -> Style

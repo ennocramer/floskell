@@ -50,7 +50,7 @@ Provide the following keybindings:
 ;; Customization properties
 
 (defcustom floskell-style
-  "flex"
+  "base"
   "The style to use for formatting."
   :group 'haskell
   :type 'string

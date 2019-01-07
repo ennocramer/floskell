@@ -49,6 +49,8 @@ module.exports = Floskell =
 
     @disposables.add \
       atom.commands.add 'atom-text-editor[data-grammar~="haskell"]',
+        'floskell:prettify-base': ({target}) =>
+          prettifyFile 'base', target.getModel()
         'floskell:prettify-chris-done': ({target}) =>
           prettifyFile 'chris-done', target.getModel()
         'floskell:prettify-johan-tibell': ({target}) =>
@@ -57,17 +59,15 @@ module.exports = Floskell =
           prettifyFile 'gibiansky', target.getModel()
         'floskell:prettify-cramer': ({target}) =>
           prettifyFile 'cramer', target.getModel()
-        'floskell:prettify-flex': ({target}) =>
-          prettifyFile 'flex', target.getModel()
 
     @menu.add atom.menu.add [
       label: 'floskell'
       submenu : [
+        {label: 'Base', command: 'floskell:prettify-base'}
         {label: 'Chris Done', command: 'floskell:prettify-chris-done'}
         {label: 'Johan Tibell', command: 'floskell:prettify-johan-tibell'}
         {label: 'Gibiansky', command: 'floskell:prettify-gibiansky'}
         {label: 'Cramer', command: 'floskell:prettify-cramer'}
-        {label: 'Flex', command: 'floskell:prettify-flex'}
       ]
     ]
 

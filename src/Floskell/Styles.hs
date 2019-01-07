@@ -1,14 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NamedFieldPuns    #-}
 
-module Floskell.Styles
-    ( flex
-    , makeFlex
-    , chrisDone
-    , cramer
-    , gibiansky
-    , johanTibell
-    ) where
+module Floskell.Styles ( styles ) where
 
 import           Control.Monad.State.Strict   ( gets )
 
@@ -327,19 +320,16 @@ johanTibellCfg = safeFlexConfig $
                               }
 
 -- | Base style definition.
-flex :: Style
-flex = makeFlex defaultFlexConfig
-
-makeFlex :: FlexConfig -> Style
-makeFlex cfg = Style { styleName = "flex"
-                     , styleAuthor = "Enno Cramer"
-                     , styleDescription = "Configurable formatting style"
-                     , styleInitialState = cfg
-                     , styleDefConfig = defaultConfig { configMaxColumns = 80
-                                                      , configIndentSpaces = 4
-                                                      }
-                     , styleLinePenalty = linePenalty
-                     }
+base :: Style
+base = Style { styleName = "base"
+             , styleAuthor = "Enno Cramer"
+             , styleDescription = "Configurable formatting style"
+             , styleInitialState = defaultFlexConfig
+             , styleDefConfig = defaultConfig { configMaxColumns = 80
+                                              , configIndentSpaces = 4
+                                              }
+             , styleLinePenalty = linePenalty
+             }
 
 chrisDone :: Style
 chrisDone = Style { styleName = "chris-done"
@@ -384,6 +374,11 @@ johanTibell = Style { styleName = "johan-tibell"
                                                      }
                     , styleLinePenalty = linePenalty
                     }
+
+-- | Styles list, useful for programmatically choosing.
+styles :: [Style]
+styles = [ base, chrisDone, johanTibell, gibiansky, cramer ]
+
 
 -- | Line penalty calculation
 linePenalty :: Bool -> Int64 -> Printer Penalty

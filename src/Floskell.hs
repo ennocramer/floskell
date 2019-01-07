@@ -10,11 +10,6 @@ module Floskell
       -- * Style
     , Style(..)
     , styles
-    , chrisDone
-    , johanTibell
-    , gibiansky
-    , cramer
-    , flex
       -- * Testing
     , defaultExtensions
     ) where
@@ -36,8 +31,7 @@ import           Data.Monoid
 import qualified Floskell.Buffer             as Buffer
 import           Floskell.Comments
 import           Floskell.Flex.Pretty        ( pretty, printComment )
-import           Floskell.Styles             ( chrisDone, cramer, flex
-                                             , gibiansky , johanTibell )
+import           Floskell.Styles             ( styles )
 import           Floskell.Types
 
 import           Language.Haskell.Exts       hiding ( Pretty, Style, parse
@@ -205,10 +199,6 @@ runPrinterStyle (Style _name _author _desc st config penalty) m =
                                            False
                                            penalty
                                            Anything))
-
--- | Styles list, useful for programmatically choosing.
-styles :: [Style]
-styles = [ flex, chrisDone, johanTibell, gibiansky, cramer ]
 
 -- | Default extensions.
 defaultExtensions :: [Extension]

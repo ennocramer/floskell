@@ -133,16 +133,16 @@ instance Default IndentConfig where
     def = IndentConfig { cfgIndentOnside = 4
                        , cfgIndentDeriving = 4
                        , cfgIndentWhere = 2
-                       , cfgIndentApp = Align
+                       , cfgIndentApp = IndentBy 4
                        , cfgIndentCase = IndentBy 4
                        , cfgIndentClass = IndentBy 4
                        , cfgIndentDo = IndentBy 4
-                       , cfgIndentExportSpecList = Align
-                       , cfgIndentIf = Align
-                       , cfgIndentImportSpecList = Align
-                       , cfgIndentLet = Align
-                       , cfgIndentLetBinds = Align
-                       , cfgIndentLetIn = Align
+                       , cfgIndentExportSpecList = IndentBy 4
+                       , cfgIndentIf = IndentBy 4
+                       , cfgIndentImportSpecList = IndentBy 4
+                       , cfgIndentLet = IndentBy 4
+                       , cfgIndentLetBinds = IndentBy 4
+                       , cfgIndentLetIn = IndentBy 4
                        , cfgIndentMultiIf = IndentBy 4
                        , cfgIndentWhereBinds = IndentBy 2
                        }
@@ -163,7 +163,7 @@ data LayoutConfig = LayoutConfig { cfgLayoutApp            :: !Layout
 
 instance Default LayoutConfig where
     def = LayoutConfig { cfgLayoutApp = Flex
-                       , cfgLayoutConDecls = TryOneline
+                       , cfgLayoutConDecls = Flex
                        , cfgLayoutDeclaration = Flex
                        , cfgLayoutExportSpecList = Flex
                        , cfgLayoutIf = Flex
@@ -171,7 +171,7 @@ instance Default LayoutConfig where
                        , cfgLayoutInfixApp = Flex
                        , cfgLayoutLet = Flex
                        , cfgLayoutListComp = Flex
-                       , cfgLayoutRecord = TryOneline
+                       , cfgLayoutRecord = Flex
                        , cfgLayoutTypesig = Flex
                        }
 
