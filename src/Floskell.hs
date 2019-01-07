@@ -1,9 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 
-{-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE TupleSections       #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 -- | Haskell indenter.
 module Floskell
@@ -38,7 +35,7 @@ import           Data.Monoid
 
 import qualified Floskell.Buffer             as Buffer
 import           Floskell.Comments
-import           Floskell.Pretty
+import           Floskell.Flex.Pretty        ( pretty, printComment )
 import           Floskell.Styles             ( chrisDone, cramer, flex
                                              , gibiansky , johanTibell )
 import           Floskell.Types
@@ -192,9 +189,9 @@ prettyPrint style m comments =
 
 -- | Pretty print the given printable thing.
 runPrinterStyle :: Style
-                -> (forall s. Printer s ())
+                -> Printer ()
                 -> L.ByteString
-runPrinterStyle (Style _name _author _desc st extenders config penalty) m =
+runPrinterStyle (Style _name _author _desc st config penalty) m =
     maybe (error "Printer failed with mzero call.")
           (Buffer.toLazyByteString . psBuffer)
           (snd <$> execPrinter m
@@ -203,7 +200,6 @@ runPrinterStyle (Style _name _author _desc st extenders config penalty) m =
                                            0
                                            Map.empty
                                            st
-                                           extenders
                                            config
                                            False
                                            False

@@ -32,7 +32,6 @@ library
   exposed-modules:   Floskell
                      Floskell.Buffer
                      Floskell.Types
-                     Floskell.Pretty
                      Floskell.Comments
                      Floskell.Flex.Config
                      Floskell.Flex.Printers

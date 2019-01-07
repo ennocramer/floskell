@@ -5,7 +5,7 @@ module Floskell.Flex.Printers
     , getOption
     , cut
     , oneline
-      -- *
+      -- * Basic printing
     , write
     , string
     , int
@@ -14,10 +14,10 @@ module Floskell.Flex.Printers
     , linebreak
     , blankline
     , spaceOrNewline
-      -- *
+      -- * Tab stops
     , withTabStops
     , atTabStop
-      -- *
+      -- * Combinators
     , mayM_
     , withPrefix
     , withPostfix
@@ -26,6 +26,9 @@ module Floskell.Flex.Printers
     , withIndentBy
     , withLayout
     , inter
+      -- * Indentation
+    , getNextColumn
+    , column
     , aligned
     , indented
     , onside
@@ -33,11 +36,11 @@ module Floskell.Flex.Printers
     , depend'
     , parens
     , brackets
-      -- *
+      -- * Wrapping
     , group
     , groupH
     , groupV
-      -- *
+      -- * Operators
     , operator
     , operatorH
     , operatorV
@@ -52,47 +55,116 @@ module Floskell.Flex.Printers
     , comma
     ) where
 
-import           Control.Applicative        ( (<|>) )
-import           Control.Monad              ( when )
-import           Control.Monad.State.Strict ( gets, modify )
+import           Control.Applicative            ( (<|>) )
 
-import           Data.ByteString            ( ByteString )
-import qualified Data.ByteString            as BS
-import           Data.List                  ( intersperse )
-import qualified Data.Map.Strict            as Map
+import           Control.Monad                  ( guard, unless, when )
+import           Control.Monad.Search           ( cost, winner )
 
+import           Control.Monad.State.Strict     ( get, gets, modify )
+
+import           Data.ByteString                ( ByteString )
+import qualified Data.ByteString                as BS
+import qualified Data.ByteString.Builder        as BB
+import qualified Data.ByteString.Lazy           as BL
+import           Data.Int                       ( Int64 )
+import           Data.List                      ( intersperse )
+import qualified Data.Map.Strict                as Map
+import           Data.Monoid                    ( (<>) )
+
+import qualified Floskell.Buffer                as Buffer
 import           Floskell.Flex.Config
-import           Floskell.Pretty            ( brackets, cut, int, newline
-                                            , parens, space, string, write )
-import qualified Floskell.Pretty            as P
 import           Floskell.Types
 
 -- | Query part of the pretty printer config
-getConfig :: (a -> b) -> Printer a b
-getConfig f = f <$> P.getState
+getConfig :: (FlexConfig -> b) -> Printer b
+getConfig f = f <$> gets psUserState
 
 -- | Query pretty printer options
-getOption :: (OptionConfig -> Bool) -> Printer FlexConfig Bool
+getOption :: (OptionConfig -> Bool) -> Printer Bool
 getOption f = getConfig (f . cfgOptions)
 
-oneline :: Printer s a -> Printer s a
+-- | Try only the first (i.e. locally best) solution to the given
+-- pretty printer.  Use this function to improve performance whenever
+-- the formatting of an AST node has no effect on the penalty of any
+-- following AST node, such as top-level declarations or case
+-- branches.
+cut :: Printer a -> Printer a
+cut = winner
+
+withOutputRestriction :: OutputRestriction -> Printer a -> Printer a
+withOutputRestriction r p = do
+    orig <- gets psOutputRestriction
+    modify $ \s -> s { psOutputRestriction = max orig r }
+    result <- p
+    modify $ \s -> s { psOutputRestriction = orig }
+    return result
+
+oneline :: Printer a -> Printer a
 oneline p = do
     eol <- gets psEolComment
     when eol $ newline
-    P.withOutputRestriction NoOverflowOrLinebreak p
+    withOutputRestriction NoOverflowOrLinebreak p
 
-linebreak :: Printer s ()
+-- | Write out a string, updating the current position information.
+write :: ByteString -> Printer ()
+write x = do
+    eol <- gets psEolComment
+    when eol newline
+    write' x
+  where
+    write' x' = do
+        state <- get
+        let indentLevel = fromIntegral (psIndentLevel state)
+            out = if psNewline state then BS.replicate indentLevel 32 <> x' else x'
+            buffer = psBuffer state
+            newCol = Buffer.column buffer + fromIntegral (BS.length out)
+        guard $ psOutputRestriction state == Anything || newCol < configMaxColumns (psConfig state)
+        penalty <- psLinePenalty state False newCol
+        when (penalty /= mempty) $ cost mempty penalty
+        modify (\s -> s { psBuffer = Buffer.write out buffer
+                        , psEolComment = False
+                        })
+
+-- | Write a string.
+string :: String -> Printer ()
+string = write . BL.toStrict . BB.toLazyByteString . BB.stringUtf8
+
+-- | Write an integral.
+int :: Integer -> Printer ()
+int = string . show
+
+-- | Write a space.
+space :: Printer ()
+space = do
+    comment <- gets psEolComment
+    unless comment $ write " "
+
+-- | Output a newline.
+newline :: Printer ()
+newline = do
+    modify (\s -> s { psIndentLevel = psIndentLevel s + psOnside s
+                    , psOnside = 0
+                    })
+    state <- get
+    guard $ psOutputRestriction state /= NoOverflowOrLinebreak
+    penalty <- psLinePenalty state True (psColumn state)
+    when (penalty /= mempty) $ cost penalty mempty
+    modify (\s -> s { psBuffer = Buffer.newline (psBuffer state)
+                    , psEolComment = False
+                    })
+
+linebreak :: Printer ()
 linebreak = return () <|> newline
 
-blankline :: Printer s ()
+blankline :: Printer ()
 blankline = newline >> newline
 
-spaceOrNewline :: Printer s ()
+spaceOrNewline :: Printer ()
 spaceOrNewline = space <|> newline
 
-withTabStops :: [(TabStop, Maybe Int)] -> Printer s a -> Printer s a
+withTabStops :: [(TabStop, Maybe Int)] -> Printer a -> Printer a
 withTabStops stops p = do
-    col <- P.getNextColumn
+    col <- getNextColumn
     oldstops <- gets psTabStops
     modify $ \s ->
         s { psTabStops = foldr (\(k, v) ->
@@ -107,15 +179,15 @@ withTabStops stops p = do
     modify $ \s -> s { psTabStops = oldstops }
     return res
 
-atTabStop :: TabStop -> Printer FlexConfig ()
+atTabStop :: TabStop -> Printer ()
 atTabStop tabstop = do
     mstop <- gets (Map.lookup tabstop . psTabStops)
     mayM_ mstop $ \stop -> do
-        col <- P.getNextColumn
+        col <- getNextColumn
         let padding = max 0 $ fromIntegral (stop - col)
         write (BS.replicate padding 32)
 
-mayM_ :: Maybe a -> (a -> Printer s ()) -> Printer s ()
+mayM_ :: Maybe a -> (a -> Printer ()) -> Printer ()
 mayM_ Nothing _ = return ()
 mayM_ (Just x) p = p x
 
@@ -125,9 +197,7 @@ withPrefix pre f x = pre *> f x
 withPostfix :: Applicative f => f a -> (x -> f b) -> x -> f b
 withPostfix post f x = f x <* post
 
-withIndent :: (IndentConfig -> Indent)
-           -> Printer FlexConfig a
-           -> Printer FlexConfig a
+withIndent :: (IndentConfig -> Indent) -> Printer a -> Printer a
 withIndent fn p = do
     cfg <- getConfig (fn . cfgIndent)
     case cfg of
@@ -138,14 +208,14 @@ withIndent fn p = do
     align = do
         space
         aligned p
-    indentby indent = P.indented (fromIntegral indent) $ do
+    indentby i = indent i $ do
         newline
         p
 
 withIndentFlat :: (IndentConfig -> Indent)
                -> ByteString
-               -> Printer FlexConfig a
-               -> Printer FlexConfig a
+               -> Printer a
+               -> Printer a
 withIndentFlat fn kw p = do
     cfg <- getConfig (fn . cfgIndent)
     case cfg of
@@ -156,19 +226,14 @@ withIndentFlat fn kw p = do
     align = aligned $ do
         write kw
         p
-    indentby indent = do
+    indentby i = do
         write kw
-        P.indented (fromIntegral indent) $ p
+        indent i p
 
-withIndentBy :: (IndentConfig -> Int)
-             -> Printer FlexConfig a
-             -> Printer FlexConfig a
+withIndentBy :: (IndentConfig -> Int) -> Printer a -> Printer a
 withIndentBy fn = withIndent (IndentBy . fn)
 
-withLayout :: (LayoutConfig -> Layout)
-           -> Printer FlexConfig a
-           -> Printer FlexConfig a
-           -> Printer FlexConfig a
+withLayout :: (LayoutConfig -> Layout) -> Printer a -> Printer a -> Printer a
 withLayout fn flex vertical = do
     cfg <- getConfig (fn . cfgLayout)
     case cfg of
@@ -176,42 +241,89 @@ withLayout fn flex vertical = do
         Vertical -> vertical
         TryOneline -> oneline flex <|> vertical
 
-inter :: Printer s () -> [Printer s ()] -> Printer s ()
+inter :: Printer () -> [Printer ()] -> Printer ()
 inter x = sequence_ . intersperse x
 
-aligned :: Printer s a -> Printer s a
+-- | Get the column for the next printed character.
+getNextColumn :: Printer Int64
+getNextColumn = do
+    st <- get
+    return $
+        if psEolComment st
+        then psIndentLevel st + psOnside st
+        else max (psColumn st) (psIndentLevel st)
+
+-- | Set the (newline-) indent level to the given column for the given
+-- printer.
+column :: Int64 -> Printer a -> Printer a
+column i p = do
+    level <- gets psIndentLevel
+    onside' <- gets psOnside
+    modify (\s -> s { psIndentLevel = i
+                    , psOnside = if i > level then 0 else onside'
+                    })
+    m <- p
+    modify (\s -> s { psIndentLevel = level, psOnside = onside' })
+    return m
+
+-- | Increase indentation level by n spaces for the given printer.
+indent :: Int -> Printer a -> Printer a
+indent i p = do
+    level <- gets psIndentLevel
+    column (level + fromIntegral i) p
+
+aligned :: Printer a -> Printer a
 aligned p = do
-    col <- P.getNextColumn
-    P.column col $ do
+    col <- getNextColumn
+    column col $ do
         modify $ \s -> s { psOnside = 0 }
         p
 
-indented :: Printer FlexConfig a -> Printer FlexConfig a
+indented :: Printer a -> Printer a
 indented p = do
-    indent <- getConfig (cfgIndentOnside . cfgIndent)
-    P.indented (fromIntegral indent) p
+    i <- getConfig (cfgIndentOnside . cfgIndent)
+    indent i p
 
-onside :: Printer FlexConfig a -> Printer FlexConfig a
+-- | Increase indentation level b n spaces for the given printer, but
+-- ignore increase when computing further indentations.
+onside :: Printer a -> Printer a
 onside p = do
-    indent <- getConfig (cfgIndentOnside . cfgIndent)
-    P.onside (fromIntegral indent) p
+    eol <- gets psEolComment
+    when eol newline
+    onsideIndent <- getConfig (cfgIndentOnside . cfgIndent)
+    level <- gets psIndentLevel
+    onside' <- gets psOnside
+    modify (\s -> s { psOnside = fromIntegral onsideIndent })
+    m <- p
+    modify (\s -> s { psIndentLevel = level, psOnside = onside' })
+    return m
 
-depend :: ByteString -> Printer FlexConfig a -> Printer FlexConfig a
+depend :: ByteString -> Printer a -> Printer a
 depend kw = depend' (write kw)
 
-depend' :: Printer FlexConfig ()
-        -> Printer FlexConfig a
-        -> Printer FlexConfig a
+depend' :: Printer () -> Printer a -> Printer a
 depend' kw p = do
     kw
     space
     indented p
 
-group :: LayoutContext
-      -> ByteString
-      -> ByteString
-      -> Printer FlexConfig ()
-      -> Printer FlexConfig ()
+-- | Wrap in parens.
+parens :: Printer () -> Printer ()
+parens p = do
+    write "("
+    aligned $ do
+        p
+        write ")"
+
+-- | Wrap in brackets.
+brackets :: Printer () -> Printer ()
+brackets p = do
+    write "["
+    aligned $ do
+        p
+        write "]"
+
+group :: LayoutContext -> ByteString -> ByteString -> Printer () -> Printer ()
 group ctx open close p = do
     force <- getConfig (wsForceLinebreak . cfgGroupWs ctx open . cfgGroup)
     if force then vert else oneline hor <|> vert
@@ -219,11 +331,7 @@ group ctx open close p = do
     hor = groupH ctx open close p
     vert = groupV ctx open close p
 
-groupH :: LayoutContext
-       -> ByteString
-       -> ByteString
-       -> Printer FlexConfig ()
-       -> Printer FlexConfig ()
+groupH :: LayoutContext -> ByteString -> ByteString -> Printer () -> Printer ()
 groupH ctx open close p = do
     ws <- getConfig (cfgGroupWs ctx open . cfgGroup)
     write open
@@ -232,11 +340,7 @@ groupH ctx open close p = do
     when (wsSpace After ws) space
     write close
 
-groupV :: LayoutContext
-       -> ByteString
-       -> ByteString
-       -> Printer FlexConfig ()
-       -> Printer FlexConfig ()
+groupV :: LayoutContext -> ByteString -> ByteString -> Printer () -> Printer ()
 groupV ctx open close p = aligned $ do
     ws <- getConfig (cfgGroupWs ctx open . cfgGroup)
     write open
@@ -245,41 +349,32 @@ groupV ctx open close p = aligned $ do
     if wsLinebreak After ws then newline else when (wsSpace After ws) space
     write close
 
-operator :: LayoutContext -> ByteString -> Printer FlexConfig ()
+operator :: LayoutContext -> ByteString -> Printer ()
 operator ctx op = withOperatorFormatting ctx op (write op) id
 
-operatorH :: LayoutContext -> ByteString -> Printer FlexConfig ()
+operatorH :: LayoutContext -> ByteString -> Printer ()
 operatorH ctx op = withOperatorFormattingH ctx op (write op) id
 
-operatorV :: LayoutContext -> ByteString -> Printer FlexConfig ()
+operatorV :: LayoutContext -> ByteString -> Printer ()
 operatorV ctx op = withOperatorFormattingV ctx op (write op) id
 
-alignOnOperator :: LayoutContext
-                -> ByteString
-                -> Printer FlexConfig a
-                -> Printer FlexConfig a
+alignOnOperator :: LayoutContext -> ByteString -> Printer a -> Printer a
 alignOnOperator ctx op p =
     withOperatorFormatting ctx op (write op) (aligned . (*> p))
 
-alignOnOperatorH :: LayoutContext
-                 -> ByteString
-                 -> Printer FlexConfig a
-                 -> Printer FlexConfig a
+alignOnOperatorH :: LayoutContext -> ByteString -> Printer a -> Printer a
 alignOnOperatorH ctx op p =
     withOperatorFormattingH ctx op (write op) (aligned . (*> p))
 
-alignOnOperatorV :: LayoutContext
-                 -> ByteString
-                 -> Printer FlexConfig a
-                 -> Printer FlexConfig a
+alignOnOperatorV :: LayoutContext -> ByteString -> Printer a -> Printer a
 alignOnOperatorV ctx op p =
     withOperatorFormattingV ctx op (write op) (aligned . (*> p))
 
 withOperatorFormatting :: LayoutContext
                        -> ByteString
-                       -> Printer FlexConfig ()
-                       -> (Printer FlexConfig () -> Printer FlexConfig a)
-                       -> Printer FlexConfig a
+                       -> Printer ()
+                       -> (Printer () -> Printer a)
+                       -> Printer a
 withOperatorFormatting ctx op opp fn = do
     force <- getConfig (wsForceLinebreak . cfgOpWs ctx op . cfgOp)
     if force then vert else hor <|> vert
@@ -289,9 +384,9 @@ withOperatorFormatting ctx op opp fn = do
 
 withOperatorFormattingH :: LayoutContext
                         -> ByteString
-                        -> Printer FlexConfig ()
-                        -> (Printer FlexConfig () -> Printer FlexConfig a)
-                        -> Printer FlexConfig a
+                        -> Printer ()
+                        -> (Printer () -> Printer a)
+                        -> Printer a
 withOperatorFormattingH ctx op opp fn = do
     ws <- getConfig (cfgOpWs ctx op . cfgOp)
     nl <- gets psNewline
@@ -303,35 +398,31 @@ withOperatorFormattingH ctx op opp fn = do
 
 withOperatorFormattingV :: LayoutContext
                         -> ByteString
-                        -> Printer FlexConfig ()
-                        -> (Printer FlexConfig () -> Printer FlexConfig a)
-                        -> Printer FlexConfig a
+                        -> Printer ()
+                        -> (Printer () -> Printer a)
+                        -> Printer a
 withOperatorFormattingV ctx op opp fn = do
     ws <- getConfig (cfgOpWs ctx op . cfgOp)
     nl <- gets psNewline
     eol <- gets psEolComment
-    if wsLinebreak Before ws then newline else when (wsSpace Before ws && not nl && not eol) space
+    if wsLinebreak Before ws
+        then newline
+        else when (wsSpace Before ws && not nl && not eol) space
     fn $ do
         opp
         if wsLinebreak After ws then newline else when (wsSpace After ws) space
 
-operatorSectionL :: LayoutContext
-                 -> ByteString
-                 -> Printer FlexConfig ()
-                 -> Printer FlexConfig ()
+operatorSectionL :: LayoutContext -> ByteString -> Printer () -> Printer ()
 operatorSectionL ctx op opp = do
     ws <- getConfig (cfgOpWs ctx op . cfgOp)
     when (wsSpace Before ws) space
     opp
 
-operatorSectionR :: LayoutContext
-                 -> ByteString
-                 -> Printer FlexConfig ()
-                 -> Printer FlexConfig ()
+operatorSectionR :: LayoutContext -> ByteString -> Printer () -> Printer ()
 operatorSectionR ctx op opp = do
     ws <- getConfig (cfgOpWs ctx op . cfgOp)
     opp
     when (wsSpace After ws) space
 
-comma :: Printer FlexConfig ()
+comma :: Printer ()
 comma = operator Expression ","

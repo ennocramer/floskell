@@ -5,6 +5,7 @@
 module Floskell.Flex.Config
     ( Indent(..)
     , LayoutContext(..)
+    , Location(..)
     , WsLoc(..)
     , Whitespace(..)
     , Layout(..)
@@ -41,8 +42,6 @@ import qualified Data.Map.Strict    as Map
 import qualified Data.Text          as T
 import qualified Data.Text.Encoding as T ( decodeUtf8, encodeUtf8 )
 
-import           Floskell.Types     ( ComInfoLocation(..) )
-
 import           GHC.Generics
 
 data Indent = Align
@@ -51,6 +50,9 @@ data Indent = Align
     deriving (Eq, Ord, Show, Generic)
 
 data LayoutContext = Declaration | Type | Pattern | Expression | Other
+    deriving (Eq, Ord, Bounded, Enum, Show, Generic)
+
+data Location = Before | After
     deriving (Eq, Ord, Bounded, Enum, Show, Generic)
 
 data WsLoc = WsNone | WsBefore | WsAfter | WsBoth
@@ -280,16 +282,16 @@ cfgOpWs ctx op = cfgMapFind ctx op . unOpConfig
 cfgGroupWs :: LayoutContext -> ByteString -> GroupConfig -> Whitespace
 cfgGroupWs ctx op = cfgMapFind ctx op . unGroupConfig
 
-inWs :: ComInfoLocation -> WsLoc -> Bool
+inWs :: Location -> WsLoc -> Bool
 inWs _ WsBoth = True
 inWs Before WsBefore = True
 inWs After WsAfter = True
 inWs _ _ = False
 
-wsSpace :: ComInfoLocation -> Whitespace -> Bool
+wsSpace :: Location -> Whitespace -> Bool
 wsSpace loc ws = loc `inWs` wsSpaces ws
 
-wsLinebreak :: ComInfoLocation -> Whitespace -> Bool
+wsLinebreak :: Location -> Whitespace -> Bool
 wsLinebreak loc ws = loc `inWs` wsLinebreaks ws
 
 ------------------------------------------------------------------------

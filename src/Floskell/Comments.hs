@@ -1,7 +1,4 @@
-{-# LANGUAGE RankNTypes          #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE TupleSections       #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -- | Comment handling.
 module Floskell.Comments where
@@ -92,7 +89,7 @@ annotateComments src comments =
             srcSpanEndLine before == srcSpanStartLine after - 1 &&
                 srcSpanStartColumn before == srcSpanStartColumn after
 
-        insertComment :: ComInfoLocation
+        insertComment :: Location
                       -> SrcSpanInfo
                       -> State ([ComInfo], M.Map SrcSpanInfo NodeInfo) ()
         insertComment l ssi = modify $

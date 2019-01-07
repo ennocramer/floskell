@@ -16,10 +16,7 @@ import           Data.Int                     ( Int64 )
 import qualified Data.Map                     as Map
 
 import           Floskell.Flex.Config
-import           Floskell.Flex.Pretty         ( pretty )
 import           Floskell.Types
-
-import           Language.Haskell.Exts.Syntax ( Module )
 
 chrisDoneCfg :: FlexConfig
 chrisDoneCfg = safeFlexConfig $
@@ -338,7 +335,6 @@ makeFlex cfg = Style { styleName = "flex"
                      , styleAuthor = "Enno Cramer"
                      , styleDescription = "Configurable formatting style"
                      , styleInitialState = cfg
-                     , styleExtenders = [ Extender prettyModule ]
                      , styleDefConfig = defaultConfig { configMaxColumns = 80
                                                       , configIndentSpaces = 4
                                                       }
@@ -350,7 +346,6 @@ chrisDone = Style { styleName = "chris-done"
                   , styleAuthor = "Chris Done"
                   , styleDescription = "Chris Done's style"
                   , styleInitialState = chrisDoneCfg
-                  , styleExtenders = [ Extender prettyModule ]
                   , styleDefConfig = defaultConfig { configMaxColumns = 80
                                                    , configIndentSpaces = 4
                                                    }
@@ -362,7 +357,6 @@ cramer = Style { styleName = "cramer"
                , styleAuthor = "Enno Cramer"
                , styleDescription = "Enno Cramer's style"
                , styleInitialState = cramerCfg
-               , styleExtenders = [ Extender prettyModule ]
                , styleDefConfig = defaultConfig { configMaxColumns = 80
                                                 , configIndentSpaces = 4
                                                 }
@@ -374,7 +368,6 @@ gibiansky = Style { styleName = "gibiansky"
                   , styleAuthor = "Andrew Gibiansky"
                   , styleDescription = "Andrew Gibiansky's style"
                   , styleInitialState = gibianskyCfg
-                  , styleExtenders = [ Extender prettyModule ]
                   , styleDefConfig = defaultConfig { configMaxColumns = 80
                                                    , configIndentSpaces = 4
                                                    }
@@ -386,18 +379,14 @@ johanTibell = Style { styleName = "johan-tibell"
                     , styleAuthor = "Johan Tibell"
                     , styleDescription = "Johan Tibell's style"
                     , styleInitialState = johanTibellCfg
-                    , styleExtenders = [ Extender prettyModule ]
                     , styleDefConfig = defaultConfig { configMaxColumns = 80
                                                      , configIndentSpaces = 4
                                                      }
                     , styleLinePenalty = linePenalty
                     }
 
-prettyModule :: Module NodeInfo -> Printer FlexConfig ()
-prettyModule = pretty
-
 -- | Line penalty calculation
-linePenalty :: Bool -> Int64 -> Printer FlexConfig Penalty
+linePenalty :: Bool -> Int64 -> Printer Penalty
 linePenalty eol col = do
     indent <- gets psIndentLevel
     maxcol <- gets (configMaxColumns . psConfig)

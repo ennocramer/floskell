@@ -8,7 +8,7 @@ module Floskell.Flex.Pretty where
 import           Control.Applicative            ( (<|>) )
 import           Control.Monad                  ( forM_, guard, replicateM_
                                                 , unless, void, when )
-import           Control.Monad.State.Strict     ( get, gets )
+import           Control.Monad.State.Strict     ( get, gets, modify )
 
 import           Data.ByteString                ( ByteString )
 import qualified Data.ByteString                as BS
@@ -22,15 +22,13 @@ import qualified Floskell.Buffer                as Buffer
 import           Floskell.Flex.Config
 import           Floskell.Flex.Printers
 
-import           Floskell.Pretty                ( column, getNextColumn
-                                                , printComment, printComments )
 import           Floskell.Types
 
 import           Language.Haskell.Exts.Comments ( Comment(..) )
 import qualified Language.Haskell.Exts.Pretty   as HSE
-import           Language.Haskell.Exts.SrcLoc   ( noSrcSpan, srcInfoSpan
-                                                , srcSpanEndLine
-                                                , srcSpanStartLine )
+
+import           Language.Haskell.Exts.SrcLoc   ( SrcSpan(..), noSrcSpan
+                                                , srcInfoSpan )
 import           Language.Haskell.Exts.Syntax
 
 -- | Like `span`, but comparing adjacent items.
@@ -91,7 +89,7 @@ flattenInfix fn = go . amap (\info -> info { nodeInfoComments = [] })
         Nothing -> (x, [])
 
 -- | Syntax shortcut for Pretty Printers.
-type PrettyPrinter f = f NodeInfo -> Printer FlexConfig ()
+type PrettyPrinter f = f NodeInfo -> Printer ()
 
 -- | Pretty printing prettyHSE using haskell-src-exts pretty printer
 prettyHSE :: HSE.Pretty (ast NodeInfo) => PrettyPrinter ast
@@ -135,14 +133,14 @@ compareAST a b = void a `compare` void b
 
 -- | Return comments with matching location.
 filterComments :: Annotated a
-               => (Maybe ComInfoLocation -> Bool)
+               => (Maybe Location -> Bool)
                -> a NodeInfo
                -> [ComInfo]
 filterComments f = filter (f . comInfoLocation) . nodeInfoComments . ann
 
 -- | Copy comments from one AST node to another.
 copyComments :: (Annotated ast1, Annotated ast2)
-             => ComInfoLocation
+             => Location
              -> ast1 NodeInfo
              -> ast2 NodeInfo
              -> ast2 NodeInfo
@@ -152,6 +150,54 @@ copyComments loc from to = amap updateComments to
                                }
     oldComments = filterComments (/= Just loc) to
     newComments = filterComments (== Just loc) from
+
+-- | Pretty print a comment.
+printComment :: Maybe SrcSpan -> Comment -> Printer ()
+printComment mayNodespan (Comment inline cspan str) = do
+    -- Insert proper amount of space before comment.
+    -- This maintains alignment. This cannot force comments
+    -- to go before the left-most possible indent (specified by depends).
+    case mayNodespan of
+        Just nodespan -> do
+            let neededSpaces = srcSpanStartColumn cspan -
+                    max 1 (srcSpanEndColumn nodespan)
+            replicateM_ neededSpaces space
+        Nothing -> return ()
+
+    if inline
+        then do
+            write "{-"
+            string str
+            write "-}"
+            when (1 == srcSpanStartColumn cspan) $
+                modify (\s -> s { psEolComment = True })
+        else do
+            write "--"
+            string str
+            modify (\s -> s { psEolComment = True })
+
+-- | Print comments of a node.
+printComments :: Annotated ast => Location -> ast NodeInfo -> Printer ()
+printComments loc' ast = do
+    let correctLocation comment = comInfoLocation comment == Just loc'
+        commentsWithLocation = filter correctLocation (nodeInfoComments info)
+        comments = map comInfoComment commentsWithLocation
+
+    unless (null comments) $ do
+        -- Preceeding comments must have a newline before them, but not break onside indent.
+        nl <- gets psNewline
+        onside' <- gets psOnside
+        when nl $ modify $ \s -> s { psOnside = 0 }
+        when (loc' == Before && not nl) newline
+
+        forM_ comments $ printComment (Just $ srcInfoSpan $ nodeInfoSpan info)
+
+        -- Write newline before restoring onside indent.
+        eol <- gets psEolComment
+        when (loc' == Before && eol && onside' > 0) newline
+        when nl $ modify $ \s -> s { psOnside = onside' }
+  where
+    info = ann ast
 
 -- | Return the configuration name of an operator
 opName :: QOp a -> ByteString
@@ -184,9 +230,9 @@ lineDelta prev next = nextLine - prevLine
     commentSrcSpan = (\(Comment _ sp _) -> sp) . comInfoComment
 
 linedFn :: Annotated ast
-        => (ast NodeInfo -> Printer FlexConfig ())
+        => (ast NodeInfo -> Printer ())
         -> [ast NodeInfo]
-        -> Printer FlexConfig ()
+        -> Printer ()
 linedFn fn xs = do
     preserveP <- getOption cfgOptionPreserveVerticalSpace
     if preserveP
@@ -199,17 +245,17 @@ linedFn fn xs = do
             [] -> return ()
         else inter newline $ map (cut . fn) xs
 
-lined :: (Annotated ast, Pretty ast) => [ast NodeInfo] -> Printer FlexConfig ()
+lined :: (Annotated ast, Pretty ast) => [ast NodeInfo] -> Printer ()
 lined = linedFn pretty
 
-linedOnside :: (Annotated ast, Pretty ast) => [ast NodeInfo] -> Printer FlexConfig ()
+linedOnside :: (Annotated ast, Pretty ast) => [ast NodeInfo] -> Printer ()
 linedOnside = linedFn prettyOnside
 
 listVinternal :: (Annotated ast, Pretty ast)
               => LayoutContext
               -> ByteString
               -> [ast NodeInfo]
-              -> Printer FlexConfig ()
+              -> Printer ()
 listVinternal ctx sep xs = aligned $ do
     ws <- getConfig (cfgOpWs ctx sep . cfgOp)
     nl <- gets psNewline
@@ -247,7 +293,7 @@ listH :: (Annotated ast, Pretty ast)
       -> ByteString
       -> ByteString
       -> [ast NodeInfo]
-      -> Printer FlexConfig ()
+      -> Printer ()
 listH _ open close _ [] = do
     write open
     write close
@@ -261,7 +307,7 @@ listV :: (Annotated ast, Pretty ast)
       -> ByteString
       -> ByteString
       -> [ast NodeInfo]
-      -> Printer FlexConfig ()
+      -> Printer ()
 listV ctx open close sep xs = groupV ctx open close $ do
     ws <- getConfig (cfgOpWs ctx sep . cfgOp)
     ws' <- getConfig (cfgGroupWs ctx open . cfgGroup)
@@ -278,7 +324,7 @@ list :: (Annotated ast, Pretty ast)
      -> ByteString
      -> ByteString
      -> [ast NodeInfo]
-     -> Printer FlexConfig ()
+     -> Printer ()
 list ctx open close sep xs = oneline hor <|> ver
   where
     hor = listH ctx open close sep xs
@@ -288,21 +334,21 @@ listH' :: (Annotated ast, Pretty ast)
        => LayoutContext
        -> ByteString
        -> [ast NodeInfo]
-       -> Printer FlexConfig ()
+       -> Printer ()
 listH' ctx sep = inter (operatorH ctx sep) . map pretty
 
 listV' :: (Annotated ast, Pretty ast)
        => LayoutContext
        -> ByteString
        -> [ast NodeInfo]
-       -> Printer FlexConfig ()
+       -> Printer ()
 listV' ctx sep = listVinternal ctx sep
 
 list' :: (Annotated ast, Pretty ast)
       => LayoutContext
       -> ByteString
       -> [ast NodeInfo]
-      -> Printer FlexConfig ()
+      -> Printer ()
 list' ctx sep xs = oneline hor <|> ver
   where
     hor = listH' ctx sep xs
@@ -314,7 +360,7 @@ listAutoWrap :: (Annotated ast, Pretty ast)
              -> ByteString
              -> ByteString
              -> [ast NodeInfo]
-             -> Printer FlexConfig ()
+             -> Printer ()
 listAutoWrap _ open close _ [] = do
     write open
     write close
@@ -334,7 +380,7 @@ listAutoWrap ctx open close sep (x : xs) =
                 prettyPrint x'
                 printComments After x'
 
-measure :: Printer s a -> Printer s (Maybe Int)
+measure :: Printer a -> Printer (Maybe Int)
 measure p = do
     s <- get
     let s' = s { psBuffer = Buffer.empty, psEolComment = False }
@@ -343,7 +389,7 @@ measure p = do
         Just (_, s'') -> Just . fromIntegral .
             (\x -> x - psIndentLevel s) . BL.length . Buffer.toLazyByteString $ psBuffer s''
 
-measureDecl :: Decl NodeInfo -> Printer FlexConfig (Maybe [Int])
+measureDecl :: Decl NodeInfo -> Printer (Maybe [Int])
 measureDecl (PatBind _ pat _ Nothing) = fmap (: []) <$> measure (pretty pat)
 measureDecl (FunBind _ matches) = sequence <$> traverse measureMatch matches
   where
@@ -358,24 +404,24 @@ measureDecl (FunBind _ matches) = sequence <$> traverse measureMatch matches
     measureMatch _ = return Nothing
 measureDecl _ = return Nothing
 
-measureClassDecl :: ClassDecl NodeInfo -> Printer FlexConfig (Maybe [Int])
+measureClassDecl :: ClassDecl NodeInfo -> Printer (Maybe [Int])
 measureClassDecl (ClsDecl _ decl) = measureDecl decl
 measureClassDecl _ = return Nothing
 
-measureInstDecl :: InstDecl NodeInfo -> Printer FlexConfig (Maybe [Int])
+measureInstDecl :: InstDecl NodeInfo -> Printer (Maybe [Int])
 measureInstDecl (InsDecl _ decl) = measureDecl decl
 measureInstDecl _ = return Nothing
 
-measureAlt :: Alt NodeInfo -> Printer FlexConfig (Maybe [Int])
+measureAlt :: Alt NodeInfo -> Printer (Maybe [Int])
 measureAlt (Alt _ pat _ Nothing) = fmap (: []) <$> measure (pretty pat)
 measureAlt _ = return Nothing
 
 withComputedTabStop :: TabStop
                     -> (AlignConfig -> Bool)
-                    -> (a -> Printer FlexConfig (Maybe [Int]))
+                    -> (a -> Printer (Maybe [Int]))
                     -> [a]
-                    -> Printer FlexConfig b
-                    -> Printer FlexConfig b
+                    -> Printer b
+                    -> Printer b
 withComputedTabStop name predicate fn xs p = do
     enabled <- getConfig (predicate . cfgAlign)
     (limAbs, limRel) <- getConfig (cfgAlignLimits . cfgAlign)
@@ -416,7 +462,7 @@ qnameLength (Special _ con) = case con of
     UnboxedSingleCon _ -> 5
     ExprHole _ -> 1
 
-prettyPragmas :: [ModulePragma NodeInfo] -> Printer FlexConfig ()
+prettyPragmas :: [ModulePragma NodeInfo] -> Printer ()
 prettyPragmas ps = do
     splitP <- getOption cfgOptionSplitLanguagePragmas
     sortP <- getOption cfgOptionSortPragmas
@@ -433,7 +479,7 @@ prettyPragmas ps = do
     sameType AnnModulePragma{} AnnModulePragma{} = True
     sameType _ _ = False
 
-prettyImports :: [ImportDecl NodeInfo] -> Printer FlexConfig ()
+prettyImports :: [ImportDecl NodeInfo] -> Printer ()
 prettyImports is = do
     sortP <- getOption cfgOptionSortImports
     alignModuleP <- getConfig (cfgAlignImportModule . cfgAlign)
@@ -497,14 +543,14 @@ skipBlankInstDecl = skipBlank $ \a _ -> case a of
 prettyDecls :: (Annotated ast, Pretty ast)
             => (ast NodeInfo -> ast NodeInfo -> Bool)
             -> [ast NodeInfo]
-            -> Printer FlexConfig ()
+            -> Printer ()
 prettyDecls fn = inter blankline . map lined . runs fn
 
 prettySimpleDecl :: (Annotated ast1, Pretty ast1, Annotated ast2, Pretty ast2)
                  => ast1 NodeInfo
                  -> ByteString
                  -> ast2 NodeInfo
-                 -> Printer FlexConfig ()
+                 -> Printer ()
 prettySimpleDecl lhs op rhs = withLayout cfgLayoutDeclaration flex vertical
   where
     flex = do
@@ -518,7 +564,7 @@ prettySimpleDecl lhs op rhs = withLayout cfgLayoutDeclaration flex vertical
 
 prettyConDecls :: (Annotated ast, Pretty ast)
                => [ast NodeInfo]
-               -> Printer FlexConfig ()
+               -> Printer ()
 prettyConDecls condecls = withLayout cfgLayoutConDecls flex vertical
   where
     flex = listH' Declaration "|" condecls
@@ -526,7 +572,7 @@ prettyConDecls condecls = withLayout cfgLayoutConDecls flex vertical
 
 prettyForall :: (Annotated ast, Pretty ast)
              => [ast NodeInfo]
-             -> Printer FlexConfig ()
+             -> Printer ()
 prettyForall vars = do
     write "forall "
     inter space $ map pretty vars
@@ -536,7 +582,7 @@ prettyTypesig :: (Annotated ast, Pretty ast)
               => LayoutContext
               -> [ast NodeInfo]
               -> Type NodeInfo
-              -> Printer FlexConfig ()
+              -> Printer ()
 prettyTypesig ctx names ty = withLayout cfgLayoutTypesig flex vertical
   where
     flex = do
@@ -571,7 +617,7 @@ prettyTypesig ctx names ty = withLayout cfgLayoutTypesig flex vertical
 prettyApp :: (Annotated ast1, Annotated ast2, Pretty ast1, Pretty ast2)
           => ast1 NodeInfo
           -> [ast2 NodeInfo]
-          -> Printer FlexConfig ()
+          -> Printer ()
 prettyApp fn args = withLayout cfgLayoutApp flex vertical
   where
     flex = do
@@ -588,7 +634,7 @@ prettyInfixApp :: (Annotated ast, Pretty ast, HSE.Pretty (op NodeInfo))
                => (op NodeInfo -> ByteString)
                -> LayoutContext
                -> (ast NodeInfo, [(op NodeInfo, ast NodeInfo)])
-               -> Printer FlexConfig ()
+               -> Printer ()
 prettyInfixApp nameFn ctx (lhs, args) = withLayout cfgLayoutInfixApp flex vertical
   where
     flex = do
@@ -604,11 +650,11 @@ prettyInfixApp nameFn ctx (lhs, args) = withLayout cfgLayoutInfixApp flex vertic
             pretty arg
 
 prettyRecord :: (Annotated ast1, Pretty ast1, Annotated ast2, Pretty ast2)
-             => (ast2 NodeInfo -> Printer FlexConfig (Maybe Int))
+             => (ast2 NodeInfo -> Printer (Maybe Int))
              -> LayoutContext
              -> ast1 NodeInfo
              -> [ast2 NodeInfo]
-             -> Printer FlexConfig ()
+             -> Printer ()
 prettyRecord len ctx name fields = withLayout cfgLayoutRecord flex vertical
   where
     flex = do
@@ -623,10 +669,10 @@ prettyRecord len ctx name fields = withLayout cfgLayoutRecord flex vertical
             listVinternal ctx "," fields
 
 prettyRecordFields :: (Annotated ast, Pretty ast)
-                   => (ast NodeInfo -> Printer FlexConfig (Maybe Int))
+                   => (ast NodeInfo -> Printer (Maybe Int))
                    -> LayoutContext
                    -> [ast NodeInfo]
-                   -> Printer FlexConfig ()
+                   -> Printer ()
 prettyRecordFields len ctx fields = withLayout cfgLayoutRecord flex vertical
   where
     flex = groupH ctx "{" "}" $ inter (operatorH ctx ",") $ map prettyOnside fields
@@ -637,12 +683,12 @@ prettyRecordFields len ctx fields = withLayout cfgLayoutRecord flex vertical
                             fields $
             listVinternal ctx "," fields
 
-prettyPragma :: ByteString -> Printer FlexConfig () -> Printer FlexConfig ()
+prettyPragma :: ByteString -> Printer () -> Printer ()
 prettyPragma name = prettyPragma' name . Just
 
 prettyPragma' :: ByteString
-              -> Maybe (Printer FlexConfig ())
-              -> Printer FlexConfig ()
+              -> Maybe (Printer ())
+              -> Printer ()
 prettyPragma' name mp = do
     write "{-# "
     write name
