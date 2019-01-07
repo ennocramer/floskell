@@ -78,7 +78,6 @@ data PrintState =
                , psTabStops            :: !(Map TabStop Int64) -- ^ Tab stops for alignment.
                , psUserState           :: !FlexConfig -- ^ User state.
                , psEolComment          :: !Bool -- ^ An end of line comment has just been outputted.
-               , psInsideCase          :: !Bool -- ^ Whether we're in a case statement, used for Rhs printing.
                , psLinePenalty         :: Bool -> Int64 -> Printer Penalty
                , psOutputRestriction   :: OutputRestriction
                }

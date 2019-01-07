@@ -195,7 +195,6 @@ runPrinterStyle (Style _name _author _desc st penalty) m =
                                            Map.empty
                                            st
                                            False
-                                           False
                                            penalty
                                            Anything))
 
