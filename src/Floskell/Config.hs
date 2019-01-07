@@ -75,15 +75,17 @@ data ConfigMap a = ConfigMap { cfgMapDefault   :: !a
                              }
     deriving (Generic)
 
-data PenaltyConfig = PenaltyConfig { penaltyLinebreak    :: !Int
-                                   , penaltyIndent       :: !Int
-                                   , penaltyOverfull     :: !Int
-                                   , penaltyOverfullOnce :: !Int
+data PenaltyConfig = PenaltyConfig { penaltyMaxLineLength :: !Int
+                                   , penaltyLinebreak     :: !Int
+                                   , penaltyIndent        :: !Int
+                                   , penaltyOverfull      :: !Int
+                                   , penaltyOverfullOnce  :: !Int
                                    }
     deriving (Generic)
 
 instance Default PenaltyConfig where
-    def = PenaltyConfig { penaltyLinebreak = 100
+    def = PenaltyConfig { penaltyMaxLineLength = 80
+                        , penaltyLinebreak = 100
                         , penaltyIndent = 1
                         , penaltyOverfull = 10
                         , penaltyOverfullOnce = 200

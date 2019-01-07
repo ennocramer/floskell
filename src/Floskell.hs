@@ -185,7 +185,7 @@ prettyPrint style m comments =
 runPrinterStyle :: Style
                 -> Printer ()
                 -> L.ByteString
-runPrinterStyle (Style _name _author _desc st config penalty) m =
+runPrinterStyle (Style _name _author _desc st penalty) m =
     maybe (error "Printer failed with mzero call.")
           (Buffer.toLazyByteString . psBuffer)
           (snd <$> execPrinter m
@@ -194,7 +194,6 @@ runPrinterStyle (Style _name _author _desc st config penalty) m =
                                            0
                                            Map.empty
                                            st
-                                           config
                                            False
                                            False
                                            penalty

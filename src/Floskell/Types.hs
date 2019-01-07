@@ -14,9 +14,7 @@ module Floskell.Types
     , psColumn
     , psNewline
     , Style(..)
-    , Config(..)
     , FlexConfig(..)
-    , defaultConfig
     , NodeInfo(..)
     , ComInfo(..)
     , Location(..)
@@ -79,7 +77,6 @@ data PrintState =
                , psOnside              :: !Int64 -- ^ Extra indentation is necessary with next line break.
                , psTabStops            :: !(Map TabStop Int64) -- ^ Tab stops for alignment.
                , psUserState           :: !FlexConfig -- ^ User state.
-               , psConfig              :: !Config -- ^ Config which styles may or may not pay attention to.
                , psEolComment          :: !Bool -- ^ An end of line comment has just been outputted.
                , psInsideCase          :: !Bool -- ^ Whether we're in a case statement, used for Rhs printing.
                , psLinePenalty         :: Bool -> Int64 -> Printer Penalty
@@ -101,22 +98,8 @@ data Style =
           , styleAuthor       :: !Text -- ^ Author of the printer (as opposed to the author of the style).
           , styleDescription  :: !Text -- ^ Description of the style.
           , styleInitialState :: !FlexConfig -- ^ User state, if needed.
-          , styleDefConfig    :: !Config -- ^ Default config to use for this style.
           , styleLinePenalty  :: Bool -> Int64 -> Printer Penalty
           }
-
--- | Configurations shared among the different styles. Styles may pay
--- attention to or completely disregard this configuration.
-data Config =
-    Config { configMaxColumns      :: !Int64 -- ^ Maximum columns to fit code into ideally.
-           , configIndentSpaces    :: !Int64 -- ^ How many spaces to indent?
-           }
-
--- | Default style configuration.
-defaultConfig :: Config
-defaultConfig = Config { configMaxColumns = 80
-                       , configIndentSpaces = 2
-                       }
 
 -- | Information for each node in the AST.
 data NodeInfo =

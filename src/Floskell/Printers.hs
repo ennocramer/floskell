@@ -118,7 +118,7 @@ write x = do
             out = if psNewline state then BS.replicate indentLevel 32 <> x' else x'
             buffer = psBuffer state
             newCol = Buffer.column buffer + fromIntegral (BS.length out)
-        guard $ psOutputRestriction state == Anything || newCol < configMaxColumns (psConfig state)
+        guard $ psOutputRestriction state == Anything || newCol < fromIntegral (penaltyMaxLineLength (cfgPenalty (psUserState state)))
         penalty <- psLinePenalty state False newCol
         when (penalty /= mempty) $ cost mempty penalty
         modify (\s -> s { psBuffer = Buffer.write out buffer

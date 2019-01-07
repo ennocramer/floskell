@@ -325,9 +325,6 @@ base = Style { styleName = "base"
              , styleAuthor = "Enno Cramer"
              , styleDescription = "Configurable formatting style"
              , styleInitialState = defaultFlexConfig
-             , styleDefConfig = defaultConfig { configMaxColumns = 80
-                                              , configIndentSpaces = 4
-                                              }
              , styleLinePenalty = linePenalty
              }
 
@@ -336,9 +333,6 @@ chrisDone = Style { styleName = "chris-done"
                   , styleAuthor = "Chris Done"
                   , styleDescription = "Chris Done's style"
                   , styleInitialState = chrisDoneCfg
-                  , styleDefConfig = defaultConfig { configMaxColumns = 80
-                                                   , configIndentSpaces = 4
-                                                   }
                   , styleLinePenalty = linePenalty
                   }
 
@@ -347,9 +341,6 @@ cramer = Style { styleName = "cramer"
                , styleAuthor = "Enno Cramer"
                , styleDescription = "Enno Cramer's style"
                , styleInitialState = cramerCfg
-               , styleDefConfig = defaultConfig { configMaxColumns = 80
-                                                , configIndentSpaces = 4
-                                                }
                , styleLinePenalty = linePenalty
                }
 
@@ -358,9 +349,6 @@ gibiansky = Style { styleName = "gibiansky"
                   , styleAuthor = "Andrew Gibiansky"
                   , styleDescription = "Andrew Gibiansky's style"
                   , styleInitialState = gibianskyCfg
-                  , styleDefConfig = defaultConfig { configMaxColumns = 80
-                                                   , configIndentSpaces = 4
-                                                   }
                   , styleLinePenalty = linePenalty
                   }
 
@@ -369,9 +357,6 @@ johanTibell = Style { styleName = "johan-tibell"
                     , styleAuthor = "Johan Tibell"
                     , styleDescription = "Johan Tibell's style"
                     , styleInitialState = johanTibellCfg
-                    , styleDefConfig = defaultConfig { configMaxColumns = 80
-                                                     , configIndentSpaces = 4
-                                                     }
                     , styleLinePenalty = linePenalty
                     }
 
@@ -384,13 +369,13 @@ styles = [ base, chrisDone, johanTibell, gibiansky, cramer ]
 linePenalty :: Bool -> Int64 -> Printer Penalty
 linePenalty eol col = do
     indent <- gets psIndentLevel
-    maxcol <- gets (configMaxColumns . psConfig)
+    maxcol <- gets (penaltyMaxLineLength . cfgPenalty . psUserState)
     config <- gets (cfgPenalty . psUserState)
     let pLinebreak = onlyIf eol $ penaltyLinebreak config
     let pIndent = fromIntegral indent * (penaltyIndent config)
-    let pOverfull = onlyIf (col > maxcol) $
-            penaltyOverfull config *
-                fromIntegral (col - maxcol) + penaltyOverfullOnce config
+    let pOverfull = onlyIf (col > fromIntegral maxcol) $
+            penaltyOverfull config * fromIntegral (col - fromIntegral maxcol) +
+                penaltyOverfullOnce config
     return . fromIntegral $ pLinebreak + pIndent + pOverfull
   where
     onlyIf cond penalty = if cond then penalty else 0

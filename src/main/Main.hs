@@ -23,8 +23,7 @@ import qualified Data.Text                       as T
 import           Data.Version                    ( showVersion )
 
 import           Floskell                        ( reformat, styles )
-import           Floskell.Types                  ( Style(styleName, styleDefConfig, styleInitialState)
-                                                 , configMaxColumns )
+import           Floskell.Types                  ( Style(styleName, styleInitialState) )
 
 import           Foreign.C.Error                 ( Errno(..), eXDEV )
 
@@ -37,7 +36,7 @@ import           Language.Haskell.Exts           ( Extension(..), Language(..)
                                                  , knownLanguages )
 
 import           Options.Applicative             ( ParseError(..), abortOption
-                                                 , argument, auto, execParser
+                                                 , argument,  execParser
                                                  , footerDoc, fullDesc, header
                                                  , help, helper, hidden, info
                                                  , long, metavar, option
@@ -61,7 +60,6 @@ import           System.IO                       ( FilePath, hClose, hFlush
 
 -- | Program options.
 data Options = Options { optStyle       :: Maybe String
-                       , optLineLength  :: Maybe Int
                        , optLanguage    :: Maybe String
                        , optExtensions  :: [String]
                        , optConfig      :: Maybe FilePath
@@ -71,7 +69,6 @@ data Options = Options { optStyle       :: Maybe String
 
 -- | Program configuration.
 data Config = Config { cfgStyle      :: Style
-                     , cfgLineLength :: Maybe Int
                      , cfgLanguage   :: Language
                      , cfgExtensions :: [Extension]
                      }
@@ -79,7 +76,6 @@ data Config = Config { cfgStyle      :: Style
 instance ToJSON Config where
     toJSON Config{..} =
         JSON.object [ "style" .= styleName cfgStyle
-                    , "line-length" .= configMaxColumns (styleDefConfig cfgStyle)
                     , "language" .= show cfgLanguage
                     , "extensions" .= map showExt cfgExtensions
                     , "formatting" .= styleInitialState cfgStyle
@@ -92,7 +88,6 @@ instance ToJSON Config where
 instance FromJSON Config where
     parseJSON (JSON.Object o) = do
         style <- maybe (cfgStyle defaultConfig) lookupStyle <$> o .:? "style"
-        lineLength <- o .:? "line-length"
         language <- maybe (cfgLanguage defaultConfig) lookupLanguage <$>
                         o .:? "language"
         extensions <- maybe (cfgExtensions defaultConfig) (map lookupExtension) <$>
@@ -100,7 +95,7 @@ instance FromJSON Config where
         let flex = styleInitialState style
         flex' <- maybe flex (updateFlexConfig flex) <$> o .:? "formatting"
         let style' = style { styleInitialState = flex' }
-        return $ Config style' lineLength language extensions
+        return $ Config style' language extensions
       where
         updateFlexConfig cfg v = case JSON.fromJSON $
             mergeJSON (toJSON cfg) v of
@@ -117,7 +112,7 @@ instance FromJSON Config where
 
 -- | Default program configuration.
 defaultConfig :: Config
-defaultConfig = Config (head styles) Nothing Haskell2010 []
+defaultConfig = Config (head styles) Haskell2010 []
 
 -- | Main entry point.
 main :: IO ()
@@ -154,10 +149,6 @@ main = do
                                           <> short 's'
                                           <> metavar "STYLE"
                                           <> help "Formatting style"))
-                <*> optional (option auto
-                                     (long "line-length"
-                                          <> metavar "INT"
-                                          <> help "Override style's default line length"))
                 <*> optional (option str
                                      (long "language"
                                           <> short 'L'
@@ -253,16 +244,10 @@ readConfig file = do
 -- | Update the program configuration from the program options.
 mergeConfig :: Config -> Options -> Config
 mergeConfig cfg@Config{..} Options{..} =
-    cfg { cfgStyle = setLineLength optLineLength $ maybe cfgStyle lookupStyle optStyle
+    cfg { cfgStyle = maybe cfgStyle lookupStyle optStyle
         , cfgLanguage = maybe cfgLanguage lookupLanguage optLanguage
         , cfgExtensions = cfgExtensions ++ map lookupExtension optExtensions
         }
-  where
-    setLineLength Nothing s = s
-    setLineLength (Just l) s =
-        s { styleDefConfig = (styleDefConfig s) { configMaxColumns = fromIntegral l
-                                                }
-          }
 
 -- | Lookup a style by name.
 lookupStyle :: String -> Style
