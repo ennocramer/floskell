@@ -39,7 +39,7 @@ empty = Buffer { bufferData = mempty
 write :: BS.ByteString -> Buffer -> Buffer
 write str buf =
     buf { bufferData = newBufferData
-        , bufferDataNoSpace = if str == " " then bufferData buf else newBufferData
+        , bufferDataNoSpace = if BS.all (== 32) str then bufferData buf else newBufferData
         , bufferColumn = bufferColumn buf + fromIntegral (BS.length str)
         }
   where

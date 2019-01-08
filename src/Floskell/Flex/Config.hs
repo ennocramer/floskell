@@ -87,7 +87,8 @@ instance Default PenaltyConfig where
 
 data AlignConfig = AlignConfig { cfgAlignLimits       :: !(Int, Int)
                                , cfgAlignClass        :: !Bool
-                               , cfgAlignImports      :: !Bool
+                               , cfgAlignImportModule :: !Bool
+                               , cfgAlignImportSpec   :: !Bool
                                , cfgAlignLet          :: !Bool
                                , cfgAlignRecordFields :: !Bool
                                , cfgAlignWhere        :: !Bool
@@ -97,7 +98,8 @@ data AlignConfig = AlignConfig { cfgAlignLimits       :: !(Int, Int)
 instance Default AlignConfig where
     def = AlignConfig { cfgAlignLimits = (10, 25)
                       , cfgAlignClass = False
-                      , cfgAlignImports = False
+                      , cfgAlignImportModule = False
+                      , cfgAlignImportSpec = False
                       , cfgAlignLet = False
                       , cfgAlignRecordFields = False
                       , cfgAlignWhere = False

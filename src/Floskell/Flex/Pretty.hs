@@ -15,7 +15,7 @@ import qualified Data.ByteString.Char8        as BS8
 import qualified Data.ByteString.Lazy         as BL
 
 import           Data.List                    ( groupBy, sortBy, sortOn )
-import           Data.Maybe                   ( catMaybes )
+import           Data.Maybe                   ( catMaybes, fromMaybe )
 
 import           Floskell.Flex.Config
 import           Floskell.Flex.Printers
@@ -378,21 +378,23 @@ prettyPragmas ps = do
 prettyImports :: [ImportDecl NodeInfo] -> Printer FlexConfig ()
 prettyImports is = do
     sortP <- getConfig (cfgModuleSortImports . cfgModule)
-    alignP <- getConfig (cfgAlignImports . cfgAlign)
-    withTabStops (if alignP then stops else noStops) $
+    alignModuleP <- getConfig (cfgAlignImportModule . cfgAlign)
+    alignSpecP <- getConfig (cfgAlignImportSpec . cfgAlign)
+    let maxNameLength = maximum $ map (length . moduleName . importModule) is
+        alignModule = if alignModuleP then Just 16 else Nothing
+        alignSpec = if alignSpecP
+            then Just (fromMaybe 0 alignModule + 1 + maxNameLength)
+            else Nothing
+    withTabStops [ (stopImportModule, alignModule)
+                 , (stopImportSpec, alignSpec)
+                 ] $
         if sortP
-        then inter blankline . map lined .
-            groupBy samePrefix $ sortOn (moduleName . importModule) is
+        then inter blankline . map lined . groupBy samePrefix $
+            sortOn (moduleName . importModule) is
         else lined is
   where
     samePrefix left right = prefix left == prefix right
     prefix = takeWhile (/= '.') . moduleName . importModule
-    stops = [ (stopImportModule, Just beforeName)
-            , (stopImportSpec, Just afterName)
-            ]
-    beforeName = 16
-    afterName = 16 + 1 + maximum (map (length . moduleName . importModule) is)
-    noStops = [ (stopImportModule, Nothing), (stopImportSpec, Nothing) ]
 
 skipBlank :: Annotated ast
           => (ast NodeInfo -> ast NodeInfo -> Bool)
@@ -644,21 +646,21 @@ instance Pretty ImportDecl where
             atTabStop stopImportSpec
             write " as "
             pretty name
-        mayM_ importSpecs $ \specs -> do
-            atTabStop stopImportSpec
-            pretty specs
+        mayM_ importSpecs pretty
 
 instance Pretty ImportSpecList where
     prettyPrint (ImportSpecList _ hiding specs) = do
         sortP <- getConfig (cfgModuleSortImportLists . cfgModule)
         let specs' = if sortP then sortOn HSE.prettyPrint specs else specs
-        when hiding $ write " hiding"
+        atTabStop stopImportSpec
         withLayout cfgLayoutImportSpecList (flex specs') (vertical specs')
       where
         flex imports = do
+            when hiding $ write " hiding"
             space
             listAutoWrap Other "(" ")" "," imports
-        vertical imports = withIndent cfgIndentImportSpecList $
+        vertical imports = withIndent cfgIndentImportSpecList $ do
+            when hiding $ write "hiding "
             listAutoWrap Other "(" ")" "," imports
 
 instance Pretty ImportSpec
