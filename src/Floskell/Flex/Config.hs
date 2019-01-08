@@ -223,6 +223,8 @@ defaultFlexConfig =
   where
     opWsOverrides =
         [ (ConfigMapKey (Just ",") Nothing, Whitespace WsAfter WsBefore False)
+        , (ConfigMapKey (Just "record") Nothing, Whitespace WsAfter WsAfter False)
+        , (ConfigMapKey (Just ".") (Just Type), Whitespace WsAfter WsAfter False)
         ]
 
 cfgMapFind :: LayoutContext -> ByteString -> ConfigMap a -> a

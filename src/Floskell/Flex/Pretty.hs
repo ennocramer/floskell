@@ -470,8 +470,7 @@ prettyForall :: (Annotated ast, Pretty ast)
 prettyForall vars = do
     write "forall "
     inter space $ map pretty vars
-    write "."
-    sepSpace
+    operator Type "."
 
 prettyTypesig :: (Annotated ast, Pretty ast)
               => LayoutContext
@@ -496,7 +495,7 @@ prettyTypesig ctx names ty = withLayout cfgLayoutTypesig flex vertical
         forM_ mtyvarbinds $ \tyvarbinds -> do
             write "forall "
             inter space $ map pretty tyvarbinds
-            withOperatorFormattingV Type "=>" (write ". ") id
+            withOperatorFormattingV Type "." (write "." >> space) id
         forM_ mcontext $ \context -> do
             case context of
                 (CxSingle _ asst) -> pretty asst
@@ -546,12 +545,31 @@ prettyInfixApp nameFn ctx (lhs, args) = withLayout cfgLayoutInfixApp flex vertic
             withOperatorFormattingV ctx (nameFn op) (prettyHSE op) id
             pretty arg
 
-prettyRecord :: (Annotated ast, Pretty ast)
-             => (ast NodeInfo -> Printer FlexConfig (Maybe Int))
+prettyRecord :: (Annotated ast1, Pretty ast1, Annotated ast2, Pretty ast2)
+             => (ast2 NodeInfo -> Printer FlexConfig (Maybe Int))
              -> LayoutContext
-             -> [ast NodeInfo]
+             -> ast1 NodeInfo
+             -> [ast2 NodeInfo]
              -> Printer FlexConfig ()
-prettyRecord len ctx fields = withLayout cfgLayoutRecord flex vertical
+prettyRecord len ctx name fields = withLayout cfgLayoutRecord flex vertical
+  where
+    flex = do
+        withOperatorFormattingH ctx "record" (pretty name) id
+        groupH ctx "{" "}" $ inter (operatorH ctx ",") $ map pretty fields
+    vertical = do
+        withOperatorFormatting ctx "record" (pretty name) id
+        groupV ctx "{" "}" $ withComputedTabStop stopRecordField
+                                                 cfgAlignRecordFields
+                                                 (fmap (fmap pure) . len)
+                                                 fields $
+            listVinternal ctx "," fields
+
+prettyRecordFields :: (Annotated ast, Pretty ast)
+                   => (ast NodeInfo -> Printer FlexConfig (Maybe Int))
+                   -> LayoutContext
+                   -> [ast NodeInfo]
+                   -> Printer FlexConfig ()
+prettyRecordFields len ctx fields = withLayout cfgLayoutRecord flex vertical
   where
     flex = groupH ctx "{" "}" $ inter (operatorH ctx ",") $ map pretty fields
     vertical = groupV ctx "{" "}" $
@@ -1029,10 +1047,8 @@ instance Pretty ConDecl where
         pretty $ ConOp noNodeInfo name
         pretty ty'
 
-    prettyPrint (RecDecl _ name fielddecls) = do
-        pretty name
-        sepSpace
-        prettyRecord len Declaration fielddecls
+    prettyPrint (RecDecl _ name fielddecls) =
+        prettyRecord len Declaration name fielddecls
       where
         len (FieldDecl _ names _) = measure $ inter comma $ map pretty names
 
@@ -1050,7 +1066,7 @@ instance Pretty GadtDecl where
         pretty name
         operator Declaration "::"
         mayM_ mfielddecls $ \decls -> do
-            prettyRecord len Declaration decls
+            prettyRecordFields len Declaration decls
             operator Type "->"
         pretty ty
       where
@@ -1376,19 +1392,15 @@ instance Pretty Exp where
         operatorSectionR Expression (opName qop) $ prettyHSE qop
         pretty expr
 
-    prettyPrint (RecConstr _ qname fieldupdates) = do
-        pretty qname
-        sepSpace
-        prettyRecord len Expression fieldupdates
+    prettyPrint (RecConstr _ qname fieldupdates) =
+        prettyRecord len Expression qname fieldupdates
       where
         len (FieldUpdate _ n _) = measure $ pretty n
         len (FieldPun _ n) = measure $ pretty n
         len (FieldWildcard _) = measure $ write ".."
 
-    prettyPrint (RecUpdate _ expr fieldupdates) = do
-        pretty expr
-        sepSpace
-        prettyRecord len Expression fieldupdates
+    prettyPrint (RecUpdate _ expr fieldupdates) =
+        prettyRecord len Expression expr fieldupdates
       where
         len (FieldUpdate _ n _) = measure $ pretty n
         len (FieldPun _ n) = measure $ pretty n
@@ -1629,8 +1641,7 @@ instance Pretty Pat where
     prettyPrint (PParen _ pat) = parens $ pretty pat
 
     prettyPrint (PRec _ qname patfields) = do
-        pretty qname
-        sepSpace
+        withOperatorFormatting Pattern "record" (pretty qname) id
         list Pattern "{" "}" "," patfields
 
     prettyPrint (PAsPat _ name pat) = do

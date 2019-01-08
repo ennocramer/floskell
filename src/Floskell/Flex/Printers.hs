@@ -35,7 +35,6 @@ module Floskell.Flex.Printers
     , groupH
     , groupV
       -- *
-    , sepSpace
     , operator
     , operatorH
     , operatorV
@@ -213,11 +212,6 @@ groupV ctx open close p = aligned $ do
     p
     if wsLinebreak After ws then newline else when (wsSpace After ws) space
     write close
-
-sepSpace :: Printer FlexConfig ()
-sepSpace = do
-    sp <- getConfig (wsSpaces . cfgMapDefault . unOpConfig . cfgOp)
-    when (sp /= WsNone) space
 
 operator :: LayoutContext -> ByteString -> Printer FlexConfig ()
 operator ctx op = withOperatorFormatting ctx op (write op) id
