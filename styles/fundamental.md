@@ -970,3 +970,17 @@ foo =
     'Nothing
     ''Maybe
 ```
+
+# Regression Tests
+
+## Do
+
+Before comments and onside indent do not mix well.
+
+``` haskell
+foo =
+  do 
+     -- comment
+     some
+       expression
+```

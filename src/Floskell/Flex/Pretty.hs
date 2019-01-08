@@ -1798,7 +1798,12 @@ instance Pretty Stmt where
             operator Expression "<-"
             pretty expr
 
-    prettyPrint (Qualifier _ expr) = onside $ pretty expr
+    prettyPrint (Qualifier _ expr) = do
+        printComments Before expr
+        eol <- gets psEolComment
+        when eol newline
+        onside $ prettyPrint expr
+        printComments After expr
 
     prettyPrint (LetStmt _ binds) = do
         write "let "
