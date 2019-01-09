@@ -1307,10 +1307,15 @@ instance Pretty Exp where
 
     prettyPrint (Lambda _ pats expr) = do
         write "\\"
-        space
+        maybeSpace
         inter space $ map pretty pats
         operator Expression "->"
         pretty expr
+      where
+        maybeSpace = case pats of
+            PIrrPat{} : _ -> space
+            PBangPat{} : _ -> space
+            _ -> return ()
 
     prettyPrint (Let _ binds expr) = withLayout cfgLayoutLet flex vertical
       where

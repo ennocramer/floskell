@@ -683,7 +683,7 @@ foo = mdo
 ``` haskell
 {-# LANGUAGE LambdaCase #-}
 
-foo = \ x -> x
+foo = \x -> x
 
 foo = \ ~x -> x
 
