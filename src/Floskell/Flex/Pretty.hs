@@ -1105,7 +1105,8 @@ instance Pretty Rhs where
             operatorV Declaration "="
             pretty expr
 
-    prettyPrint (GuardedRhss _ guardedrhss) = withIndent cfgIndentMultiIf $ lined guardedrhss
+    prettyPrint (GuardedRhss _ guardedrhss) =
+        withIndent cfgIndentMultiIf $ lined guardedrhss
 
 instance Pretty GuardedRhs where
     prettyPrint (GuardedRhs _ stmts expr) =
@@ -1964,7 +1965,7 @@ instance Pretty GuardedAlts where
         pretty expr
 
     prettyPrint (GuardedAlts (GuardedRhss _ guardedrhss)) =
-        aligned . lined $ map GuardedAlt guardedrhss
+        withIndent cfgIndentMultiIf $ lined $ map GuardedAlt guardedrhss
 
 newtype CompactBinds l = CompactBinds (Binds l)
     deriving (Functor, Annotated)

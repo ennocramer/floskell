@@ -701,6 +701,12 @@ foo =
       -- it's not
       Some
         x
+
+foo =
+  case xs of
+    _
+      | null xs -> None
+    _ -> Some $ head x
 ```
 
 ### Do and MDo
