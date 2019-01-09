@@ -1329,8 +1329,8 @@ instance Pretty Exp where
             write "let"
             withIndent cfgIndentLet $ pretty (CompactBinds binds)
             newline
-            write "in "
-            onside $ pretty expr
+            write "in"
+            withIndent cfgIndentLetIn $ pretty expr
 
     prettyPrint (If _ expr expr' expr'') = withLayout cfgLayoutIf flex vertical
       where

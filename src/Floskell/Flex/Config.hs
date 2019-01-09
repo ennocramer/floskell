@@ -113,6 +113,7 @@ data IndentConfig = IndentConfig { cfgIndentOnside         :: !Int
                                  , cfgIndentIf             :: !Indent
                                  , cfgIndentImportSpecList :: !Indent
                                  , cfgIndentLet            :: !Indent
+                                 , cfgIndentLetIn          :: !Indent
                                  , cfgIndentMultiIf        :: !Indent
                                  , cfgIndentWhere          :: !Indent
                                  }
@@ -127,6 +128,7 @@ instance Default IndentConfig where
                        , cfgIndentIf = IndentBy 0
                        , cfgIndentImportSpecList = Align
                        , cfgIndentLet = Align
+                       , cfgIndentLetIn = Align
                        , cfgIndentMultiIf = IndentBy 4
                        , cfgIndentWhere = IndentBy 4
                        }
