@@ -251,6 +251,14 @@ data Expr :: * -> * where
         Plus :: Expr Int -> Expr Int -> Expr Int
         Eq :: Expr Int -> Expr Int -> Expr Bool
     deriving (Show)
+
+data Term a where
+        Lit :: {val :: Int} -> Term Int
+        Succ :: {num :: Term Int} -> Term Int
+        Pred :: {num :: Term Int} -> Term Int
+        IsZero :: {arg :: Term Int} -> Term Bool
+        Pair :: {arg1 :: Term a, arg2 :: Term b} -> Term (a, b)
+        If :: {cnd :: Term Bool, tru :: Term a, fls :: Term a} -> Term a
 ```
 
 ### TypeFamDecl, TypeInsDecl, and ClosedTypeFamDecl
@@ -289,6 +297,11 @@ data instance  List Char = CharNil
 data instance  List Int :: * where
         IntNil :: List Int
         IntCons :: Int -> List Int
+    deriving (Eq, Ord, Show)
+
+data instance  List Int :: * where
+        IntNil :: List Int
+        IntCons :: {val :: Int} -> List Int
     deriving (Eq, Ord, Show)
 ```
 
@@ -330,6 +343,14 @@ instance Semigroup a =>
   Nothing `mappend` m = m
   m `mappend` Nothing = m
   Just m1 `mappend` Just m2 = Just (m1 `mappend` m2)
+
+instance Data () where
+  type Base = ()
+  newtype Wrapped = Wrapped{unWrap :: ()}
+  data Expr :: * -> * where
+        Const :: Int -> Expr Int
+        Plus :: Expr Int -> Expr Int -> Expr Int
+        Eq :: Expr Int -> Expr Int -> Expr Bool
 ```
 
 ### DerivDecl

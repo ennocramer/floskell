@@ -996,27 +996,24 @@ instance Pretty InstDecl where
             pretty ty
             unless (null qualcondecls) $ withLayout cfgLayoutDeclaration flex vertical
             mapM_ pretty derivings
-          where
-            flex = do
-                operator Declaration "="
-                prettyConDecls qualcondecls
-            vertical = do
-                operatorV Declaration "="
-                prettyConDecls qualcondecls
+      where
+        flex = do
+            operator Declaration "="
+            prettyConDecls qualcondecls
+        vertical = do
+            operatorV Declaration "="
+            prettyConDecls qualcondecls
 
-    prettyPrint (InsGData _ dataornew ty mkind gadtdecls derivings) =
+    prettyPrint (InsGData _ dataornew ty mkind gadtdecls derivings) = do
         depend' (pretty dataornew) $ do
             pretty ty
-            mayM_ mkind $ withPrefix space pretty
-            unless (null gadtdecls) $ withLayout cfgLayoutDeclaration flex vertical
-            mapM_ pretty derivings
-          where
-            flex = do
-                operator Declaration "="
-                prettyConDecls gadtdecls
-            vertical = do
-                operatorV Declaration "="
-                prettyConDecls gadtdecls
+            mayM_ mkind $ \kind -> do
+                operator Declaration "::"
+                pretty kind
+            write " where"
+            newline
+            lined gadtdecls
+        mapM_ pretty derivings
 
 instance Pretty Deriving where
     prettyPrint (Deriving _ mderivstrategy instrules) = do
