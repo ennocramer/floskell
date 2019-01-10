@@ -20,6 +20,8 @@ different formatting styles, by presenting a mixture of common Haskell
 constructs.
 
 ``` haskell
+{-# OPTIONS_GHC -fno-warn-name-shadowing #-}
+
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 

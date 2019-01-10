@@ -369,11 +369,16 @@ prettyPragmas ps = do
     sortP <- getConfig (cfgModuleSortPragmas . cfgModule)
     let ps' = if splitP then concatMap splitPragma ps else ps
     let ps'' = if sortP then sortBy compareAST ps' else ps'
-    lined ps''
+    inter blankline . map lined $ groupBy sameType ps''
   where
     splitPragma (LanguagePragma anno langs) = map (LanguagePragma anno . (: []))
                                                   langs
     splitPragma p = [ p ]
+
+    sameType LanguagePragma{} LanguagePragma{} = True
+    sameType OptionsPragma{} OptionsPragma{} = True
+    sameType AnnModulePragma{} AnnModulePragma{} = True
+    sameType _ _ = False
 
 prettyImports :: [ImportDecl NodeInfo] -> Printer FlexConfig ()
 prettyImports is = do
@@ -1856,11 +1861,12 @@ instance Pretty ModulePragma where
     prettyPrint (LanguagePragma _ names) =
         prettyPragma "LANGUAGE" . inter comma $ map pretty names
 
-    prettyPrint (OptionsPragma _ mtool str) = prettyPragma name $ string str
+    prettyPrint (OptionsPragma _ mtool str) = prettyPragma name $ string (trim str)
       where
         name = case mtool of
             Just tool -> "OPTIONS_" `mappend` BS8.pack (HSE.prettyPrint tool)
             Nothing -> "OPTIONS"
+        trim = reverse . dropWhile (== ' ') . reverse . dropWhile (== ' ')
 
     prettyPrint (AnnModulePragma _ annotation) = prettyPragma "ANN" $ pretty annotation
 
