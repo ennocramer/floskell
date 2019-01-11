@@ -86,6 +86,7 @@ instance Default PenaltyConfig where
                         }
 
 data AlignConfig = AlignConfig { cfgAlignLimits       :: !(Int, Int)
+                               , cfgAlignCase         :: !Bool
                                , cfgAlignClass        :: !Bool
                                , cfgAlignImportModule :: !Bool
                                , cfgAlignImportSpec   :: !Bool
@@ -97,6 +98,7 @@ data AlignConfig = AlignConfig { cfgAlignLimits       :: !(Int, Int)
 
 instance Default AlignConfig where
     def = AlignConfig { cfgAlignLimits = (10, 25)
+                      , cfgAlignCase = False
                       , cfgAlignClass = False
                       , cfgAlignImportModule = False
                       , cfgAlignImportSpec = False
@@ -106,6 +108,7 @@ instance Default AlignConfig where
                       }
 
 data IndentConfig = IndentConfig { cfgIndentOnside         :: !Int
+                                 , cfgIndentApp            :: !Indent
                                  , cfgIndentCase           :: !Indent
                                  , cfgIndentClass          :: !Indent
                                  , cfgIndentDo             :: !Indent
@@ -121,6 +124,7 @@ data IndentConfig = IndentConfig { cfgIndentOnside         :: !Int
 
 instance Default IndentConfig where
     def = IndentConfig { cfgIndentOnside = 4
+                       , cfgIndentApp = Align
                        , cfgIndentCase = IndentBy 4
                        , cfgIndentClass = IndentBy 4
                        , cfgIndentDo = IndentBy 4

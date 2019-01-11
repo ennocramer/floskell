@@ -317,6 +317,10 @@ measureInstDecl :: InstDecl NodeInfo -> Printer FlexConfig (Maybe [Int])
 measureInstDecl (InsDecl _ decl) = measureDecl decl
 measureInstDecl _ = return Nothing
 
+measureAlt :: Alt NodeInfo -> Printer FlexConfig (Maybe [Int])
+measureAlt (Alt _ pat _ Nothing) = fmap (: []) <$> measure (pretty pat)
+measureAlt _ = return Nothing
+
 withComputedTabStop :: TabStop
                     -> (AlignConfig -> Bool)
                     -> (a -> Printer FlexConfig (Maybe [Int]))
@@ -530,8 +534,7 @@ prettyApp fn args = withLayout cfgLayoutApp flex vertical
 
     vertical = do
         pretty fn
-        space
-        aligned . inter newline $ map pretty args
+        withIndent cfgIndentApp $ lined args
 
 prettyInfixApp :: (Annotated ast, Pretty ast, HSE.Pretty (op NodeInfo))
                => (op NodeInfo -> ByteString)
@@ -1361,7 +1364,9 @@ instance Pretty Exp where
         write " of"
         if null alts
             then write " { }"
-            else withIndent cfgIndentCase $ lined alts
+            else withIndent cfgIndentCase $
+                withComputedTabStop stopRhs cfgAlignCase measureAlt alts $
+                    lined alts
 
     prettyPrint (Do _ stmts) = do
         write "do"
@@ -1594,11 +1599,14 @@ instance Pretty Exp where
         write "\\case"
         if null alts
             then write " { }"
-            else withIndent cfgIndentCase $ lined alts
+            else withIndent cfgIndentCase $
+                withComputedTabStop stopRhs cfgAlignCase measureAlt alts $
+                    lined alts
 
 instance Pretty Alt where
     prettyPrint (Alt _ pat rhs mbinds) = do
         pretty pat
+        atTabStop stopRhs
         pretty $ GuardedAlts rhs
         mapM_ pretty mbinds
 
