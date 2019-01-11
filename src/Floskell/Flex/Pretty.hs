@@ -1318,14 +1318,14 @@ instance Pretty Exp where
     prettyPrint (Let _ binds expr) = withLayout cfgLayoutLet flex vertical
       where
         flex = aligned $ do
-            write "let"
-            withIndent cfgIndentLet $ pretty (CompactBinds binds)
+            write "let "
+            onside $ pretty (CompactBinds binds)
             spaceOrNewline
             write "in "
             onside $ pretty expr
         vertical = aligned $ do
             write "let"
-            withIndent cfgIndentLet $ pretty (CompactBinds binds)
+            withIndent cfgIndentLetBinds $ pretty (CompactBinds binds)
             newline
             write "in"
             withIndent cfgIndentLetIn $ pretty expr
@@ -1970,7 +1970,7 @@ newtype CompactBinds l = CompactBinds (Binds l)
 
 instance Pretty CompactBinds where
     prettyPrint (CompactBinds (BDecls _ decls)) = aligned $
-        withComputedTabStop stopRhs cfgAlignLet measureDecl decls $ lined decls
+        withComputedTabStop stopRhs cfgAlignLetBinds measureDecl decls $ lined decls
     prettyPrint (CompactBinds (IPBinds _ ipbinds)) = aligned $ lined ipbinds
 
 newtype MayAst a l = MayAst (Maybe (a l))

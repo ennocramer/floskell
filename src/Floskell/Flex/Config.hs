@@ -89,7 +89,7 @@ data AlignConfig = AlignConfig { cfgAlignLimits       :: !(Int, Int)
                                , cfgAlignClass        :: !Bool
                                , cfgAlignImportModule :: !Bool
                                , cfgAlignImportSpec   :: !Bool
-                               , cfgAlignLet          :: !Bool
+                               , cfgAlignLetBinds     :: !Bool
                                , cfgAlignRecordFields :: !Bool
                                , cfgAlignWhere        :: !Bool
                                }
@@ -100,7 +100,7 @@ instance Default AlignConfig where
                       , cfgAlignClass = False
                       , cfgAlignImportModule = False
                       , cfgAlignImportSpec = False
-                      , cfgAlignLet = False
+                      , cfgAlignLetBinds = False
                       , cfgAlignRecordFields = False
                       , cfgAlignWhere = False
                       }
@@ -112,7 +112,7 @@ data IndentConfig = IndentConfig { cfgIndentOnside         :: !Int
                                  , cfgIndentExportSpecList :: !Indent
                                  , cfgIndentIf             :: !Indent
                                  , cfgIndentImportSpecList :: !Indent
-                                 , cfgIndentLet            :: !Indent
+                                 , cfgIndentLetBinds       :: !Indent
                                  , cfgIndentLetIn          :: !Indent
                                  , cfgIndentMultiIf        :: !Indent
                                  , cfgIndentWhere          :: !Indent
@@ -127,7 +127,7 @@ instance Default IndentConfig where
                        , cfgIndentExportSpecList = Align
                        , cfgIndentIf = IndentBy 0
                        , cfgIndentImportSpecList = Align
-                       , cfgIndentLet = Align
+                       , cfgIndentLetBinds = Align
                        , cfgIndentLetIn = Align
                        , cfgIndentMultiIf = IndentBy 4
                        , cfgIndentWhere = IndentBy 4
