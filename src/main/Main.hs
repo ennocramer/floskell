@@ -16,6 +16,7 @@ import qualified Data.ByteString                 as BS
 import qualified Data.ByteString.Lazy            as BL
 import qualified Data.HashMap.Lazy               as HashMap
 import           Data.List                       ( inits )
+import           Data.Maybe                      ( isJust )
 import           Data.Monoid                     ( (<>) )
 
 import qualified Data.Text                       as T
@@ -127,7 +128,9 @@ main = do
     opts <- execParser parser
     mconfig <- case optConfig opts of
                    Just c -> return $ Just c
-                   Nothing -> findConfig
+                   Nothing -> if isJust (optStyle opts)
+                              then return Nothing
+                              else findConfig
     baseConfig <- case mconfig of
                       Just path -> readConfig path
                       Nothing -> return defaultConfig
