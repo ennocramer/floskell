@@ -136,7 +136,6 @@ instance Default IndentConfig where
 data LayoutConfig = LayoutConfig { cfgLayoutApp            :: !Layout
                                  , cfgLayoutConDecls       :: !Layout
                                  , cfgLayoutDeclaration    :: !Layout
-                                 , cfgLayoutDeriving       :: !Layout
                                  , cfgLayoutExportSpecList :: !Layout
                                  , cfgLayoutIf             :: !Layout
                                  , cfgLayoutImportSpecList :: !Layout
@@ -152,7 +151,6 @@ instance Default LayoutConfig where
     def = LayoutConfig { cfgLayoutApp = Flex
                        , cfgLayoutConDecls = TryOneline
                        , cfgLayoutDeclaration = Flex
-                       , cfgLayoutDeriving = Flex
                        , cfgLayoutExportSpecList = Flex
                        , cfgLayoutIf = Flex
                        , cfgLayoutImportSpecList = Flex

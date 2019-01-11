@@ -1028,13 +1028,8 @@ instance Pretty Deriving where
             mayM_ mderivstrategy $ withPostfix space pretty
             case instrules of
                 [ i@IRule{} ] -> pretty i
-                _ -> withLayout cfgLayoutDeriving flex vertical
-      where
-        flex = listAutoWrap Other "(" ")" "," instrules'
-        vertical = listV Other "(" ")" "," instrules'
-        instrules' = case instrules of
-            [ IParen _ i ] -> [ i ]
-            _ -> instrules
+                [ IParen _ i ] -> listAutoWrap Other "(" ")" "," [ i ]
+                _ -> listAutoWrap Other "(" ")" "," instrules
 
 instance Pretty ConDecl where
     prettyPrint (ConDecl _ name types) = do
