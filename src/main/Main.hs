@@ -15,7 +15,7 @@ import qualified Data.Aeson.Types                as JSON ( typeMismatch )
 import qualified Data.ByteString                 as BS
 import qualified Data.ByteString.Lazy            as BL
 import qualified Data.HashMap.Lazy               as HashMap
-import           Data.List                       ( inits )
+import           Data.List                       ( inits, sort )
 import           Data.Maybe                      ( isJust )
 import           Data.Monoid                     ( (<>) )
 
@@ -193,7 +193,7 @@ main = do
         PP.<$$>
         PP.text hdr
         PP.<$$>
-        (PP.indent 2 . PP.fillSep . PP.punctuate PP.comma $ map PP.text xs)
+        (PP.indent 2 . PP.fillSep . PP.punctuate PP.comma . map PP.text $ sort xs)
 
 -- | Reformat files or stdin based on provided configuration.
 run :: Config -> [FilePath] -> IO ()
