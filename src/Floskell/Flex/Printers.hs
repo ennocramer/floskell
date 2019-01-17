@@ -21,6 +21,7 @@ module Floskell.Flex.Printers
     , withPrefix
     , withPostfix
     , withIndent
+    , withIndent'
     , withLayout
     , inter
     , aligned
@@ -132,6 +133,15 @@ withIndent fn p = do
         space
         aligned p
     indentby indent = P.indented (fromIntegral indent) $ do
+        newline
+        p
+
+withIndent' :: (IndentConfig -> Int)
+           -> Printer FlexConfig a
+           -> Printer FlexConfig a
+withIndent' fn p = do
+    indent <- getConfig (fn . cfgIndent)
+    P.indented (fromIntegral indent) $ do
         newline
         p
 

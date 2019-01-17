@@ -934,17 +934,15 @@ instance Pretty InstHead where
     prettyPrint (IHApp _ insthead ty) = depend' (pretty insthead) $ pretty ty
 
 instance Pretty Binds where
-    prettyPrint (BDecls _ decls) = do
-        newline
-        write "  where"
-        withIndent cfgIndentWhere $
+    prettyPrint (BDecls _ decls) = withIndent' cfgIndentWhere $ do
+        write "where"
+        withIndent cfgIndentWhereBinds $
             withComputedTabStop stopRhs cfgAlignWhere measureDecl decls $
                 prettyDecls skipBlankDecl decls
 
-    prettyPrint (IPBinds _ ipbinds) = do
-        newline
-        write "  where"
-        withIndent cfgIndentWhere $ lined ipbinds
+    prettyPrint (IPBinds _ ipbinds) = withIndent' cfgIndentWhere $ do
+        write "where"
+        withIndent cfgIndentWhereBinds $ lined ipbinds
 
 instance Pretty IPBind where
     prettyPrint (IPBind _ ipname expr) = onside $ prettySimpleDecl ipname "=" expr
@@ -1025,8 +1023,7 @@ instance Pretty InstDecl where
 
 instance Pretty Deriving where
     prettyPrint (Deriving _ mderivstrategy instrules) = do
-        newline
-        indented $ do
+        withIndent' cfgIndentDeriving $ do
             write "deriving "
             mayM_ mderivstrategy $ withPostfix space pretty
             case instrules of

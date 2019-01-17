@@ -108,6 +108,8 @@ instance Default AlignConfig where
                       }
 
 data IndentConfig = IndentConfig { cfgIndentOnside         :: !Int
+                                 , cfgIndentDeriving       :: !Int
+                                 , cfgIndentWhere          :: !Int
                                  , cfgIndentApp            :: !Indent
                                  , cfgIndentCase           :: !Indent
                                  , cfgIndentClass          :: !Indent
@@ -118,12 +120,14 @@ data IndentConfig = IndentConfig { cfgIndentOnside         :: !Int
                                  , cfgIndentLetBinds       :: !Indent
                                  , cfgIndentLetIn          :: !Indent
                                  , cfgIndentMultiIf        :: !Indent
-                                 , cfgIndentWhere          :: !Indent
+                                 , cfgIndentWhereBinds     :: !Indent
                                  }
     deriving (Generic)
 
 instance Default IndentConfig where
     def = IndentConfig { cfgIndentOnside = 4
+                       , cfgIndentDeriving = 4
+                       , cfgIndentWhere = 2
                        , cfgIndentApp = Align
                        , cfgIndentCase = IndentBy 4
                        , cfgIndentClass = IndentBy 4
@@ -134,7 +138,7 @@ instance Default IndentConfig where
                        , cfgIndentLetBinds = Align
                        , cfgIndentLetIn = Align
                        , cfgIndentMultiIf = IndentBy 4
-                       , cfgIndentWhere = IndentBy 4
+                       , cfgIndentWhereBinds = IndentBy 2
                        }
 
 data LayoutConfig = LayoutConfig { cfgLayoutApp            :: !Layout
