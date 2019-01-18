@@ -1069,3 +1069,12 @@ foo =
     [1 -- comment
     ,2]
 ```
+
+If-then-else must always indent in do blocks.
+
+``` haskell
+foo =
+  do if condition -- comment
+        then this
+        else that
+```

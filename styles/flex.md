@@ -647,9 +647,9 @@ foo = bar { x = 1 -- the one
 foo = let x = x in x
 
 foo = let x = x -- bottom
-      in 
-          -- bottom
-          x
+    in 
+        -- bottom
+        x
 
 foo = if null xs then None else Some $ head xs
 
@@ -803,4 +803,12 @@ Align overrides onside.
 foo = some expr [ 1 -- comment
                 , 2
                 ]
+```
+
+If-then-else must always indent in do blocks.
+
+``` haskell
+foo = do
+    if condition -- comment
+        then this else that
 ```

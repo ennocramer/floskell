@@ -949,13 +949,13 @@ instance Pretty InstHead where
     prettyPrint (IHApp _ insthead ty) = depend' (pretty insthead) $ pretty ty
 
 instance Pretty Binds where
-    prettyPrint (BDecls _ decls) = withIndent' cfgIndentWhere $ do
+    prettyPrint (BDecls _ decls) = withIndentBy cfgIndentWhere $ do
         write "where"
         withIndent cfgIndentWhereBinds $
             withComputedTabStop stopRhs cfgAlignWhere measureDecl decls $
                 prettyDecls skipBlankDecl decls
 
-    prettyPrint (IPBinds _ ipbinds) = withIndent' cfgIndentWhere $ do
+    prettyPrint (IPBinds _ ipbinds) = withIndentBy cfgIndentWhere $ do
         write "where"
         withIndent cfgIndentWhereBinds $ linedOnside ipbinds
 
@@ -1038,7 +1038,7 @@ instance Pretty InstDecl where
 
 instance Pretty Deriving where
     prettyPrint (Deriving _ mderivstrategy instrules) = do
-        withIndent' cfgIndentDeriving $ do
+        withIndentBy cfgIndentDeriving $ do
             write "deriving "
             mayM_ mderivstrategy $ withPostfix space pretty
             case instrules of
@@ -1332,14 +1332,13 @@ instance Pretty Exp where
 
     prettyPrint (Let _ binds expr) = withLayout cfgLayoutLet flex vertical
       where
-        flex = aligned $ do
+        flex = do
             write "let "
             prettyOnside (CompactBinds binds)
             spaceOrNewline
             write "in "
             prettyOnside expr
-        vertical = aligned $ do
-            write "let"
+        vertical = withIndentFlat cfgIndentLet "let" $ do
             withIndent cfgIndentLetBinds $ pretty (CompactBinds binds)
             newline
             write "in"
@@ -1356,15 +1355,14 @@ instance Pretty Exp where
             spaceOrNewline
             write "else "
             prettyOnside expr''
-        vertical = do
-            write "if "
+        vertical = withIndentFlat cfgIndentIf "if " $ do
             prettyOnside expr
-            withIndent cfgIndentIf $ do
-                write "then "
-                prettyOnside expr'
-                newline
-                write "else "
-                prettyOnside expr''
+            newline
+            write "then "
+            prettyOnside expr'
+            newline
+            write "else "
+            prettyOnside expr''
 
     prettyPrint (MultiIf _ guardedrhss) = do
         write "if"
@@ -1822,6 +1820,15 @@ instance Pretty Stmt where
         pretty pat
         operator Expression "<-"
         pretty expr
+
+    -- Special case for If in Do,
+    prettyPrint (Qualifier _ expr@If{}) = do
+        cfg <- getConfig (cfgIndentIf . cfgIndent)
+        case cfg of
+            Align -> do
+                write ""
+                indented $ pretty expr
+            _ -> pretty expr
 
     prettyPrint (Qualifier _ expr) = pretty expr
 

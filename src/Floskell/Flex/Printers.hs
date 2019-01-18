@@ -21,7 +21,8 @@ module Floskell.Flex.Printers
     , withPrefix
     , withPostfix
     , withIndent
-    , withIndent'
+    , withIndentFlat
+    , withIndentBy
     , withLayout
     , inter
     , aligned
@@ -136,14 +137,28 @@ withIndent fn p = do
         newline
         p
 
-withIndent' :: (IndentConfig -> Int)
-           -> Printer FlexConfig a
-           -> Printer FlexConfig a
-withIndent' fn p = do
-    indent <- getConfig (fn . cfgIndent)
-    P.indented (fromIntegral indent) $ do
-        newline
+withIndentFlat :: (IndentConfig -> Indent)
+               -> ByteString
+               -> Printer FlexConfig a
+               -> Printer FlexConfig a
+withIndentFlat fn kw p = do
+    cfg <- getConfig (fn . cfgIndent)
+    case cfg of
+        Align -> align
+        IndentBy i -> indentby i
+        AlignOrIndentBy i -> align <|> indentby i
+  where
+    align = aligned $ do
+        write kw
         p
+    indentby indent = do
+        write kw
+        P.indented (fromIntegral indent) $ p
+
+withIndentBy :: (IndentConfig -> Int)
+             -> Printer FlexConfig a
+             -> Printer FlexConfig a
+withIndentBy fn = withIndent (IndentBy . fn)
 
 withLayout :: (LayoutConfig -> Layout)
            -> Printer FlexConfig a
