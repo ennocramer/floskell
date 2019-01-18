@@ -760,3 +760,47 @@ foo = do
     -- comment
     some expression
 ```
+
+## Onside
+
+Indent within onside started on non-empty line should still not stack.
+
+``` haskell
+foo = if cond then do
+    this else do
+    that
+```
+
+Before comments at the start of onside do not trigger onside.
+
+``` haskell
+foo = do
+    -- comment
+    some expression
+```
+
+Matche arms have individual onside.
+
+``` haskell
+foo True = some -- comment
+    expression
+foo False = some -- comment
+    other expression
+```
+
+Where binds are considered outside of onside.
+
+``` haskell
+foo = some -- comment
+    expression
+  where
+    expression = other
+```
+
+Align overrides onside.
+
+``` haskell
+foo = some expr [ 1 -- comment
+                , 2
+                ]
+```

@@ -88,6 +88,8 @@ expectedFailures = [ ("fundamental", [ 2, 3, 4, 1 ])
                    , ("gibiansky", [ 2, 4, 2, 1 ])
                    , ("cramer", [ 2, 3, 4, 1 ])
                    , ("cramer", [ 2, 3, 13, 1 ])
+                   , ("cramer", [ 3, 2, 3 ])
+                   , ("cramer", [ 3, 2, 4 ])
                    ]
 
 -- | Convert the Markdone document to Spec benchmarks.

@@ -162,7 +162,9 @@ inter x = sequence_ . intersperse x
 aligned :: Printer s a -> Printer s a
 aligned p = do
     col <- P.getNextColumn
-    P.column col p
+    P.column col $ do
+        modify $ \s -> s { psOnside = 0 }
+        p
 
 indented :: Printer FlexConfig a -> Printer FlexConfig a
 indented p = do

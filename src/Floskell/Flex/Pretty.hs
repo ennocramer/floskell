@@ -106,6 +106,18 @@ pretty ast = do
     prettyPrint ast
     printComments After ast
 
+prettyOnside :: (Annotated ast, Pretty ast) => PrettyPrinter ast
+prettyOnside ast = do
+    eol <- gets psEolComment
+    when eol newline
+    nl <- gets psNewline
+    if nl
+        then do
+            printComments Before ast
+            onside $ prettyPrint ast
+            printComments After ast
+        else onside $ pretty ast
+
 -- | Empty NodeInfo
 noNodeInfo :: NodeInfo
 noNodeInfo = NodeInfo noSrcSpan []
@@ -156,6 +168,9 @@ opName' (Special _ _) = ""
 lined :: (Annotated ast, Pretty ast) => [ast NodeInfo] -> Printer FlexConfig ()
 lined = inter newline . map (cut . pretty)
 
+linedOnside :: (Annotated ast, Pretty ast) => [ast NodeInfo] -> Printer FlexConfig ()
+linedOnside = inter newline . map (cut . prettyOnside)
+
 listVinternal :: (Annotated ast, Pretty ast)
               => LayoutContext
               -> ByteString
@@ -176,12 +191,12 @@ listVinternal ctx sep xs = aligned $ do
         (x : xs') -> column itemCol $ do
             cut $ do
                 printCommentsSimple Before x
-                prettyPrint x
+                cut . onside $ prettyPrint x
                 printCommentsSimple After x
             forM_ xs' $ \x' -> do
                 printComments Before x'
                 column sepCol $ operatorV ctx sep
-                cut $ prettyPrint x'
+                cut . onside $ prettyPrint x'
                 printComments After x'
   where
     printCommentsSimple loc ast = let comments = map comInfoComment $
@@ -492,15 +507,14 @@ prettyTypesig ctx names ty = withLayout cfgLayoutTypesig flex vertical
   where
     flex = do
         inter comma $ map pretty names
-        onside $ do
-            atTabStop stopRecordField
-            operator ctx "::"
-            pretty ty
+        atTabStop stopRecordField
+        operator ctx "::"
+        pretty ty
 
     vertical = do
         inter comma $ map pretty names
         atTabStop stopRecordField
-        onside . alignOnOperator ctx "::" $ pretty' ty
+        alignOnOperator ctx "::" $ pretty' ty
 
     pretty' (TyForall _ mtyvarbinds mcontext ty') = do
         forM_ mtyvarbinds $ \tyvarbinds -> do
@@ -534,7 +548,7 @@ prettyApp fn args = withLayout cfgLayoutApp flex vertical
 
     vertical = do
         pretty fn
-        withIndent cfgIndentApp $ lined args
+        withIndent cfgIndentApp $ linedOnside args
 
 prettyInfixApp :: (Annotated ast, Pretty ast, HSE.Pretty (op NodeInfo))
                => (op NodeInfo -> ByteString)
@@ -565,7 +579,7 @@ prettyRecord len ctx name fields = withLayout cfgLayoutRecord flex vertical
   where
     flex = do
         withOperatorFormattingH ctx "record" (pretty name) id
-        groupH ctx "{" "}" $ inter (operatorH ctx ",") $ map pretty fields
+        groupH ctx "{" "}" $ inter (operatorH ctx ",") $ map prettyOnside fields
     vertical = do
         withOperatorFormatting ctx "record" (pretty name) id
         groupV ctx "{" "}" $ withComputedTabStop stopRecordField
@@ -581,7 +595,7 @@ prettyRecordFields :: (Annotated ast, Pretty ast)
                    -> Printer FlexConfig ()
 prettyRecordFields len ctx fields = withLayout cfgLayoutRecord flex vertical
   where
-    flex = groupH ctx "{" "}" $ inter (operatorH ctx ",") $ map pretty fields
+    flex = groupH ctx "{" "}" $ inter (operatorH ctx ",") $ map prettyOnside fields
     vertical = groupV ctx "{" "}" $
         withComputedTabStop stopRecordField
                             cfgAlignRecordFields
@@ -692,7 +706,7 @@ instance Pretty Decl where
             mayM_ minjectivityinfo pretty
             write " where"
             newline
-            lined typeeqns
+            linedOnside typeeqns
 
     prettyPrint (DataDecl _ dataornew mcontext declhead qualcondecls derivings) = do
         depend' (pretty dataornew) $ do
@@ -717,7 +731,7 @@ instance Pretty Decl where
                 pretty kind
             write " where"
             newline
-            lined gadtdecls
+            linedOnside gadtdecls
         mapM_ pretty derivings
 
     prettyPrint (DataFamDecl _ mcontext declhead mresultsig) =
@@ -750,7 +764,7 @@ instance Pretty Decl where
                 pretty kind
             write " where"
             newline
-            lined gadtdecls
+            linedOnside gadtdecls
         mapM_ pretty derivings
 
     prettyPrint (ClassDecl _ mcontext declhead fundeps mclassdecls) = do
@@ -783,7 +797,7 @@ instance Pretty Decl where
             mayM_ moverlap $ withPostfix space pretty
             pretty instrule
 
-    prettyPrint (InfixDecl _ assoc mint ops) = do
+    prettyPrint (InfixDecl _ assoc mint ops) = onside $ do
         pretty assoc
         mayM_ mint $ withPrefix space (int . fromIntegral)
         space
@@ -795,7 +809,7 @@ instance Pretty Decl where
 
     prettyPrint (SpliceDecl _ expr) = pretty expr
 
-    prettyPrint (TypeSig _ names ty) = prettyTypesig Declaration names ty
+    prettyPrint (TypeSig _ names ty) = onside $ prettyTypesig Declaration names ty
 
     prettyPrint (PatSynSig _ names mtyvarbinds mcontext mcontext' ty) = depend "pattern" $ do
         inter comma $ map pretty names
@@ -805,12 +819,13 @@ instance Pretty Decl where
         mayM_ mcontext' pretty
         pretty ty
 
-    prettyPrint (FunBind _ matches) = lined matches
+    prettyPrint (FunBind _ matches) = linedOnside matches
 
     prettyPrint (PatBind _ pat rhs mbinds) = do
-        pretty pat
-        atTabStop stopRhs
-        pretty rhs
+        onside $ do
+            pretty pat
+            atTabStop stopRhs
+            pretty rhs
         mapM_ pretty mbinds
 
     prettyPrint (PatSyn _ pat pat' patternsyndirection) = do
@@ -942,10 +957,10 @@ instance Pretty Binds where
 
     prettyPrint (IPBinds _ ipbinds) = withIndent' cfgIndentWhere $ do
         write "where"
-        withIndent cfgIndentWhereBinds $ lined ipbinds
+        withIndent cfgIndentWhereBinds $ linedOnside ipbinds
 
 instance Pretty IPBind where
-    prettyPrint (IPBind _ ipname expr) = onside $ prettySimpleDecl ipname "=" expr
+    prettyPrint (IPBind _ ipname expr) = prettySimpleDecl ipname "=" expr
 
 instance Pretty InjectivityInfo where
     prettyPrint (InjectivityInfo _ name names) = do
@@ -1039,7 +1054,7 @@ instance Pretty ConDecl where
             oneline hor <|> ver
       where
         hor = inter space $ map pretty types
-        ver = aligned $ lined types
+        ver = aligned $ linedOnside types
 
     prettyPrint (InfixConDecl _ ty name ty') = do
         pretty ty
@@ -1093,7 +1108,7 @@ instance Pretty Match where
 
 instance Pretty Rhs where
     prettyPrint (UnGuardedRhs _ expr) =
-        cut . onside $ withLayout cfgLayoutDeclaration flex vertical
+        cut $ withLayout cfgLayoutDeclaration flex vertical
       where
         flex = do
             operator Declaration "="
@@ -1103,11 +1118,11 @@ instance Pretty Rhs where
             pretty expr
 
     prettyPrint (GuardedRhss _ guardedrhss) =
-        withIndent cfgIndentMultiIf $ lined guardedrhss
+        withIndent cfgIndentMultiIf $ linedOnside guardedrhss
 
 instance Pretty GuardedRhs where
     prettyPrint (GuardedRhs _ stmts expr) =
-        onside $ withLayout cfgLayoutDeclaration flex vertical
+        withLayout cfgLayoutDeclaration flex vertical
       where
         flex = do
             operatorSectionR Pattern "|" $ write "|"
@@ -1319,10 +1334,10 @@ instance Pretty Exp where
       where
         flex = aligned $ do
             write "let "
-            onside $ pretty (CompactBinds binds)
+            prettyOnside (CompactBinds binds)
             spaceOrNewline
             write "in "
-            onside $ pretty expr
+            prettyOnside expr
         vertical = aligned $ do
             write "let"
             withIndent cfgIndentLetBinds $ pretty (CompactBinds binds)
@@ -1334,26 +1349,26 @@ instance Pretty Exp where
       where
         flex = do
             write "if "
-            onside $ pretty expr
+            prettyOnside expr
             spaceOrNewline
             write "then "
-            onside $ pretty expr'
+            prettyOnside expr'
             spaceOrNewline
             write "else "
-            onside $ pretty expr''
+            prettyOnside expr''
         vertical = do
             write "if "
-            onside $ pretty expr
+            prettyOnside expr
             withIndent cfgIndentIf $ do
                 write "then "
-                pretty expr'
+                prettyOnside expr'
                 newline
                 write "else "
-                pretty expr''
+                prettyOnside expr''
 
     prettyPrint (MultiIf _ guardedrhss) = do
         write "if"
-        withIndent cfgIndentMultiIf . lined $ map GuardedAlt guardedrhss
+        withIndent cfgIndentMultiIf . linedOnside $ map GuardedAlt guardedrhss
 
     prettyPrint (Case _ expr alts) = do
         write "case "
@@ -1367,11 +1382,11 @@ instance Pretty Exp where
 
     prettyPrint (Do _ stmts) = do
         write "do"
-        withIndent cfgIndentDo $ lined stmts
+        withIndent cfgIndentDo $ linedOnside stmts
 
     prettyPrint (MDo _ stmts) = do
         write "mdo"
-        withIndent cfgIndentDo $ lined stmts
+        withIndent cfgIndentDo $ linedOnside stmts
 
     prettyPrint (Tuple _ boxed exprs) = case boxed of
         Boxed -> list Expression "(" ")" "," exprs
@@ -1602,9 +1617,10 @@ instance Pretty Exp where
 
 instance Pretty Alt where
     prettyPrint (Alt _ pat rhs mbinds) = do
-        pretty pat
-        atTabStop stopRhs
-        pretty $ GuardedAlts rhs
+        onside $ do
+            pretty pat
+            atTabStop stopRhs
+            pretty $ GuardedAlts rhs
         mapM_ pretty mbinds
 
 instance Pretty XAttr where
@@ -1804,16 +1820,10 @@ instance Pretty QualStmt where
 instance Pretty Stmt where
     prettyPrint (Generator _ pat expr) = do
         pretty pat
-        onside $ do
-            operator Expression "<-"
-            pretty expr
+        operator Expression "<-"
+        pretty expr
 
-    prettyPrint (Qualifier _ expr) = do
-        printComments Before expr
-        eol <- gets psEolComment
-        when eol newline
-        onside $ prettyPrint expr
-        printComments After expr
+    prettyPrint (Qualifier _ expr) = pretty expr
 
     prettyPrint (LetStmt _ binds) = do
         write "let "
@@ -1821,7 +1831,7 @@ instance Pretty Stmt where
 
     prettyPrint (RecStmt _ stmts) = do
         write "rec "
-        aligned $ lined stmts
+        aligned $ linedOnside stmts
 
 instance Pretty FieldUpdate where
     prettyPrint (FieldUpdate _ qname expr) = do
@@ -1953,22 +1963,21 @@ newtype GuardedAlt l = GuardedAlt (GuardedRhs l)
 
 instance Pretty GuardedAlt where
     prettyPrint (GuardedAlt (GuardedRhs _ stmts expr)) = cut $ do
-        onside $ do
-            operatorSectionR Pattern "|" $ write "|"
-            inter comma $ map pretty stmts
-            operator Expression "->"
-            pretty expr
+        operatorSectionR Pattern "|" $ write "|"
+        inter comma $ map pretty stmts
+        operator Expression "->"
+        pretty expr
 
 newtype GuardedAlts l = GuardedAlts (Rhs l)
     deriving (Functor, Annotated)
 
 instance Pretty GuardedAlts where
-    prettyPrint (GuardedAlts (UnGuardedRhs _ expr)) = cut . onside $ do
+    prettyPrint (GuardedAlts (UnGuardedRhs _ expr)) = cut $ do
         operator Expression "->"
         pretty expr
 
     prettyPrint (GuardedAlts (GuardedRhss _ guardedrhss)) =
-        withIndent cfgIndentMultiIf $ lined $ map GuardedAlt guardedrhss
+        withIndent cfgIndentMultiIf $ linedOnside $ map GuardedAlt guardedrhss
 
 newtype CompactBinds l = CompactBinds (Binds l)
     deriving (Functor, Annotated)
@@ -1976,7 +1985,7 @@ newtype CompactBinds l = CompactBinds (Binds l)
 instance Pretty CompactBinds where
     prettyPrint (CompactBinds (BDecls _ decls)) = aligned $
         withComputedTabStop stopRhs cfgAlignLetBinds measureDecl decls $ lined decls
-    prettyPrint (CompactBinds (IPBinds _ ipbinds)) = aligned $ lined ipbinds
+    prettyPrint (CompactBinds (IPBinds _ ipbinds)) = aligned $ linedOnside ipbinds
 
 newtype MayAst a l = MayAst (Maybe (a l))
 

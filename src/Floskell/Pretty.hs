@@ -218,6 +218,8 @@ modifyState f = modify (\s -> s { psUserState = f (psUserState s) })
 -- ignore increase when computing further indentations.
 onside :: Int64 -> Printer s a -> Printer s a
 onside i p = do
+    eol <- gets psEolComment
+    when eol newline
     level <- gets psIndentLevel
     onside' <- gets psOnside
     modify (\s -> s { psOnside = i })
