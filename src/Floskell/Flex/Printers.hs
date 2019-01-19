@@ -2,6 +2,7 @@
 
 module Floskell.Flex.Printers
     ( getConfig
+    , getOption
     , cut
     , oneline
       -- *
@@ -69,6 +70,10 @@ import           Floskell.Types
 -- | Query part of the pretty printer config
 getConfig :: (a -> b) -> Printer a b
 getConfig f = f <$> P.getState
+
+-- | Query pretty printer options
+getOption :: (OptionConfig -> Bool) -> Printer FlexConfig Bool
+getOption f = getConfig (f . cfgOptions)
 
 oneline :: Printer s a -> Printer s a
 oneline p = do

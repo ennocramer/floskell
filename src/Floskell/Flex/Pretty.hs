@@ -5,28 +5,32 @@
 
 module Floskell.Flex.Pretty where
 
-import           Control.Applicative          ( (<|>) )
-import           Control.Monad                ( forM_, guard, unless, void, when )
-import           Control.Monad.State.Strict   ( get, gets )
+import           Control.Applicative            ( (<|>) )
+import           Control.Monad                  ( forM_, guard, replicateM_
+                                                , unless, void, when )
+import           Control.Monad.State.Strict     ( get, gets )
 
-import           Data.ByteString              ( ByteString )
-import qualified Data.ByteString              as BS
-import qualified Data.ByteString.Char8        as BS8
-import qualified Data.ByteString.Lazy         as BL
+import           Data.ByteString                ( ByteString )
+import qualified Data.ByteString                as BS
+import qualified Data.ByteString.Char8          as BS8
+import qualified Data.ByteString.Lazy           as BL
 
-import           Data.List                    ( groupBy, sortBy, sortOn )
-import           Data.Maybe                   ( catMaybes, fromMaybe )
+import           Data.List                      ( groupBy, sortBy, sortOn )
+import           Data.Maybe                     ( catMaybes, fromMaybe )
 
+import qualified Floskell.Buffer                as Buffer
 import           Floskell.Flex.Config
 import           Floskell.Flex.Printers
 
-import qualified Floskell.Buffer              as Buffer
-import           Floskell.Pretty              ( column, getNextColumn
-                                              , printComment, printComments )
+import           Floskell.Pretty                ( column, getNextColumn
+                                                , printComment, printComments )
 import           Floskell.Types
 
-import qualified Language.Haskell.Exts.Pretty as HSE
-import           Language.Haskell.Exts.SrcLoc ( noSrcSpan, srcInfoSpan )
+import           Language.Haskell.Exts.Comments ( Comment(..) )
+import qualified Language.Haskell.Exts.Pretty   as HSE
+import           Language.Haskell.Exts.SrcLoc   ( noSrcSpan, srcInfoSpan
+                                                , srcSpanEndLine
+                                                , srcSpanStartLine )
 import           Language.Haskell.Exts.Syntax
 
 -- | Like `span`, but comparing adjacent items.
@@ -165,11 +169,41 @@ opName' (Special _ (FunCon _)) = "->"
 opName' (Special _ (Cons _)) = ":"
 opName' (Special _ _) = ""
 
+lineDelta :: Annotated ast => ast NodeInfo -> ast NodeInfo -> Int
+lineDelta prev next = nextLine - prevLine
+  where
+    prevLine = maximum (prevNodeLine : prevCommentLines)
+    nextLine = minimum (nextNodeLine : nextCommentLines)
+    prevNodeLine = srcSpanEndLine $ annSrcSpan prev
+    nextNodeLine = srcSpanStartLine $ annSrcSpan next
+    annSrcSpan = srcInfoSpan . nodeInfoSpan . ann
+    prevCommentLines = map (srcSpanEndLine . commentSrcSpan) $
+        filterComments (== Just After) prev
+    nextCommentLines = map (srcSpanStartLine . commentSrcSpan) $
+        filterComments (== Just Before) next
+    commentSrcSpan = (\(Comment _ sp _) -> sp) . comInfoComment
+
+linedFn :: Annotated ast
+        => (ast NodeInfo -> Printer FlexConfig ())
+        -> [ast NodeInfo]
+        -> Printer FlexConfig ()
+linedFn fn xs = do
+    preserveP <- getOption cfgOptionPreserveVerticalSpace
+    if preserveP
+        then case xs of
+            x : xs' -> do
+                cut $ fn x
+                forM_ (zip xs xs') $ \(prev, cur) -> do
+                    replicateM_ (min 2 (max 1 $ lineDelta prev cur)) newline
+                    cut $ fn cur
+            [] -> return ()
+        else inter newline $ map (cut . fn) xs
+
 lined :: (Annotated ast, Pretty ast) => [ast NodeInfo] -> Printer FlexConfig ()
-lined = inter newline . map (cut . pretty)
+lined = linedFn pretty
 
 linedOnside :: (Annotated ast, Pretty ast) => [ast NodeInfo] -> Printer FlexConfig ()
-linedOnside = inter newline . map (cut . prettyOnside)
+linedOnside = linedFn prettyOnside
 
 listVinternal :: (Annotated ast, Pretty ast)
               => LayoutContext
@@ -384,8 +418,8 @@ qnameLength (Special _ con) = case con of
 
 prettyPragmas :: [ModulePragma NodeInfo] -> Printer FlexConfig ()
 prettyPragmas ps = do
-    splitP <- getConfig (cfgModuleSplitLanguagePragmas . cfgModule)
-    sortP <- getConfig (cfgModuleSortPragmas . cfgModule)
+    splitP <- getOption cfgOptionSplitLanguagePragmas
+    sortP <- getOption cfgOptionSortPragmas
     let ps' = if splitP then concatMap splitPragma ps else ps
     let ps'' = if sortP then sortBy compareAST ps' else ps'
     inter blankline . map lined $ groupBy sameType ps''
@@ -401,7 +435,7 @@ prettyPragmas ps = do
 
 prettyImports :: [ImportDecl NodeInfo] -> Printer FlexConfig ()
 prettyImports is = do
-    sortP <- getConfig (cfgModuleSortImports . cfgModule)
+    sortP <- getOption cfgOptionSortImports
     alignModuleP <- getConfig (cfgAlignImportModule . cfgAlign)
     alignSpecP <- getConfig (cfgAlignImportSpec . cfgAlign)
     let maxNameLength = maximum $ map (length . moduleName . importModule) is
@@ -672,7 +706,7 @@ instance Pretty ImportDecl where
 
 instance Pretty ImportSpecList where
     prettyPrint (ImportSpecList _ hiding specs) = do
-        sortP <- getConfig (cfgModuleSortImportLists . cfgModule)
+        sortP <- getOption cfgOptionSortImportLists
         let specs' = if sortP then sortOn HSE.prettyPrint specs else specs
         atTabStop stopImportSpec
         withLayout cfgLayoutImportSpecList (flex specs') (vertical specs')

@@ -15,7 +15,7 @@ module Floskell.Flex.Config
     , LayoutConfig(..)
     , OpConfig(..)
     , GroupConfig(..)
-    , ModuleConfig(..)
+    , OptionConfig(..)
     , FlexConfig(..)
     , defaultFlexConfig
     , cfgMapFind
@@ -193,18 +193,20 @@ instance Default GroupConfig where
                       )
                     ]
 
-data ModuleConfig = ModuleConfig { cfgModuleSortPragmas          :: !Bool
-                                 , cfgModuleSplitLanguagePragmas :: !Bool
-                                 , cfgModuleSortImports          :: !Bool
-                                 , cfgModuleSortImportLists      :: !Bool
+data OptionConfig = OptionConfig { cfgOptionSortPragmas           :: !Bool
+                                 , cfgOptionSplitLanguagePragmas  :: !Bool
+                                 , cfgOptionSortImports           :: !Bool
+                                 , cfgOptionSortImportLists       :: !Bool
+                                 , cfgOptionPreserveVerticalSpace :: !Bool
                                  }
     deriving (Generic)
 
-instance Default ModuleConfig where
-    def = ModuleConfig { cfgModuleSortPragmas = False
-                       , cfgModuleSplitLanguagePragmas = False
-                       , cfgModuleSortImports = False
-                       , cfgModuleSortImportLists = False
+instance Default OptionConfig where
+    def = OptionConfig { cfgOptionSortPragmas = False
+                       , cfgOptionSplitLanguagePragmas = False
+                       , cfgOptionSortImports = False
+                       , cfgOptionSortImportLists = False
+                       , cfgOptionPreserveVerticalSpace = False
                        }
 
 data FlexConfig = FlexConfig { cfgPenalty :: !PenaltyConfig
@@ -213,7 +215,7 @@ data FlexConfig = FlexConfig { cfgPenalty :: !PenaltyConfig
                              , cfgLayout  :: !LayoutConfig
                              , cfgOp      :: !OpConfig
                              , cfgGroup   :: !GroupConfig
-                             , cfgModule  :: !ModuleConfig
+                             , cfgOptions :: !OptionConfig
                              }
     deriving (Generic)
 
@@ -224,7 +226,7 @@ instance Default FlexConfig where
                      , cfgLayout = def
                      , cfgOp = def
                      , cfgGroup = def
-                     , cfgModule = def
+                     , cfgOptions = def
                      }
 
 defaultFlexConfig :: FlexConfig
@@ -416,10 +418,10 @@ instance ToJSON GroupConfig where
 instance FromJSON GroupConfig where
     parseJSON = genericParseJSON (recordOptions 0)
 
-instance ToJSON ModuleConfig where
+instance ToJSON OptionConfig where
     toJSON = genericToJSON (recordOptions 9)
 
-instance FromJSON ModuleConfig where
+instance FromJSON OptionConfig where
     parseJSON = genericParseJSON (recordOptions 9)
 
 instance ToJSON FlexConfig where
