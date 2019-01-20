@@ -1498,11 +1498,11 @@ instance Pretty Exp where
         withLayout cfgLayoutListComp flex vertical
       where
         flex = group Expression "[" "]" $ do
-            pretty expr
+            prettyOnside expr
             operator Expression "|"
             list' Expression "," qualstmts
         vertical = groupV Expression "[" "]" $ do
-            pretty expr
+            prettyOnside expr
             operatorV Expression "|"
             listV' Expression "," qualstmts
 
@@ -1510,12 +1510,12 @@ instance Pretty Exp where
         withLayout cfgLayoutListComp flex vertical
       where
         flex = group Expression "[" "]" $ do
-            pretty expr
+            prettyOnside expr
             forM_ qualstmtss $ \qualstmts -> cut $ do
                 operator Expression "|"
                 list' Expression "," qualstmts
         vertical = groupV Expression "[" "]" $ do
-            pretty expr
+            prettyOnside expr
             forM_ qualstmtss $ \qualstmts -> cut $ do
                 operatorV Expression "|"
                 listV' Expression "," qualstmts
@@ -1524,12 +1524,12 @@ instance Pretty Exp where
         withLayout cfgLayoutListComp flex vertical
       where
         flex = group Expression "[:" ":]" $ do
-            pretty expr
+            prettyOnside expr
             forM_ qualstmtss $ \qualstmts -> cut $ do
                 operator Expression "|"
                 list' Expression "," qualstmts
         vertical = groupV Expression "[:" ":]" $ do
-            pretty expr
+            prettyOnside expr
             forM_ qualstmtss $ \qualstmts -> cut $ do
                 operatorV Expression "|"
                 listV' Expression "," qualstmts
