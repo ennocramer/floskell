@@ -25,6 +25,9 @@ matrix:
   - name: "Stack LTS-12 (GHC-8.4.4)"
     env: BUILD=stack RESOLVER=lts-12
 
+  - name: "Stack LTS-13 (GHC-8.6.3)"
+    env: BUILD=stack RESOLVER=lts-13
+
   - name: "Stack Nightly"
     env: BUILD=stack RESOLVER=nightly
 
@@ -32,8 +35,8 @@ matrix:
     env: BUILD=cabal
     addons: {apt: {packages: [cabal-install-head,ghc-head], sources: [hvr-ghc]}}
 
-  - name: "Stack LTS-12 (GHC-8.4.4) [OSX]"
-    env: BUILD=stack RESOLVER=lts-12
+  - name: "Stack LTS-13 (GHC-8.6.3) [OSX]"
+    env: BUILD=stack RESOLVER=lts-13
     os: osx
 
   allow_failures:
