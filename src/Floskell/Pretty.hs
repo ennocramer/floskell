@@ -1,13 +1,13 @@
-{-# LANGUAGE DefaultSignatures          #-}
+{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Floskell.Pretty where
 
 import           Control.Applicative            ( (<|>) )
-import           Control.Monad                  ( forM_, guard, replicateM_
-                                                , unless, void, when )
+import           Control.Monad
+                 ( forM_, guard, replicateM_, unless, void, when )
 import           Control.Monad.State.Strict     ( get, gets, modify )
 
 import           Data.ByteString                ( ByteString )
@@ -27,8 +27,8 @@ import           Floskell.Types
 import           Language.Haskell.Exts.Comments ( Comment(..) )
 import qualified Language.Haskell.Exts.Pretty   as HSE
 
-import           Language.Haskell.Exts.SrcLoc   ( SrcSpan(..), noSrcSpan
-                                                , srcInfoSpan )
+import           Language.Haskell.Exts.SrcLoc
+                 ( SrcSpan(..), noSrcSpan, srcInfoSpan )
 import           Language.Haskell.Exts.Syntax
 
 -- | Like `span`, but comparing adjacent items.
@@ -36,17 +36,13 @@ run :: (a -> a -> Bool) -> [a] -> ([a], [a])
 run _ [] = ([], [])
 run _ [ x ] = ([ x ], [])
 run eq (x : y : xs)
-    | eq x y = let (ys, zs) = run eq (y : xs)
-               in
-                   (x : ys, zs)
+    | eq x y = let (ys, zs) = run eq (y : xs) in (x : ys, zs)
     | otherwise = ([ x ], y : xs)
 
 -- | Like `groupBy`, but comparing adjacent items.
 runs :: (a -> a -> Bool) -> [a] -> [[a]]
 runs _ [] = []
-runs eq xs = let (ys, zs) = run eq xs
-             in
-                 ys : runs eq zs
+runs eq xs = let (ys, zs) = run eq xs in ys : runs eq zs
 
 stopImportModule :: TabStop
 stopImportModule = TabStop "import-module"
@@ -73,19 +69,19 @@ flattenApp fn = go . amap (\info -> info { nodeInfoComments = [] })
                                lhs' ++ rhs'
         Nothing -> [ x ]
 
-flattenInfix :: (Annotated ast1, Annotated ast2)
-             => (ast1 NodeInfo
-                 -> Maybe (ast1 NodeInfo, ast2 NodeInfo, ast1 NodeInfo))
-             -> ast1 NodeInfo
-             -> (ast1 NodeInfo, [(ast2 NodeInfo, ast1 NodeInfo)])
+flattenInfix
+    :: (Annotated ast1, Annotated ast2)
+    => (ast1 NodeInfo -> Maybe (ast1 NodeInfo, ast2 NodeInfo, ast1 NodeInfo))
+    -> ast1 NodeInfo
+    -> (ast1 NodeInfo, [(ast2 NodeInfo, ast1 NodeInfo)])
 flattenInfix fn = go . amap (\info -> info { nodeInfoComments = [] })
   where
     go x = case fn x of
-        Just (lhs, op, rhs) -> let (lhs', ops) = go $ copyComments Before x lhs
-                                   (lhs'', ops') =
-                                       go $ copyComments After x rhs
-                               in
-                                   (lhs', ops ++ (op, lhs'') : ops')
+        Just (lhs, op, rhs) ->
+            let (lhs', ops) = go $ copyComments Before x lhs
+                (lhs'', ops') = go $ copyComments After x rhs
+            in
+                (lhs', ops ++ (op, lhs'') : ops')
         Nothing -> (x, [])
 
 -- | Syntax shortcut for Pretty Printers.
@@ -146,9 +142,11 @@ copyComments :: (Annotated ast1, Annotated ast2)
              -> ast2 NodeInfo
 copyComments loc from to = amap updateComments to
   where
-    updateComments info = info { nodeInfoComments = oldComments ++ newComments
-                               }
+    updateComments info =
+        info { nodeInfoComments = oldComments ++ newComments }
+
     oldComments = filterComments (/= Just loc) to
+
     newComments = filterComments (== Just loc) from
 
 -- | Pretty print a comment.
@@ -159,8 +157,8 @@ printComment mayNodespan (Comment inline cspan str) = do
     -- to go before the left-most possible indent (specified by depends).
     case mayNodespan of
         Just nodespan -> do
-            let neededSpaces = srcSpanStartColumn cspan -
-                    max 1 (srcSpanEndColumn nodespan)
+            let neededSpaces = srcSpanStartColumn cspan
+                    - max 1 (srcSpanEndColumn nodespan)
             replicateM_ neededSpaces space
         Nothing -> return ()
 
@@ -219,14 +217,21 @@ lineDelta :: Annotated ast => ast NodeInfo -> ast NodeInfo -> Int
 lineDelta prev next = nextLine - prevLine
   where
     prevLine = maximum (prevNodeLine : prevCommentLines)
+
     nextLine = minimum (nextNodeLine : nextCommentLines)
+
     prevNodeLine = srcSpanEndLine $ annSrcSpan prev
+
     nextNodeLine = srcSpanStartLine $ annSrcSpan next
+
     annSrcSpan = srcInfoSpan . nodeInfoSpan . ann
+
     prevCommentLines = map (srcSpanEndLine . commentSrcSpan) $
         filterComments (== Just After) prev
+
     nextCommentLines = map (srcSpanStartLine . commentSrcSpan) $
         filterComments (== Just Before) next
+
     commentSrcSpan = (\(Comment _ sp _) -> sp) . comInfoComment
 
 linedFn :: Annotated ast
@@ -279,13 +284,12 @@ listVinternal ctx sep xs = aligned $ do
                 cut . onside $ prettyPrint x'
                 printComments After x'
   where
-    printCommentsSimple loc ast = let comments = map comInfoComment $
-                                          filterComments (== Just loc) ast
-                                  in
-                                      forM_ comments $ \comment -> do
-                                          printComment (Just $ srcInfoSpan $
-                                                            nodeInfoSpan $ ann ast)
-                                                       comment
+    printCommentsSimple loc ast =
+        let comments = map comInfoComment $ filterComments (== Just loc) ast
+        in
+            forM_ comments $ \comment -> do
+                printComment (Just $ srcInfoSpan $ nodeInfoSpan $ ann ast)
+                             comment
 
 listH :: (Annotated ast, Pretty ast)
       => LayoutContext
@@ -311,10 +315,8 @@ listV :: (Annotated ast, Pretty ast)
 listV ctx open close sep xs = groupV ctx open close $ do
     ws <- getConfig (cfgOpWs ctx sep . cfgOp)
     ws' <- getConfig (cfgGroupWs ctx open . cfgGroup)
-    unless ((wsLinebreak Before ws')
-            || (wsSpace After ws')
-            || (wsLinebreak After ws)
-            || not (wsSpace After ws))
+    unless ((wsLinebreak Before ws') || (wsSpace After ws')
+            || (wsLinebreak After ws) || not (wsSpace After ws))
            space
     listVinternal ctx sep xs
 
@@ -328,6 +330,7 @@ list :: (Annotated ast, Pretty ast)
 list ctx open close sep xs = oneline hor <|> ver
   where
     hor = listH ctx open close sep xs
+
     ver = listV ctx open close sep xs
 
 listH' :: (Annotated ast, Pretty ast)
@@ -352,6 +355,7 @@ list' :: (Annotated ast, Pretty ast)
 list' ctx sep xs = oneline hor <|> ver
   where
     hor = listH' ctx sep xs
+
     ver = listV' ctx sep xs
 
 listAutoWrap :: (Annotated ast, Pretty ast)
@@ -386,8 +390,8 @@ measure p = do
     let s' = s { psBuffer = Buffer.empty, psEolComment = False }
     return $ case execPrinter (oneline p) s' of
         Nothing -> Nothing
-        Just (_, s'') -> Just . fromIntegral .
-            (\x -> x - psIndentLevel s) . BL.length . Buffer.toLazyByteString $ psBuffer s''
+        Just (_, s'') -> Just . fromIntegral . (\x -> x - psIndentLevel s)
+            . BL.length . Buffer.toLazyByteString $ psBuffer s''
 
 measureDecl :: Decl NodeInfo -> Printer (Maybe [Int])
 measureDecl (PatBind _ pat _ Nothing) = fmap (: []) <$> measure (pretty pat)
@@ -397,7 +401,7 @@ measureDecl (FunBind _ matches) = sequence <$> traverse measureMatch matches
         pretty name
         space
         inter space $ map pretty pats
-    measureMatch (InfixMatch  _ pat name pats _ Nothing) = measure $ do
+    measureMatch (InfixMatch _ pat name pats _ Nothing) = measure $ do
         pretty pat
         pretty $ VarOp noNodeInfo name
         inter space $ map pretty pats
@@ -427,15 +431,15 @@ withComputedTabStop name predicate fn xs p = do
     (limAbs, limRel) <- getConfig (cfgAlignLimits . cfgAlign)
     mtabss <- sequence <$> traverse fn xs
     let tab = do
-        tabss <- mtabss
-        let tabs = concat tabss
-            maxtab = maximum tabs
-            mintab = minimum tabs
-            delta = maxtab - mintab
-            diff = delta * 100 `div` maxtab
-        guard enabled
-        guard $ delta <= limAbs || diff <= limRel
-        return maxtab
+            tabss <- mtabss
+            let tabs = concat tabss
+                maxtab = maximum tabs
+                mintab = minimum tabs
+                delta = maxtab - mintab
+                diff = delta * 100 `div` maxtab
+            guard enabled
+            guard $ delta <= limAbs || diff <= limRel
+            return maxtab
     withTabStops [ (name, tab) ] p
 
 ------------------------------------------------------------------------
@@ -449,7 +453,8 @@ nameLength (Ident _ i) = length i
 nameLength (Symbol _ s) = 2 + length s
 
 qnameLength :: QName a -> Int
-qnameLength (Qual _ mname name) = length (moduleName mname) + nameLength name + 1
+qnameLength (Qual _ mname name) = length (moduleName mname) + nameLength name
+    + 1
 qnameLength (UnQual _ name) = nameLength name
 qnameLength (Special _ con) = case con of
     UnitCon _ -> 2
@@ -470,8 +475,8 @@ prettyPragmas ps = do
     let ps'' = if sortP then sortBy compareAST ps' else ps'
     inter blankline . map lined $ groupBy sameType ps''
   where
-    splitPragma (LanguagePragma anno langs) = map (LanguagePragma anno . (: []))
-                                                  langs
+    splitPragma (LanguagePragma anno langs) =
+        map (LanguagePragma anno . (: [])) langs
     splitPragma p = [ p ]
 
     sameType LanguagePragma{} LanguagePragma{} = True
@@ -487,17 +492,17 @@ prettyImports is = do
     let maxNameLength = maximum $ map (length . moduleName . importModule) is
         alignModule = if alignModuleP then Just 16 else Nothing
         alignSpec = if alignSpecP
-            then Just (fromMaybe 0 alignModule + 1 + maxNameLength)
-            else Nothing
+                    then Just (fromMaybe 0 alignModule + 1 + maxNameLength)
+                    else Nothing
     withTabStops [ (stopImportModule, alignModule)
                  , (stopImportSpec, alignSpec)
-                 ] $
-        if sortP
-        then inter blankline . map lined . groupBy samePrefix $
-            sortOn (moduleName . importModule) is
-        else lined is
+                 ] $ if sortP
+                     then inter blankline . map lined . groupBy samePrefix $
+                         sortOn (moduleName . importModule) is
+                     else lined is
   where
     samePrefix left right = prefix left == prefix right
+
     prefix = takeWhile (/= '.') . moduleName . importModule
 
 skipBlank :: Annotated ast
@@ -505,8 +510,8 @@ skipBlank :: Annotated ast
           -> ast NodeInfo
           -> ast NodeInfo
           -> Bool
-skipBlank skip a b =
-    skip a b && null (comments After a) && null (comments Before b)
+skipBlank skip a b = skip a b && null (comments After a)
+    && null (comments Before b)
   where
     comments loc ast = filterComments (== Just loc) ast
 
@@ -557,22 +562,20 @@ prettySimpleDecl lhs op rhs = withLayout cfgLayoutDeclaration flex vertical
         pretty lhs
         operator Declaration op
         pretty rhs
+
     vertical = do
         pretty lhs
         operatorV Declaration op
         pretty rhs
 
-prettyConDecls :: (Annotated ast, Pretty ast)
-               => [ast NodeInfo]
-               -> Printer ()
+prettyConDecls :: (Annotated ast, Pretty ast) => [ast NodeInfo] -> Printer ()
 prettyConDecls condecls = withLayout cfgLayoutConDecls flex vertical
   where
     flex = listH' Declaration "|" condecls
+
     vertical = listV' Declaration "|" condecls
 
-prettyForall :: (Annotated ast, Pretty ast)
-             => [ast NodeInfo]
-             -> Printer ()
+prettyForall :: (Annotated ast, Pretty ast) => [ast NodeInfo] -> Printer ()
 prettyForall vars = do
     write "forall "
     inter space $ map pretty vars
@@ -635,7 +638,8 @@ prettyInfixApp :: (Annotated ast, Pretty ast, HSE.Pretty (op NodeInfo))
                -> LayoutContext
                -> (ast NodeInfo, [(op NodeInfo, ast NodeInfo)])
                -> Printer ()
-prettyInfixApp nameFn ctx (lhs, args) = withLayout cfgLayoutInfixApp flex vertical
+prettyInfixApp nameFn ctx (lhs, args) =
+    withLayout cfgLayoutInfixApp flex vertical
   where
     flex = do
         pretty lhs
@@ -659,7 +663,9 @@ prettyRecord len ctx name fields = withLayout cfgLayoutRecord flex vertical
   where
     flex = do
         withOperatorFormattingH ctx "record" (pretty name) id
-        groupH ctx "{" "}" $ inter (operatorH ctx ",") $ map prettyOnside fields
+        groupH ctx "{" "}" $ inter (operatorH ctx ",") $
+            map prettyOnside fields
+
     vertical = do
         withOperatorFormatting ctx "record" (pretty name) id
         groupV ctx "{" "}" $ withComputedTabStop stopRecordField
@@ -675,20 +681,19 @@ prettyRecordFields :: (Annotated ast, Pretty ast)
                    -> Printer ()
 prettyRecordFields len ctx fields = withLayout cfgLayoutRecord flex vertical
   where
-    flex = groupH ctx "{" "}" $ inter (operatorH ctx ",") $ map prettyOnside fields
+    flex = groupH ctx "{" "}" $ inter (operatorH ctx ",") $
+        map prettyOnside fields
+
     vertical = groupV ctx "{" "}" $
         withComputedTabStop stopRecordField
                             cfgAlignRecordFields
                             (fmap (fmap pure) . len)
-                            fields $
-            listVinternal ctx "," fields
+                            fields $ listVinternal ctx "," fields
 
 prettyPragma :: ByteString -> Printer () -> Printer ()
 prettyPragma name = prettyPragma' name . Just
 
-prettyPragma' :: ByteString
-              -> Maybe (Printer ())
-              -> Printer ()
+prettyPragma' :: ByteString -> Maybe (Printer ()) -> Printer ()
 prettyPragma' name mp = do
     write "{-# "
     write name
@@ -717,8 +722,10 @@ instance Pretty ModuleHead where
         write " where"
 
 instance Pretty WarningText where
-    prettyPrint (DeprText _ s) = write "{-# DEPRECATED " >> string (show s) >> write " #-}"
-    prettyPrint (WarnText _ s) = write "{-# WARNING " >> string (show s) >> write " #-}"
+    prettyPrint (DeprText _ s) = write "{-# DEPRECATED " >> string (show s)
+        >> write " #-}"
+    prettyPrint (WarnText _ s) = write "{-# WARNING " >> string (show s)
+        >> write " #-}"
 
 instance Pretty ExportSpecList where
     prettyPrint (ExportSpecList _ exports) =
@@ -727,6 +734,7 @@ instance Pretty ExportSpecList where
         flex = do
             space
             listAutoWrap Other "(" ")" "," exports
+
         vertical = withIndent cfgIndentExportSpecList $
             listV Other "(" ")" "," exports
 
@@ -734,13 +742,13 @@ instance Pretty ExportSpec
 
 instance Pretty ImportDecl where
     prettyPrint ImportDecl{..} = do
-        inter space .
-            map write $ filter (not . BS.null)
-                               [ "import"
-                               , if importSrc then "{-# SOURCE #-}" else ""
-                               , if importSafe then "safe" else ""
-                               , if importQualified then "qualified" else ""
-                               ]
+        inter space . map write $
+            filter (not . BS.null)
+                   [ "import"
+                   , if importSrc then "{-# SOURCE #-}" else ""
+                   , if importSafe then "safe" else ""
+                   , if importQualified then "qualified" else ""
+                   ]
         atTabStop stopImportModule
         space
         string $ moduleName importModule
@@ -761,6 +769,7 @@ instance Pretty ImportSpecList where
             when hiding $ write " hiding"
             space
             listAutoWrap Other "(" ")" "," imports
+
         vertical imports = withIndent cfgIndentImportSpecList $ do
             when hiding $ write "hiding "
             listAutoWrap Other "(" ")" "," imports
@@ -779,30 +788,41 @@ instance Pretty Decl where
             mayM_ mresultsig pretty
             mayM_ minjectivityinfo pretty
 
-    prettyPrint (ClosedTypeFamDecl _ declhead mresultsig minjectivityinfo typeeqns) =
-        depend "type family" $ do
-            pretty declhead
-            mayM_ mresultsig pretty
-            mayM_ minjectivityinfo pretty
-            write " where"
-            newline
-            linedOnside typeeqns
+    prettyPrint (ClosedTypeFamDecl _
+                                   declhead
+                                   mresultsig
+                                   minjectivityinfo
+                                   typeeqns) = depend "type family" $ do
+        pretty declhead
+        mayM_ mresultsig pretty
+        mayM_ minjectivityinfo pretty
+        write " where"
+        newline
+        linedOnside typeeqns
 
     prettyPrint (DataDecl _ dataornew mcontext declhead qualcondecls derivings) = do
         depend' (pretty dataornew) $ do
             mapM_ pretty mcontext
             pretty declhead
-            unless (null qualcondecls) $ withLayout cfgLayoutDeclaration flex vertical
+            unless (null qualcondecls) $
+                withLayout cfgLayoutDeclaration flex vertical
         mapM_ pretty derivings
       where
         flex = do
             operator Declaration "="
             prettyConDecls qualcondecls
+
         vertical = do
             operatorV Declaration "="
             prettyConDecls qualcondecls
 
-    prettyPrint (GDataDecl _ dataornew mcontext declhead mkind gadtdecls derivings) = do
+    prettyPrint (GDataDecl _
+                           dataornew
+                           mcontext
+                           declhead
+                           mkind
+                           gadtdecls
+                           derivings) = do
         depend' (pretty dataornew) $ do
             mapM_ pretty mcontext
             pretty declhead
@@ -832,6 +852,7 @@ instance Pretty Decl where
         flex = do
             operator Declaration "="
             prettyConDecls qualcondecls
+
         vertical = do
             operatorV Declaration "="
             prettyConDecls qualcondecls
@@ -856,9 +877,11 @@ instance Pretty Decl where
                 list' Declaration "," fundeps
         mayM_ mclassdecls $ \decls -> do
             write " where"
-            withIndent cfgIndentClass $
-                withComputedTabStop stopRhs cfgAlignClass measureClassDecl decls $
-                    prettyDecls skipBlankClassDecl decls
+            withIndent cfgIndentClass $ withComputedTabStop stopRhs
+                                                            cfgAlignClass
+                                                            measureClassDecl
+                                                            decls $
+                prettyDecls skipBlankClassDecl decls
 
     prettyPrint (InstDecl _ moverlap instrule minstdecls) = do
         depend "instance" $ do
@@ -868,7 +891,7 @@ instance Pretty Decl where
             write " where"
             withIndent cfgIndentClass $
                 withComputedTabStop stopRhs cfgAlignClass measureInstDecl decls $
-                    prettyDecls skipBlankInstDecl decls
+                prettyDecls skipBlankInstDecl decls
 
     prettyPrint (DerivDecl _ mderivstrategy moverlap instrule) =
         depend "deriving" $ do
@@ -889,15 +912,17 @@ instance Pretty Decl where
 
     prettyPrint (SpliceDecl _ expr) = pretty expr
 
-    prettyPrint (TypeSig _ names ty) = onside $ prettyTypesig Declaration names ty
+    prettyPrint (TypeSig _ names ty) =
+        onside $ prettyTypesig Declaration names ty
 
-    prettyPrint (PatSynSig _ names mtyvarbinds mcontext mcontext' ty) = depend "pattern" $ do
-        inter comma $ map pretty names
-        operator Declaration "::"
-        mapM_ prettyForall mtyvarbinds
-        mayM_ mcontext pretty
-        mayM_ mcontext' pretty
-        pretty ty
+    prettyPrint (PatSynSig _ names mtyvarbinds mcontext mcontext' ty) =
+        depend "pattern" $ do
+            inter comma $ map pretty names
+            operator Declaration "::"
+            mapM_ prettyForall mtyvarbinds
+            mayM_ mcontext pretty
+            mayM_ mcontext' pretty
+            pretty ty
 
     prettyPrint (FunBind _ matches) = linedOnside matches
 
@@ -911,8 +936,7 @@ instance Pretty Decl where
     prettyPrint (PatSyn _ pat pat' patternsyndirection) = do
         depend "pattern" $ prettySimpleDecl pat sep pat'
         case patternsyndirection of
-            ExplicitBidirectional _ decls ->
-                pretty (BDecls noNodeInfo decls)
+            ExplicitBidirectional _ decls -> pretty (BDecls noNodeInfo decls)
             _ -> return ()
       where
         sep = case patternsyndirection of
@@ -926,13 +950,14 @@ instance Pretty Decl where
             mayM_ msafety $ withPrefix space pretty
             mayM_ mstring $ withPrefix space (string . show)
             space
-            prettyTypesig Declaration [name] ty
+            prettyTypesig Declaration [ name ] ty
 
-    prettyPrint (ForExp _ callconv mstring name ty) = depend "foreign export" $ do
-        pretty callconv
-        mayM_ mstring $ withPrefix space (string . show)
-        space
-        prettyTypesig Declaration [name] ty
+    prettyPrint (ForExp _ callconv mstring name ty) =
+        depend "foreign export" $ do
+            pretty callconv
+            mayM_ mstring $ withPrefix space (string . show)
+            space
+            prettyTypesig Declaration [ name ] ty
 
     prettyPrint (RulePragmaDecl _ rules) =
         if null rules
@@ -942,8 +967,8 @@ instance Pretty Decl where
     prettyPrint (DeprPragmaDecl _ deprecations) =
         if null deprecations
         then prettyPragma' "DEPRECATED" Nothing
-        else prettyPragma "DEPRECATED" $
-            forM_ deprecations $ \(names, str) -> do
+        else prettyPragma "DEPRECATED" $ forM_ deprecations $
+            \(names, str) -> do
                 unless (null names) $ do
                     inter comma $ map pretty names
                     space
@@ -952,12 +977,11 @@ instance Pretty Decl where
     prettyPrint (WarnPragmaDecl _ warnings) =
         if null warnings
         then prettyPragma' "WARNING" Nothing
-        else prettyPragma "WARNING" $
-            forM_ warnings $ \(names, str) -> do
-                unless (null names) $ do
-                    inter comma $ map pretty names
-                    space
-                string (show str)
+        else prettyPragma "WARNING" $ forM_ warnings $ \(names, str) -> do
+            unless (null names) $ do
+                inter comma $ map pretty names
+                space
+            string (show str)
 
     prettyPrint (InlineSig _ inline mactivation qname) = prettyPragma name $ do
         mayM_ mactivation $ withPostfix space pretty
@@ -986,15 +1010,16 @@ instance Pretty Decl where
       where
         name = if inline then "SPECIALISE INLINE" else "SPECIALISE NOINLINE"
 
-    prettyPrint (InstSig _ instrule) = prettyPragma "SPECIALISE instance" $ pretty instrule
+    prettyPrint (InstSig _ instrule) =
+        prettyPragma "SPECIALISE instance" $ pretty instrule
 
-    prettyPrint (AnnPragma _ annotation) = prettyPragma "ANN" $ pretty annotation
+    prettyPrint (AnnPragma _ annotation) =
+        prettyPragma "ANN" $ pretty annotation
 
-    prettyPrint (MinimalPragma _ mbooleanformula) = prettyPragma "MINIMAL" $
-        mapM_ pretty mbooleanformula
+    prettyPrint (MinimalPragma _ mbooleanformula) =
+        prettyPragma "MINIMAL" $ mapM_ pretty mbooleanformula
 
     -- prettyPrint (RoleAnnotDecl _ qname roles) = undefined
-
     prettyPrint decl = prettyHSE decl
 
 instance Pretty DeclHead where
@@ -1006,7 +1031,8 @@ instance Pretty DeclHead where
 
     prettyPrint (DHParen _ declhead) = parens $ pretty declhead
 
-    prettyPrint (DHApp _ declhead tyvarbind) = depend' (pretty declhead) $ pretty tyvarbind
+    prettyPrint (DHApp _ declhead tyvarbind) = depend' (pretty declhead) $
+        pretty tyvarbind
 
 instance Pretty InstRule where
     prettyPrint (IRule _ mtyvarbinds mcontext insthead) = do
@@ -1033,7 +1059,7 @@ instance Pretty Binds where
         write "where"
         withIndent cfgIndentWhereBinds $
             withComputedTabStop stopRhs cfgAlignWhere measureDecl decls $
-                prettyDecls skipBlankDecl decls
+            prettyDecls skipBlankDecl decls
 
     prettyPrint (IPBinds _ ipbinds) = withIndentBy cfgIndentWhere $ do
         write "where"
@@ -1050,20 +1076,24 @@ instance Pretty InjectivityInfo where
         inter space $ map pretty names
 
 instance Pretty ResultSig where
-    prettyPrint (KindSig _ kind) = withLayout cfgLayoutDeclaration flex vertical
+    prettyPrint (KindSig _ kind) =
+        withLayout cfgLayoutDeclaration flex vertical
       where
         flex = do
             operator Declaration "::"
             pretty kind
+
         vertical = do
             operatorV Declaration "::"
             pretty kind
 
-    prettyPrint (TyVarSig _ tyvarbind) = withLayout cfgLayoutDeclaration flex vertical
+    prettyPrint (TyVarSig _ tyvarbind) =
+        withLayout cfgLayoutDeclaration flex vertical
       where
         flex = do
             operator Declaration "="
             pretty tyvarbind
+
         vertical = do
             operatorV Declaration "="
             pretty tyvarbind
@@ -1090,17 +1120,20 @@ instance Pretty ClassDecl where
 instance Pretty InstDecl where
     prettyPrint (InsDecl _ decl) = pretty decl
 
-    prettyPrint (InsType _ ty ty') = depend "type" $ prettySimpleDecl ty "=" ty'
+    prettyPrint (InsType _ ty ty') =
+        depend "type" $ prettySimpleDecl ty "=" ty'
 
     prettyPrint (InsData _ dataornew ty qualcondecls derivings) =
         depend' (pretty dataornew) $ do
             pretty ty
-            unless (null qualcondecls) $ withLayout cfgLayoutDeclaration flex vertical
+            unless (null qualcondecls) $
+                withLayout cfgLayoutDeclaration flex vertical
             mapM_ pretty derivings
       where
         flex = do
             operator Declaration "="
             prettyConDecls qualcondecls
+
         vertical = do
             operatorV Declaration "="
             prettyConDecls qualcondecls
@@ -1134,6 +1167,7 @@ instance Pretty ConDecl where
             oneline hor <|> ver
       where
         hor = inter space $ map pretty types
+
         ver = aligned $ linedOnside types
 
     prettyPrint (InfixConDecl _ ty name ty') = do
@@ -1193,6 +1227,7 @@ instance Pretty Rhs where
         flex = do
             operator Declaration "="
             pretty expr
+
         vertical = do
             operatorV Declaration "="
             pretty expr
@@ -1209,6 +1244,7 @@ instance Pretty GuardedRhs where
             inter comma $ map pretty stmts
             operator Declaration "="
             pretty expr
+
         vertical = do
             operatorSectionR Pattern "|" $ write "|"
             inter comma $ map pretty stmts
@@ -1313,7 +1349,7 @@ instance Pretty Type where
 
     prettyPrint (TyEquals _ ty ty') = do
         pretty ty
-        operator Type  "~"
+        operator Type "~"
         pretty ty'
 
     prettyPrint (TySplice _ splice) = pretty splice
@@ -1384,7 +1420,9 @@ instance Pretty Exp where
         prettyInfixApp opName Expression $ flattenInfix flattenInfixApp e
       where
         flattenInfixApp (InfixApp _ lhs qop' rhs) =
-            if compareAST qop qop' == EQ then Just (lhs, qop', rhs) else Nothing
+            if compareAST qop qop' == EQ
+            then Just (lhs, qop', rhs)
+            else Nothing
         flattenInfixApp _ = Nothing
 
     prettyPrint e@(App _ _ _) = case flattenApp flatten e of
@@ -1418,6 +1456,7 @@ instance Pretty Exp where
             spaceOrNewline
             write "in "
             prettyOnside expr
+
         vertical = withIndentFlat cfgIndentLet "let" $ do
             withIndent cfgIndentLetBinds $ pretty (CompactBinds binds)
             newline
@@ -1435,6 +1474,7 @@ instance Pretty Exp where
             spaceOrNewline
             write "else "
             prettyOnside expr''
+
         vertical = withIndentFlat cfgIndentIf "if " $ do
             prettyOnside expr
             newline
@@ -1456,7 +1496,7 @@ instance Pretty Exp where
             then write " { }"
             else withIndent cfgIndentCase $
                 withComputedTabStop stopRhs cfgAlignCase measureAlt alts $
-                    lined alts
+                lined alts
 
     prettyPrint (Do _ stmts) = do
         write "do"
@@ -1470,9 +1510,9 @@ instance Pretty Exp where
         Boxed -> list Expression "(" ")" "," exprs
         Unboxed -> list Expression "(#" "#)" "," exprs
 
-    prettyPrint (UnboxedSum _ before after expr) =
-        group Expression "(#" "#)" . inter space $ replicate before (write "|") ++
-            [ pretty expr ] ++ replicate after (write "|")
+    prettyPrint (UnboxedSum _ before after expr) = group Expression "(#" "#)"
+        . inter space $ replicate before (write "|") ++ [ pretty expr ]
+        ++ replicate after (write "|")
 
     prettyPrint (TupleSection _ boxed mexprs) = case boxed of
         Boxed -> list Expression "(" ")" "," $ map MayAst mexprs
@@ -1521,24 +1561,26 @@ instance Pretty Exp where
         pretty expr'
         operatorSectionL Expression ".." $ write ".."
 
-    prettyPrint (EnumFromThenTo _ expr expr' expr'') = group Expression "[" "]" $ do
-        pretty expr
-        comma
-        pretty expr'
-        operator Expression ".."
-        pretty expr''
+    prettyPrint (EnumFromThenTo _ expr expr' expr'') =
+        group Expression "[" "]" $ do
+            pretty expr
+            comma
+            pretty expr'
+            operator Expression ".."
+            pretty expr''
 
     prettyPrint (ParArrayFromTo _ expr expr') = group Expression "[:" ":]" $ do
         pretty expr
         operator Expression ".."
         pretty expr'
 
-    prettyPrint (ParArrayFromThenTo _ expr expr' expr'') = group Expression "[:" ":]" $ do
-        pretty expr
-        comma
-        pretty expr'
-        operator Expression ".."
-        pretty expr''
+    prettyPrint (ParArrayFromThenTo _ expr expr' expr'') =
+        group Expression "[:" ":]" $ do
+            pretty expr
+            comma
+            pretty expr'
+            operator Expression ".."
+            pretty expr''
 
     prettyPrint (ListComp _ expr qualstmts) =
         withLayout cfgLayoutListComp flex vertical
@@ -1547,6 +1589,7 @@ instance Pretty Exp where
             prettyOnside expr
             operator Expression "|"
             list' Expression "," qualstmts
+
         vertical = groupV Expression "[" "]" $ do
             prettyOnside expr
             operatorV Expression "|"
@@ -1560,6 +1603,7 @@ instance Pretty Exp where
             forM_ qualstmtss $ \qualstmts -> cut $ do
                 operator Expression "|"
                 list' Expression "," qualstmts
+
         vertical = groupV Expression "[" "]" $ do
             prettyOnside expr
             forM_ qualstmtss $ \qualstmts -> cut $ do
@@ -1574,6 +1618,7 @@ instance Pretty Exp where
             forM_ qualstmtss $ \qualstmts -> cut $ do
                 operator Expression "|"
                 list' Expression "," qualstmts
+
         vertical = groupV Expression "[:" ":]" $ do
             prettyOnside expr
             forM_ qualstmtss $ \qualstmts -> cut $ do
@@ -1646,16 +1691,17 @@ instance Pretty Exp where
         pretty expr
 
     prettyPrint (GenPragma _ str (a, b) (c, d) expr) = do
-        prettyPragma "GENERATED" $ inter space
-                                         [ string $ show str
-                                         , int $ fromIntegral a
-                                         , write ":"
-                                         , int $ fromIntegral b
-                                         , write "-"
-                                         , int $ fromIntegral c
-                                         , write ":"
-                                         , int $ fromIntegral d
-                                         ]
+        prettyPragma "GENERATED" $
+            inter space
+                  [ string $ show str
+                  , int $ fromIntegral a
+                  , write ":"
+                  , int $ fromIntegral b
+                  , write "-"
+                  , int $ fromIntegral c
+                  , write ":"
+                  , int $ fromIntegral d
+                  ]
         space
         pretty expr
 
@@ -1691,7 +1737,7 @@ instance Pretty Exp where
             then write " { }"
             else withIndent cfgIndentCase $
                 withComputedTabStop stopRhs cfgAlignCase measureAlt alts $
-                    lined alts
+                lined alts
 
 instance Pretty Alt where
     prettyPrint (Alt _ pat rhs mbinds) = do
@@ -1736,9 +1782,9 @@ instance Pretty Pat where
         Boxed -> list Pattern "(" ")" "," pats
         Unboxed -> list Pattern "(#" "#)" "," pats
 
-    prettyPrint (PUnboxedSum _ before after pat) =
-        group Pattern "(#" "#)" . inter space $ replicate before (write "|") ++
-            [ pretty pat ] ++ replicate after (write "|")
+    prettyPrint (PUnboxedSum _ before after pat) = group Pattern "(#" "#)"
+        . inter space $ replicate before (write "|") ++ [ pretty pat ]
+        ++ replicate after (write "|")
 
     prettyPrint (PList _ pats) = list Pattern "[" "]" "," pats
 
@@ -1932,7 +1978,8 @@ instance Pretty FieldUpdate where
     prettyPrint (FieldWildcard _) = write ".."
 
 instance Pretty QOp where
-    prettyPrint qop = withOperatorFormatting Expression (opName qop) (prettyHSE qop) id
+    prettyPrint qop =
+        withOperatorFormatting Expression (opName qop) (prettyHSE qop) id
 
 instance Pretty Op where
     prettyPrint (VarOp l name) = prettyPrint (QVarOp l (UnQual noNodeInfo name))
@@ -1945,7 +1992,8 @@ instance Pretty Bracket where
 
     prettyPrint (TypeBracket _ ty) = group Expression "[t|" "|]" $ pretty ty
 
-    prettyPrint (DeclBracket _ decls) = group Expression "[d|" "|]" . aligned $ lined decls
+    prettyPrint (DeclBracket _ decls) =
+        group Expression "[d|" "|]" . aligned $ lined decls
 
 instance Pretty Splice where
     prettyPrint (IdSplice _ str) = do
@@ -1958,14 +2006,17 @@ instance Pretty ModulePragma where
     prettyPrint (LanguagePragma _ names) =
         prettyPragma "LANGUAGE" . inter comma $ map pretty names
 
-    prettyPrint (OptionsPragma _ mtool str) = prettyPragma name $ string (trim str)
+    prettyPrint (OptionsPragma _ mtool str) = prettyPragma name $
+        string (trim str)
       where
         name = case mtool of
             Just tool -> "OPTIONS_" `mappend` BS8.pack (HSE.prettyPrint tool)
             Nothing -> "OPTIONS"
+
         trim = reverse . dropWhile (== ' ') . reverse . dropWhile (== ' ')
 
-    prettyPrint (AnnModulePragma _ annotation) = prettyPragma "ANN" $ pretty annotation
+    prettyPrint (AnnModulePragma _ annotation) =
+        prettyPragma "ANN" $ pretty annotation
 
 instance Pretty Rule where
     prettyPrint (Rule _ str mactivation mrulevars expr expr') = do
@@ -2046,7 +2097,7 @@ instance Pretty Overlap
 
 -- Helpers
 newtype GuardedAlt l = GuardedAlt (GuardedRhs l)
-    deriving (Functor, Annotated)
+    deriving ( Functor, Annotated )
 
 instance Pretty GuardedAlt where
     prettyPrint (GuardedAlt (GuardedRhs _ stmts expr)) = cut $ do
@@ -2056,7 +2107,7 @@ instance Pretty GuardedAlt where
         pretty expr
 
 newtype GuardedAlts l = GuardedAlts (Rhs l)
-    deriving (Functor, Annotated)
+    deriving ( Functor, Annotated )
 
 instance Pretty GuardedAlts where
     prettyPrint (GuardedAlts (UnGuardedRhs _ expr)) = cut $ do
@@ -2067,12 +2118,14 @@ instance Pretty GuardedAlts where
         withIndent cfgIndentMultiIf $ linedOnside $ map GuardedAlt guardedrhss
 
 newtype CompactBinds l = CompactBinds (Binds l)
-    deriving (Functor, Annotated)
+    deriving ( Functor, Annotated )
 
 instance Pretty CompactBinds where
     prettyPrint (CompactBinds (BDecls _ decls)) = aligned $
-        withComputedTabStop stopRhs cfgAlignLetBinds measureDecl decls $ lined decls
-    prettyPrint (CompactBinds (IPBinds _ ipbinds)) = aligned $ linedOnside ipbinds
+        withComputedTabStop stopRhs cfgAlignLetBinds measureDecl decls $
+        lined decls
+    prettyPrint (CompactBinds (IPBinds _ ipbinds)) =
+        aligned $ linedOnside ipbinds
 
 newtype MayAst a l = MayAst (Maybe (a l))
 
@@ -2083,6 +2136,7 @@ instance Functor a => Functor (MayAst a) where
 instance Annotated a => Annotated (MayAst a) where
     ann (MayAst Nothing) = undefined
     ann (MayAst (Just x)) = ann x
+
     amap _ (MayAst Nothing) = MayAst Nothing
     amap f (MayAst (Just x)) = MayAst . Just $ amap f x
 

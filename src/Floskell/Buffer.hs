@@ -28,29 +28,30 @@ data Buffer =
 
 -- | An empty output buffer.
 empty :: Buffer
-empty = Buffer { bufferData = mempty
+empty = Buffer { bufferData        = mempty
                , bufferDataNoSpace = mempty
-               , bufferLine = 0
-               , bufferColumn = 0
+               , bufferLine        = 0
+               , bufferColumn      = 0
                }
 
 -- | Append a ByteString to the output buffer.  It is an error for the
 -- string to contain newlines.
 write :: BS.ByteString -> Buffer -> Buffer
 write str buf =
-    buf { bufferData = newBufferData
-        , bufferDataNoSpace = if BS.all (== 32) str then bufferData buf else newBufferData
-        , bufferColumn = bufferColumn buf + fromIntegral (BS.length str)
+    buf { bufferData        = newBufferData
+        , bufferDataNoSpace =
+              if BS.all (== 32) str then bufferData buf else newBufferData
+        , bufferColumn      = bufferColumn buf + fromIntegral (BS.length str)
         }
   where
     newBufferData = bufferData buf `mappend` BB.byteString str
 
 -- | Append a newline to the output buffer.
 newline :: Buffer -> Buffer
-newline buf = buf { bufferData = newBufferData
+newline buf = buf { bufferData        = newBufferData
                   , bufferDataNoSpace = newBufferData
-                  , bufferLine = bufferLine buf + 1
-                  , bufferColumn = 0
+                  , bufferLine        = bufferLine buf + 1
+                  , bufferColumn      = 0
                   }
   where
     newBufferData = bufferDataNoSpace buf `mappend` BB.char7 '\n'

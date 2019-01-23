@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PatternGuards     #-}
-{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE RecordWildCards #-}
 
 -- | Main entry point to floskell.
 module Main ( main ) where
@@ -8,8 +8,8 @@ module Main ( main ) where
 import           Control.Applicative             ( (<|>), many, optional )
 import           Control.Exception               ( catch, throw )
 
-import           Data.Aeson                      ( (.:?), (.=), FromJSON(..)
-                                                 , ToJSON(..) )
+import           Data.Aeson
+                 ( (.:?), (.=), FromJSON(..), ToJSON(..) )
 import qualified Data.Aeson                      as JSON
 import qualified Data.Aeson.Types                as JSON ( typeMismatch )
 import qualified Data.ByteString                 as BS
@@ -23,40 +23,33 @@ import qualified Data.Text                       as T
 import           Data.Version                    ( showVersion )
 
 import           Floskell                        ( reformat, styles )
-import           Floskell.Types                  ( Style(styleName, styleInitialState) )
+import           Floskell.Types
+                 ( Style(styleName, styleInitialState) )
 
 import           Foreign.C.Error                 ( Errno(..), eXDEV )
 
 import           GHC.IO.Exception                ( ioe_errno )
 
-import           Language.Haskell.Exts           ( Extension(..), Language(..)
-                                                 , classifyExtension
-                                                 , classifyLanguage
-                                                 , knownExtensions
-                                                 , knownLanguages )
+import           Language.Haskell.Exts
+                 ( Extension(..), Language(..), classifyExtension
+                 , classifyLanguage, knownExtensions, knownLanguages )
 
-import           Options.Applicative             ( ParseError(..), abortOption
-                                                 , argument,  execParser
-                                                 , footerDoc, fullDesc, header
-                                                 , help, helper, hidden, info
-                                                 , long, metavar, option
-                                                 , progDesc, short, str, switch )
+import           Options.Applicative
+                 ( ParseError(..), abortOption, argument, execParser, footerDoc
+                 , fullDesc, header, help, helper, hidden, info, long, metavar
+                 , option, progDesc, short, str, switch )
 import qualified Options.Applicative.Help.Pretty as PP
 
 import           Paths_floskell                  ( version )
 
-import           System.Directory                ( XdgDirectory(..), copyFile
-                                                 , copyPermissions
-                                                 , doesFileExist, findFileWith
-                                                 , getAppUserDataDirectory
-                                                 , getCurrentDirectory
-                                                 , getHomeDirectory
-                                                 , getTemporaryDirectory
-                                                 , getXdgDirectory, removeFile
-                                                 , renameFile )
+import           System.Directory
+                 ( XdgDirectory(..), copyFile, copyPermissions, doesFileExist
+                 , findFileWith, getAppUserDataDirectory, getCurrentDirectory
+                 , getHomeDirectory, getTemporaryDirectory, getXdgDirectory
+                 , removeFile, renameFile )
 import           System.FilePath                 ( joinPath, splitDirectories )
-import           System.IO                       ( FilePath, hClose, hFlush
-                                                 , openTempFile )
+import           System.IO
+                 ( FilePath, hClose, hFlush, openTempFile )
 
 -- | Program options.
 data Options = Options { optStyle       :: Maybe String
@@ -74,12 +67,11 @@ data Config = Config { cfgStyle      :: Style
                      }
 
 instance ToJSON Config where
-    toJSON Config{..} =
-        JSON.object [ "style" .= styleName cfgStyle
-                    , "language" .= show cfgLanguage
-                    , "extensions" .= map showExt cfgExtensions
-                    , "formatting" .= styleInitialState cfgStyle
-                    ]
+    toJSON Config{..} = JSON.object [ "style" .= styleName cfgStyle
+                                    , "language" .= show cfgLanguage
+                                    , "extensions" .= map showExt cfgExtensions
+                                    , "formatting" .= styleInitialState cfgStyle
+                                    ]
       where
         showExt (EnableExtension x) = show x
         showExt (DisableExtension x) = "No" ++ show x
@@ -88,19 +80,19 @@ instance ToJSON Config where
 instance FromJSON Config where
     parseJSON (JSON.Object o) = do
         style <- maybe (cfgStyle defaultConfig) lookupStyle <$> o .:? "style"
-        language <- maybe (cfgLanguage defaultConfig) lookupLanguage <$>
-                        o .:? "language"
-        extensions <- maybe (cfgExtensions defaultConfig) (map lookupExtension) <$>
-                          o .:? "extensions"
+        language <- maybe (cfgLanguage defaultConfig) lookupLanguage
+            <$> o .:? "language"
+        extensions <- maybe (cfgExtensions defaultConfig) (map lookupExtension)
+            <$> o .:? "extensions"
         let flex = styleInitialState style
         flex' <- maybe flex (updateFlexConfig flex) <$> o .:? "formatting"
         let style' = style { styleInitialState = flex' }
         return $ Config style' language extensions
       where
-        updateFlexConfig cfg v = case JSON.fromJSON $
-            mergeJSON (toJSON cfg) v of
-            JSON.Error e -> error e
-            JSON.Success x -> x
+        updateFlexConfig cfg v =
+            case JSON.fromJSON $ mergeJSON (toJSON cfg) v of
+                JSON.Error e -> error e
+                JSON.Success x -> x
 
         mergeJSON JSON.Null r = r
         mergeJSON l JSON.Null = l
@@ -119,69 +111,60 @@ main :: IO ()
 main = do
     opts <- execParser parser
     mconfig <- case optConfig opts of
-                   Just c -> return $ Just c
-                   Nothing -> if isJust (optStyle opts)
-                              then return Nothing
-                              else findConfig
+        Just c -> return $ Just c
+        Nothing ->
+            if isJust (optStyle opts) then return Nothing else findConfig
     baseConfig <- case mconfig of
-                      Just path -> readConfig path
-                      Nothing -> return defaultConfig
+        Just path -> readConfig path
+        Nothing -> return defaultConfig
     let config = mergeConfig baseConfig opts
     if optPrintConfig opts
         then BL.putStr $ JSON.encode config
         else run config (optFiles opts)
   where
-    parser =
-        info (helper <*> versioner <*> options)
-             (fullDesc
-                  <> progDesc "Floskell reformats one or more Haskell modules."
-                  <> header "floskell - A Haskell Source Code Pretty Printer"
-                  <> footerDoc (Just (footerStyles PP.<$$>
-                                          footerLanguages PP.<$$>
-                                          footerExtensions)))
+    parser = info (helper <*> versioner <*> options)
+                  (fullDesc
+                   <> progDesc "Floskell reformats one or more Haskell modules."
+                   <> header "floskell - A Haskell Source Code Pretty Printer"
+                   <> footerDoc (Just (footerStyles PP.<$$> footerLanguages
+                                       PP.<$$> footerExtensions)))
+
     versioner = abortOption (InfoMsg $ "floskell " ++ showVersion version)
                             (long "version"
-                                 <> help "Display program version number"
-                                 <> hidden)
-    options =
-        Options <$> optional (option str
-                                     (long "style"
-                                          <> short 's'
-                                          <> metavar "STYLE"
-                                          <> help "Formatting style"))
-                <*> optional (option str
-                                     (long "language"
-                                          <> short 'L'
-                                          <> metavar "LANGUAGE"
-                                          <> help "Select base language"))
-                <*> many (option str
-                                 (long "extension"
-                                      <> short 'X'
-                                      <> metavar "EXTENSION"
-                                      <> help "Enable or disable language extensions"))
-                <*> optional (option str
-                                     (long "config"
-                                          <> short 'c'
-                                          <> metavar "FILE"
-                                          <> help "Configuration file"))
-                <*> switch (long "print-config"
-                                <> help "Print configuration")
-                <*> many (argument str
-                                   (metavar "FILES"
-                                        <> help "Input files (will be replaced)"))
-    footerStyles = makeFooter "Supported styles:"
-                              (map (T.unpack . styleName) styles)
-    footerLanguages = makeFooter "Supported languages:"
-                                 (map show knownLanguages)
-    footerExtensions = makeFooter "Supported extensions:"
-                                  [ show e
-                                  | EnableExtension e <- knownExtensions ]
+                             <> help "Display program version number" <> hidden)
+
+    options = Options
+        <$> optional (option str
+                             (long "style" <> short 's' <> metavar "STYLE"
+                              <> help "Formatting style"))
+        <*> optional (option str
+                             (long "language" <> short 'L' <> metavar "LANGUAGE"
+                              <> help "Select base language"))
+        <*> many (option str
+                         (long "extension" <> short 'X' <> metavar "EXTENSION"
+                          <> help "Enable or disable language extensions"))
+        <*> optional (option str
+                             (long "config" <> short 'c' <> metavar "FILE"
+                              <> help "Configuration file"))
+        <*> switch (long "print-config" <> help "Print configuration")
+        <*> many (argument str
+                           (metavar "FILES"
+                            <> help "Input files (will be replaced)"))
+
+    footerStyles =
+        makeFooter "Supported styles:" (map (T.unpack . styleName) styles)
+
+    footerLanguages =
+        makeFooter "Supported languages:" (map show knownLanguages)
+
+    footerExtensions =
+        makeFooter "Supported extensions:"
+                   [ show e | EnableExtension e <- knownExtensions ]
+
     makeFooter hdr xs =
-        PP.empty
-        PP.<$$>
-        PP.text hdr
-        PP.<$$>
-        (PP.indent 2 . PP.fillSep . PP.punctuate PP.comma . map PP.text $ sort xs)
+        PP.empty PP.<$$> PP.text hdr PP.<$$> (PP.indent 2 . PP.fillSep
+                                              . PP.punctuate PP.comma
+                                              . map PP.text $ sort xs)
 
 -- | Reformat files or stdin based on provided configuration.
 run :: Config -> [FilePath] -> IO ()
@@ -230,8 +213,8 @@ findConfig = do
                           , getXdgDirectory XdgConfig "floskell"
                           ]
     userConfig <- findFileWith doesFileExist userPaths "config.json"
-    localPaths <- map joinPath . reverse . drop 1 . inits . splitDirectories <$>
-                      getCurrentDirectory
+    localPaths <- map joinPath . reverse . drop 1 . inits . splitDirectories
+        <$> getCurrentDirectory
     localConfig <- findFileWith doesFileExist localPaths "floskell.json"
     return $ localConfig <|> userConfig <|> dotfileConfig
 
@@ -244,8 +227,8 @@ readConfig file = do
 -- | Update the program configuration from the program options.
 mergeConfig :: Config -> Options -> Config
 mergeConfig cfg@Config{..} Options{..} =
-    cfg { cfgStyle = maybe cfgStyle lookupStyle optStyle
-        , cfgLanguage = maybe cfgLanguage lookupLanguage optLanguage
+    cfg { cfgStyle      = maybe cfgStyle lookupStyle optStyle
+        , cfgLanguage   = maybe cfgLanguage lookupLanguage optLanguage
         , cfgExtensions = cfgExtensions ++ map lookupExtension optExtensions
         }
 

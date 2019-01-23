@@ -10,30 +10,30 @@ import qualified Data.Map.Strict            as M
 
 import           Floskell.Types
 
-import           Language.Haskell.Exts      hiding ( Pretty, Style, parse
-                                                   , prettyPrint, style )
+import           Language.Haskell.Exts
+                 hiding ( Pretty, Style, parse, prettyPrint, style )
 
 -- Order by start of span, larger spans before smaller spans.
 newtype OrderByStart = OrderByStart SrcSpan
-    deriving (Eq)
+    deriving ( Eq )
 
 instance Ord OrderByStart where
     compare (OrderByStart l) (OrderByStart r) =
-        compare (srcSpanStartLine l) (srcSpanStartLine r) `mappend`
-            compare (srcSpanStartColumn l) (srcSpanStartColumn r) `mappend`
-            compare (srcSpanEndLine r) (srcSpanEndLine l) `mappend`
-            compare (srcSpanEndColumn r) (srcSpanEndColumn l)
+        compare (srcSpanStartLine l) (srcSpanStartLine r)
+        `mappend` compare (srcSpanStartColumn l) (srcSpanStartColumn r)
+        `mappend` compare (srcSpanEndLine r) (srcSpanEndLine l)
+        `mappend` compare (srcSpanEndColumn r) (srcSpanEndColumn l)
 
 -- Order by end of span, smaller spans before larger spans.
 newtype OrderByEnd = OrderByEnd SrcSpan
-    deriving (Eq)
+    deriving ( Eq )
 
 instance Ord OrderByEnd where
-    compare (OrderByEnd l) (OrderByEnd r) = compare (srcSpanEndLine l)
-                                                    (srcSpanEndLine r) `mappend`
-        compare (srcSpanEndColumn l) (srcSpanEndColumn r) `mappend`
-        compare (srcSpanStartLine r) (srcSpanStartLine l) `mappend`
-        compare (srcSpanStartColumn r) (srcSpanStartColumn l)
+    compare (OrderByEnd l) (OrderByEnd r) =
+        compare (srcSpanEndLine l) (srcSpanEndLine r)
+        `mappend` compare (srcSpanEndColumn l) (srcSpanEndColumn r)
+        `mappend` compare (srcSpanStartLine r) (srcSpanStartLine l)
+        `mappend` compare (srcSpanStartColumn r) (srcSpanStartColumn l)
 
 -- | Annotate the AST with comments.
 annotateComments :: Traversable ast
@@ -69,9 +69,8 @@ annotateComments src comments =
                     case nodeinfo of
                         -- We've already collected comments for this
                         -- node and this comment is a continuation.
-                        NodeInfo _ ((ComInfo c' _) : _) | aligned c' comment ->
-                                                              insertComment After
-                                                                            ssi
+                        NodeInfo _ ((ComInfo c' _) : _)
+                            | aligned c' comment -> insertComment After ssi
 
                         -- The comment does not belong to this node.
                         -- If there is a node following this comment,
@@ -86,14 +85,14 @@ annotateComments src comments =
 
         aligned :: Comment -> Comment -> Bool
         aligned (Comment _ before _) (Comment _ after _) =
-            srcSpanEndLine before == srcSpanStartLine after - 1 &&
-                srcSpanStartColumn before == srcSpanStartColumn after
+            srcSpanEndLine before == srcSpanStartLine after - 1
+            && srcSpanStartColumn before == srcSpanStartColumn after
 
         insertComment :: Location
                       -> SrcSpanInfo
                       -> State ([ComInfo], M.Map SrcSpanInfo NodeInfo) ()
-        insertComment l ssi = modify $
-            second $ M.adjust (addComment (ComInfo comment (Just l))) ssi
+        insertComment l ssi = modify $ second $
+            M.adjust (addComment (ComInfo comment (Just l))) ssi
 
         addComment :: ComInfo -> NodeInfo -> NodeInfo
         addComment x (NodeInfo s xs) = NodeInfo s (x : xs)
@@ -109,13 +108,15 @@ annotateComments src comments =
         modify $ second $ M.adjust (\(NodeInfo s _) -> NodeInfo s []) ssi
         return ni { nodeInfoComments = reverse $ nodeInfoComments ni }
 
-    nodeBefore (Comment _ ss _) =
-        fmap snd $ (OrderByEnd ss) `M.lookupLT` spansByEnd
-    nodeAfter (Comment _ ss _) =
-        fmap snd $ (OrderByStart ss) `M.lookupGT` spansByStart
+    nodeBefore (Comment _ ss _) = fmap snd $ (OrderByEnd ss)
+        `M.lookupLT` spansByEnd
+
+    nodeAfter (Comment _ ss _) = fmap snd $ (OrderByStart ss)
+        `M.lookupGT` spansByStart
 
     spansByStart = foldr (\ssi -> M.insert (OrderByStart $ srcInfoSpan ssi) ssi)
                          M.empty
                          src
+
     spansByEnd =
         foldr (\ssi -> M.insert (OrderByEnd $ srcInfoSpan ssi) ssi) M.empty src

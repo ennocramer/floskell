@@ -1,6 +1,6 @@
-{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Floskell.Config
     ( Indent(..)
@@ -29,11 +29,11 @@ module Floskell.Config
     , wsLinebreak
     ) where
 
-import           Data.Aeson         ( FromJSON(..), ToJSON(..)
-                                    , genericParseJSON, genericToJSON )
+import           Data.Aeson
+                 ( FromJSON(..), ToJSON(..), genericParseJSON, genericToJSON )
 import qualified Data.Aeson         as JSON
-import           Data.Aeson.Types   as JSON ( Options(..), camelTo2
-                                            , typeMismatch )
+import           Data.Aeson.Types   as JSON
+                 ( Options(..), camelTo2, typeMismatch )
 import           Data.ByteString    ( ByteString )
 import           Data.Default       ( Default(..) )
 import qualified Data.HashMap.Lazy  as HashMap
@@ -44,36 +44,33 @@ import qualified Data.Text.Encoding as T ( decodeUtf8, encodeUtf8 )
 
 import           GHC.Generics
 
-data Indent = Align
-            | IndentBy !Int
-            | AlignOrIndentBy !Int
-    deriving (Eq, Ord, Show, Generic)
+data Indent = Align | IndentBy !Int | AlignOrIndentBy !Int
+    deriving ( Eq, Ord, Show, Generic )
 
 data LayoutContext = Declaration | Type | Pattern | Expression | Other
-    deriving (Eq, Ord, Bounded, Enum, Show, Generic)
+    deriving ( Eq, Ord, Bounded, Enum, Show, Generic )
 
 data Location = Before | After
-    deriving (Eq, Ord, Bounded, Enum, Show, Generic)
+    deriving ( Eq, Ord, Bounded, Enum, Show, Generic )
 
 data WsLoc = WsNone | WsBefore | WsAfter | WsBoth
-    deriving (Eq, Ord, Bounded, Enum, Show, Generic)
+    deriving ( Eq, Ord, Bounded, Enum, Show, Generic )
 
 data Whitespace = Whitespace { wsSpaces         :: !WsLoc
                              , wsLinebreaks     :: !WsLoc
                              , wsForceLinebreak :: !Bool
                              }
-    deriving (Show, Generic)
+    deriving ( Show, Generic )
 
 data Layout = Flex | Vertical | TryOneline
-    deriving (Eq, Ord, Bounded, Enum, Show, Generic)
+    deriving ( Eq, Ord, Bounded, Enum, Show, Generic )
 
 data ConfigMapKey = ConfigMapKey !(Maybe ByteString) !(Maybe LayoutContext)
-    deriving (Eq, Ord, Show)
+    deriving ( Eq, Ord, Show )
 
-data ConfigMap a = ConfigMap { cfgMapDefault   :: !a
-                             , cfgMapOverrides :: !(Map ConfigMapKey a)
-                             }
-    deriving (Generic)
+data ConfigMap a =
+    ConfigMap { cfgMapDefault :: !a, cfgMapOverrides :: !(Map ConfigMapKey a) }
+    deriving ( Generic )
 
 data PenaltyConfig = PenaltyConfig { penaltyMaxLineLength :: !Int
                                    , penaltyLinebreak     :: !Int
@@ -81,55 +78,57 @@ data PenaltyConfig = PenaltyConfig { penaltyMaxLineLength :: !Int
                                    , penaltyOverfull      :: !Int
                                    , penaltyOverfullOnce  :: !Int
                                    }
-    deriving (Generic)
+    deriving ( Generic )
 
 instance Default PenaltyConfig where
     def = PenaltyConfig { penaltyMaxLineLength = 80
-                        , penaltyLinebreak = 100
-                        , penaltyIndent = 1
-                        , penaltyOverfull = 10
-                        , penaltyOverfullOnce = 200
+                        , penaltyLinebreak     = 100
+                        , penaltyIndent        = 1
+                        , penaltyOverfull      = 10
+                        , penaltyOverfullOnce  = 200
                         }
 
-data AlignConfig = AlignConfig { cfgAlignLimits       :: !(Int, Int)
-                               , cfgAlignCase         :: !Bool
-                               , cfgAlignClass        :: !Bool
-                               , cfgAlignImportModule :: !Bool
-                               , cfgAlignImportSpec   :: !Bool
-                               , cfgAlignLetBinds     :: !Bool
-                               , cfgAlignRecordFields :: !Bool
-                               , cfgAlignWhere        :: !Bool
-                               }
-    deriving (Generic)
+data AlignConfig =
+    AlignConfig { cfgAlignLimits       :: !(Int, Int)
+                , cfgAlignCase         :: !Bool
+                , cfgAlignClass        :: !Bool
+                , cfgAlignImportModule :: !Bool
+                , cfgAlignImportSpec   :: !Bool
+                , cfgAlignLetBinds     :: !Bool
+                , cfgAlignRecordFields :: !Bool
+                , cfgAlignWhere        :: !Bool
+                }
+    deriving ( Generic )
 
 instance Default AlignConfig where
-    def = AlignConfig { cfgAlignLimits = (10, 25)
-                      , cfgAlignCase = False
-                      , cfgAlignClass = False
+    def = AlignConfig { cfgAlignLimits       = (10, 25)
+                      , cfgAlignCase         = False
+                      , cfgAlignClass        = False
                       , cfgAlignImportModule = False
-                      , cfgAlignImportSpec = False
-                      , cfgAlignLetBinds = False
+                      , cfgAlignImportSpec   = False
+                      , cfgAlignLetBinds     = False
                       , cfgAlignRecordFields = False
-                      , cfgAlignWhere = False
+                      , cfgAlignWhere        = False
                       }
 
-data IndentConfig = IndentConfig { cfgIndentOnside         :: !Int
-                                 , cfgIndentDeriving       :: !Int
-                                 , cfgIndentWhere          :: !Int
-                                 , cfgIndentApp            :: !Indent
-                                 , cfgIndentCase           :: !Indent
-                                 , cfgIndentClass          :: !Indent
-                                 , cfgIndentDo             :: !Indent
-                                 , cfgIndentExportSpecList :: !Indent
-                                 , cfgIndentIf             :: !Indent
-                                 , cfgIndentImportSpecList :: !Indent
-                                 , cfgIndentLet            :: !Indent
-                                 , cfgIndentLetBinds       :: !Indent
-                                 , cfgIndentLetIn          :: !Indent
-                                 , cfgIndentMultiIf        :: !Indent
-                                 , cfgIndentWhereBinds     :: !Indent
-                                 }
-    deriving (Generic)
+data IndentConfig =
+    IndentConfig { cfgIndentOnside :: !Int
+                 , cfgIndentDeriving :: !Int
+                 , cfgIndentWhere :: !Int
+                 , cfgIndentApp :: !Indent
+                 , cfgIndentCase :: !Indent
+                 , cfgIndentClass :: !Indent
+                 , cfgIndentDo :: !Indent
+                 , cfgIndentExportSpecList :: !Indent
+                 , cfgIndentIf :: !Indent
+                 , cfgIndentImportSpecList :: !Indent
+                 , cfgIndentLet :: !Indent
+                 , cfgIndentLetBinds :: !Indent
+                 , cfgIndentLetIn :: !Indent
+                 , cfgIndentMultiIf :: !Indent
+                 , cfgIndentWhereBinds :: !Indent
+                 }
+    deriving ( Generic )
 
 instance Default IndentConfig where
     def = IndentConfig { cfgIndentOnside = 4
@@ -149,19 +148,20 @@ instance Default IndentConfig where
                        , cfgIndentWhereBinds = IndentBy 2
                        }
 
-data LayoutConfig = LayoutConfig { cfgLayoutApp            :: !Layout
-                                 , cfgLayoutConDecls       :: !Layout
-                                 , cfgLayoutDeclaration    :: !Layout
-                                 , cfgLayoutExportSpecList :: !Layout
-                                 , cfgLayoutIf             :: !Layout
-                                 , cfgLayoutImportSpecList :: !Layout
-                                 , cfgLayoutInfixApp       :: !Layout
-                                 , cfgLayoutLet            :: !Layout
-                                 , cfgLayoutListComp       :: !Layout
-                                 , cfgLayoutRecord         :: !Layout
-                                 , cfgLayoutTypesig        :: !Layout
-                                 }
-    deriving (Generic)
+data LayoutConfig =
+    LayoutConfig { cfgLayoutApp :: !Layout
+                 , cfgLayoutConDecls :: !Layout
+                 , cfgLayoutDeclaration :: !Layout
+                 , cfgLayoutExportSpecList :: !Layout
+                 , cfgLayoutIf :: !Layout
+                 , cfgLayoutImportSpecList :: !Layout
+                 , cfgLayoutInfixApp :: !Layout
+                 , cfgLayoutLet :: !Layout
+                 , cfgLayoutListComp :: !Layout
+                 , cfgLayoutRecord :: !Layout
+                 , cfgLayoutTypesig :: !Layout
+                 }
+    deriving ( Generic )
 
 instance Default LayoutConfig where
     def = LayoutConfig { cfgLayoutApp = Flex
@@ -178,21 +178,22 @@ instance Default LayoutConfig where
                        }
 
 newtype OpConfig = OpConfig { unOpConfig :: ConfigMap Whitespace }
-    deriving (Generic)
+    deriving ( Generic )
 
 instance Default OpConfig where
-    def = OpConfig ConfigMap { cfgMapDefault = Whitespace WsBoth WsBefore False
-                             , cfgMapOverrides = Map.empty
-                             }
+    def =
+        OpConfig ConfigMap { cfgMapDefault   = Whitespace WsBoth WsBefore False
+                           , cfgMapOverrides = Map.empty
+                           }
 
 newtype GroupConfig = GroupConfig { unGroupConfig :: ConfigMap Whitespace }
-    deriving (Generic)
+    deriving ( Generic )
 
 instance Default GroupConfig where
-    def =
-        GroupConfig ConfigMap { cfgMapDefault = Whitespace WsBoth WsAfter False
-                              , cfgMapOverrides = Map.empty
-                              }
+    def = GroupConfig ConfigMap { cfgMapDefault   =
+                                      Whitespace WsBoth WsAfter False
+                                , cfgMapOverrides = Map.empty
+                                }
 
 data OptionConfig = OptionConfig { cfgOptionSortPragmas           :: !Bool
                                  , cfgOptionSplitLanguagePragmas  :: !Bool
@@ -200,13 +201,13 @@ data OptionConfig = OptionConfig { cfgOptionSortPragmas           :: !Bool
                                  , cfgOptionSortImportLists       :: !Bool
                                  , cfgOptionPreserveVerticalSpace :: !Bool
                                  }
-    deriving (Generic)
+    deriving ( Generic )
 
 instance Default OptionConfig where
-    def = OptionConfig { cfgOptionSortPragmas = False
-                       , cfgOptionSplitLanguagePragmas = False
-                       , cfgOptionSortImports = False
-                       , cfgOptionSortImportLists = False
+    def = OptionConfig { cfgOptionSortPragmas           = False
+                       , cfgOptionSplitLanguagePragmas  = False
+                       , cfgOptionSortImports           = False
+                       , cfgOptionSortImportLists       = False
                        , cfgOptionPreserveVerticalSpace = False
                        }
 
@@ -218,44 +219,48 @@ data FlexConfig = FlexConfig { cfgPenalty :: !PenaltyConfig
                              , cfgGroup   :: !GroupConfig
                              , cfgOptions :: !OptionConfig
                              }
-    deriving (Generic)
+    deriving ( Generic )
 
 instance Default FlexConfig where
     def = FlexConfig { cfgPenalty = def
-                     , cfgAlign = def
-                     , cfgIndent = def
-                     , cfgLayout = def
-                     , cfgOp = def
-                     , cfgGroup = def
+                     , cfgAlign   = def
+                     , cfgIndent  = def
+                     , cfgLayout  = def
+                     , cfgOp      = def
+                     , cfgGroup   = def
                      , cfgOptions = def
                      }
 
 defaultFlexConfig :: FlexConfig
 defaultFlexConfig =
-    def { cfgOp = OpConfig ((unOpConfig def) { cfgMapOverrides = Map.fromList opWsOverrides
+    def { cfgOp = OpConfig ((unOpConfig def) { cfgMapOverrides =
+                                                   Map.fromList opWsOverrides
                                              })
         }
   where
     opWsOverrides =
         [ (ConfigMapKey (Just ",") Nothing, Whitespace WsAfter WsBefore False)
-        , (ConfigMapKey (Just "record") Nothing, Whitespace WsAfter WsAfter False)
-        , (ConfigMapKey (Just ".") (Just Type), Whitespace WsAfter WsAfter False)
+        , ( ConfigMapKey (Just "record") Nothing
+          , Whitespace WsAfter WsAfter False
+          )
+        , ( ConfigMapKey (Just ".") (Just Type)
+          , Whitespace WsAfter WsAfter False
+          )
         ]
 
 safeFlexConfig :: FlexConfig -> FlexConfig
 safeFlexConfig cfg = cfg { cfgGroup = group, cfgOp = op }
   where
-    group =
-        GroupConfig $ updateOverrides (unGroupConfig $ cfgGroup cfg)
-                                      [ ("(#", Expression), ("(#", Pattern) ]
+    group = GroupConfig $
+        updateOverrides (unGroupConfig $ cfgGroup cfg)
+                        [ ("(#", Expression), ("(#", Pattern) ]
 
-    op = OpConfig $ updateOverrides (unOpConfig $ cfgOp cfg)
-                                    [ (".", Expression) ]
+    op = OpConfig $
+        updateOverrides (unOpConfig $ cfgOp cfg) [ (".", Expression) ]
 
     updateOverrides config overrides =
-        config { cfgMapOverrides = foldl (updateWs config)
-                                         (cfgMapOverrides config)
-                                         overrides
+        config { cfgMapOverrides =
+                     foldl (updateWs config) (cfgMapOverrides config) overrides
                }
 
     updateWs config m (key, ctx) =
@@ -383,7 +388,8 @@ textToKey t = case T.splitOn " in " t of
     [ name ] -> Just (ConfigMapKey (Just (T.encodeUtf8 name)) Nothing)
     [ name, "*" ] -> Just (ConfigMapKey (Just (T.encodeUtf8 name)) Nothing)
     [ "*", layout ] -> ConfigMapKey Nothing . Just <$> textToLayout layout
-    [ name, layout ] -> ConfigMapKey (Just (T.encodeUtf8 name)) . Just <$> textToLayout layout
+    [ name, layout ] -> ConfigMapKey (Just (T.encodeUtf8 name)) . Just
+        <$> textToLayout layout
     _ -> Nothing
 
 instance ToJSON a => ToJSON (ConfigMap a) where
@@ -394,10 +400,9 @@ instance FromJSON a => FromJSON (ConfigMap a) where
     parseJSON value = do
         o <- parseJSON value
         cfgMapDefault <- maybe (fail "Missing key: default") return $
-                             HashMap.lookup "default" o
+            HashMap.lookup "default" o
         cfgMapOverrides <- either fail (return . Map.fromList) $ sequence $
-                               map toKey $
-                                   HashMap.toList $ HashMap.delete "default" o
+            map toKey $ HashMap.toList $ HashMap.delete "default" o
         return ConfigMap { .. }
       where
         toKey (k, v) = case textToKey k of

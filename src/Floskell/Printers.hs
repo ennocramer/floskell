@@ -55,23 +55,23 @@ module Floskell.Printers
     , comma
     ) where
 
-import           Control.Applicative            ( (<|>) )
+import           Control.Applicative        ( (<|>) )
 
-import           Control.Monad                  ( guard, unless, when )
-import           Control.Monad.Search           ( cost, winner )
+import           Control.Monad              ( guard, unless, when )
+import           Control.Monad.Search       ( cost, winner )
 
-import           Control.Monad.State.Strict     ( get, gets, modify )
+import           Control.Monad.State.Strict ( get, gets, modify )
 
-import           Data.ByteString                ( ByteString )
-import qualified Data.ByteString                as BS
-import qualified Data.ByteString.Builder        as BB
-import qualified Data.ByteString.Lazy           as BL
-import           Data.Int                       ( Int64 )
-import           Data.List                      ( intersperse )
-import qualified Data.Map.Strict                as Map
-import           Data.Monoid                    ( (<>) )
+import           Data.ByteString            ( ByteString )
+import qualified Data.ByteString            as BS
+import qualified Data.ByteString.Builder    as BB
+import qualified Data.ByteString.Lazy       as BL
+import           Data.Int                   ( Int64 )
+import           Data.List                  ( intersperse )
+import qualified Data.Map.Strict            as Map
+import           Data.Monoid                ( (<>) )
 
-import qualified Floskell.Buffer                as Buffer
+import qualified Floskell.Buffer            as Buffer
 import           Floskell.Config
 import           Floskell.Types
 
@@ -91,9 +91,9 @@ linePenalty eol col = do
     let maxcol = penaltyMaxLineLength config
     let pLinebreak = onlyIf eol $ penaltyLinebreak config
     let pIndent = fromIntegral indentLevel * (penaltyIndent config)
-    let pOverfull = onlyIf (col > fromIntegral maxcol) $
-            penaltyOverfull config * fromIntegral (col - fromIntegral maxcol) +
-                penaltyOverfullOnce config
+    let pOverfull = onlyIf (col > fromIntegral maxcol) $ penaltyOverfull config
+            * fromIntegral (col - fromIntegral maxcol)
+            + penaltyOverfullOnce config
     return . fromIntegral $ pLinebreak + pIndent + pOverfull
   where
     onlyIf cond penalty = if cond then penalty else 0
@@ -130,15 +130,17 @@ write x = do
     write' x' = do
         state <- get
         let indentLevel = fromIntegral (psIndentLevel state)
-            out = if psNewline state then BS.replicate indentLevel 32 <> x' else x'
+            out = if psNewline state
+                  then BS.replicate indentLevel 32 <> x'
+                  else x'
             buffer = psBuffer state
             newCol = Buffer.column buffer + fromIntegral (BS.length out)
-        guard $ psOutputRestriction state == Anything || newCol < fromIntegral (penaltyMaxLineLength (cfgPenalty (psUserState state)))
+        guard $ psOutputRestriction state == Anything || newCol
+            < fromIntegral (penaltyMaxLineLength (cfgPenalty (psUserState state)))
         penalty <- linePenalty False newCol
         when (penalty /= mempty) $ cost mempty penalty
-        modify (\s -> s { psBuffer = Buffer.write out buffer
-                        , psEolComment = False
-                        })
+        modify (\s ->
+                s { psBuffer = Buffer.write out buffer, psEolComment = False })
 
 -- | Write a string.
 string :: String -> Printer ()
@@ -157,14 +159,13 @@ space = do
 -- | Output a newline.
 newline :: Printer ()
 newline = do
-    modify (\s -> s { psIndentLevel = psIndentLevel s + psOnside s
-                    , psOnside = 0
-                    })
+    modify (\s ->
+            s { psIndentLevel = psIndentLevel s + psOnside s, psOnside = 0 })
     state <- get
     guard $ psOutputRestriction state /= NoOverflowOrLinebreak
     penalty <- linePenalty True (psColumn state)
     when (penalty /= mempty) $ cost penalty mempty
-    modify (\s -> s { psBuffer = Buffer.newline (psBuffer state)
+    modify (\s -> s { psBuffer     = Buffer.newline (psBuffer state)
                     , psEolComment = False
                     })
 
@@ -182,13 +183,12 @@ withTabStops stops p = do
     col <- getNextColumn
     oldstops <- gets psTabStops
     modify $ \s ->
-        s { psTabStops = foldr (\(k, v) ->
-                                    Map.alter (const $ fmap (\x -> col +
-                                                                 fromIntegral x)
-                                                            v)
-                                              k)
-                               (psTabStops s)
-                               stops
+        s { psTabStops =
+                foldr (\(k, v) ->
+                       Map.alter (const $ fmap (\x -> col + fromIntegral x) v)
+                                 k)
+                      (psTabStops s)
+                      stops
           }
     res <- p
     modify $ \s -> s { psTabStops = oldstops }
@@ -223,6 +223,7 @@ withIndent fn p = do
     align = do
         space
         aligned p
+
     indentby i = indent i $ do
         newline
         p
@@ -241,6 +242,7 @@ withIndentFlat fn kw p = do
     align = aligned $ do
         write kw
         p
+
     indentby i = do
         write kw
         indent i p
@@ -263,10 +265,9 @@ inter x = sequence_ . intersperse x
 getNextColumn :: Printer Int64
 getNextColumn = do
     st <- get
-    return $
-        if psEolComment st
-        then psIndentLevel st + psOnside st
-        else max (psColumn st) (psIndentLevel st)
+    return $ if psEolComment st
+             then psIndentLevel st + psOnside st
+             else max (psColumn st) (psIndentLevel st)
 
 -- | Set the (newline-) indent level to the given column for the given
 -- printer.
@@ -275,7 +276,7 @@ column i p = do
     level <- gets psIndentLevel
     onside' <- gets psOnside
     modify (\s -> s { psIndentLevel = i
-                    , psOnside = if i > level then 0 else onside'
+                    , psOnside      = if i > level then 0 else onside'
                     })
     m <- p
     modify (\s -> s { psIndentLevel = level, psOnside = onside' })
@@ -344,6 +345,7 @@ group ctx open close p = do
     if force then vert else oneline hor <|> vert
   where
     hor = groupH ctx open close p
+
     vert = groupV ctx open close p
 
 groupH :: LayoutContext -> ByteString -> ByteString -> Printer () -> Printer ()
@@ -395,6 +397,7 @@ withOperatorFormatting ctx op opp fn = do
     if force then vert else hor <|> vert
   where
     hor = withOperatorFormattingH ctx op opp fn
+
     vert = withOperatorFormattingV ctx op opp fn
 
 withOperatorFormattingH :: LayoutContext

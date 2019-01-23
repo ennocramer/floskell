@@ -1,5 +1,5 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE NamedFieldPuns    #-}
 
 module Floskell.Styles ( styles ) where
 
@@ -12,22 +12,24 @@ chrisDoneCfg :: FlexConfig
 chrisDoneCfg = safeFlexConfig $
     defaultFlexConfig { cfgIndent, cfgLayout, cfgOp, cfgGroup, cfgOptions }
   where
-    cfgIndent = IndentConfig { cfgIndentOnside = 2
-                             , cfgIndentDeriving = 2
-                             , cfgIndentWhere = 2
-                             , cfgIndentApp = Align
-                             , cfgIndentCase = IndentBy 2
-                             , cfgIndentClass = IndentBy 2
-                             , cfgIndentDo = Align
-                             , cfgIndentIf = IndentBy 3
-                             , cfgIndentLet = Align
-                             , cfgIndentLetBinds = Align
-                             , cfgIndentLetIn = Align
-                             , cfgIndentMultiIf = IndentBy 2
-                             , cfgIndentWhereBinds = Align
-                             , cfgIndentExportSpecList = IndentBy 2
-                             , cfgIndentImportSpecList = IndentBy 7
-                             }
+    cfgIndent =
+        IndentConfig { cfgIndentOnside = 2
+                     , cfgIndentDeriving = 2
+                     , cfgIndentWhere = 2
+                     , cfgIndentApp = Align
+                     , cfgIndentCase = IndentBy 2
+                     , cfgIndentClass = IndentBy 2
+                     , cfgIndentDo = Align
+                     , cfgIndentIf = IndentBy 3
+                     , cfgIndentLet = Align
+                     , cfgIndentLetBinds = Align
+                     , cfgIndentLetIn = Align
+                     , cfgIndentMultiIf = IndentBy 2
+                     , cfgIndentWhereBinds = Align
+                     , cfgIndentExportSpecList = IndentBy 2
+                     , cfgIndentImportSpecList = IndentBy 7
+                     }
+
     cfgLayout = LayoutConfig { cfgLayoutApp = TryOneline
                              , cfgLayoutConDecls = Vertical
                              , cfgLayoutDeclaration = TryOneline
@@ -40,10 +42,12 @@ chrisDoneCfg = safeFlexConfig $
                              , cfgLayoutRecord = Vertical
                              , cfgLayoutTypesig = TryOneline
                              }
+
     cfgOp =
-        OpConfig ConfigMap { cfgMapDefault = Whitespace WsBoth WsBefore False
+        OpConfig ConfigMap { cfgMapDefault   = Whitespace WsBoth WsBefore False
                            , cfgMapOverrides = Map.fromList opWsOverrides
                            }
+
     opWsOverrides =
         [ (ConfigMapKey (Just ",") Nothing, Whitespace WsNone WsBefore False)
         , ( ConfigMapKey (Just "record") Nothing
@@ -56,15 +60,19 @@ chrisDoneCfg = safeFlexConfig $
         , (ConfigMapKey (Just "<-") Nothing, Whitespace WsBoth WsAfter False)
         , (ConfigMapKey (Just ":") Nothing, Whitespace WsNone WsBefore False)
         ]
+
     cfgGroup =
-        GroupConfig ConfigMap { cfgMapDefault = Whitespace WsNone WsNone False
+        GroupConfig ConfigMap { cfgMapDefault   =
+                                    Whitespace WsNone WsNone False
                               , cfgMapOverrides = Map.fromList groupWsOverrides
                               }
+
     groupWsOverrides = []
-    cfgOptions = OptionConfig { cfgOptionSortPragmas = False
-                              , cfgOptionSplitLanguagePragmas = False
-                              , cfgOptionSortImports = False
-                              , cfgOptionSortImportLists = False
+
+    cfgOptions = OptionConfig { cfgOptionSortPragmas           = False
+                              , cfgOptionSplitLanguagePragmas  = False
+                              , cfgOptionSortImports           = False
+                              , cfgOptionSortImportLists       = False
                               , cfgOptionPreserveVerticalSpace = False
                               }
 
@@ -78,31 +86,34 @@ cramerCfg = safeFlexConfig $
                       , cfgOptions
                       }
   where
-    cfgAlign = AlignConfig { cfgAlignLimits = (10, 25)
-                           , cfgAlignCase = False
-                           , cfgAlignClass = False
+    cfgAlign = AlignConfig { cfgAlignLimits       = (10, 25)
+                           , cfgAlignCase         = False
+                           , cfgAlignClass        = False
                            , cfgAlignImportModule = True
-                           , cfgAlignImportSpec = True
-                           , cfgAlignLetBinds = False
+                           , cfgAlignImportSpec   = True
+                           , cfgAlignLetBinds     = False
                            , cfgAlignRecordFields = True
-                           , cfgAlignWhere = False
+                           , cfgAlignWhere        = False
                            }
-    cfgIndent = IndentConfig { cfgIndentOnside = 4
-                             , cfgIndentDeriving = 4
-                             , cfgIndentWhere = 2
-                             , cfgIndentApp = Align
-                             , cfgIndentCase = IndentBy 4
-                             , cfgIndentClass = IndentBy 4
-                             , cfgIndentDo = IndentBy 4
-                             , cfgIndentIf = Align
-                             , cfgIndentLet = Align
-                             , cfgIndentLetBinds = Align
-                             , cfgIndentLetIn = IndentBy 4
-                             , cfgIndentMultiIf = IndentBy 4
-                             , cfgIndentWhereBinds = IndentBy 2
-                             , cfgIndentExportSpecList = IndentBy 4
-                             , cfgIndentImportSpecList = AlignOrIndentBy 17
-                             }
+
+    cfgIndent =
+        IndentConfig { cfgIndentOnside = 4
+                     , cfgIndentDeriving = 4
+                     , cfgIndentWhere = 2
+                     , cfgIndentApp = Align
+                     , cfgIndentCase = IndentBy 4
+                     , cfgIndentClass = IndentBy 4
+                     , cfgIndentDo = IndentBy 4
+                     , cfgIndentIf = Align
+                     , cfgIndentLet = Align
+                     , cfgIndentLetBinds = Align
+                     , cfgIndentLetIn = IndentBy 4
+                     , cfgIndentMultiIf = IndentBy 4
+                     , cfgIndentWhereBinds = IndentBy 2
+                     , cfgIndentExportSpecList = IndentBy 4
+                     , cfgIndentImportSpecList = AlignOrIndentBy 17
+                     }
+
     cfgLayout = LayoutConfig { cfgLayoutApp = TryOneline
                              , cfgLayoutConDecls = TryOneline
                              , cfgLayoutDeclaration = Flex
@@ -115,10 +126,12 @@ cramerCfg = safeFlexConfig $
                              , cfgLayoutRecord = TryOneline
                              , cfgLayoutTypesig = TryOneline
                              }
+
     cfgOp =
-        OpConfig ConfigMap { cfgMapDefault = Whitespace WsBoth WsBefore False
+        OpConfig ConfigMap { cfgMapDefault   = Whitespace WsBoth WsBefore False
                            , cfgMapOverrides = Map.fromList opWsOverrides
                            }
+
     opWsOverrides =
         [ (ConfigMapKey (Just ",") Nothing, Whitespace WsAfter WsBefore False)
         , ( ConfigMapKey (Just "record") Nothing
@@ -137,10 +150,13 @@ cramerCfg = safeFlexConfig $
           , Whitespace WsNone WsNone False
           )
         ]
+
     cfgGroup =
-        GroupConfig ConfigMap { cfgMapDefault = Whitespace WsBoth WsAfter False
+        GroupConfig ConfigMap { cfgMapDefault   =
+                                    Whitespace WsBoth WsAfter False
                               , cfgMapOverrides = Map.fromList groupWsOverrides
                               }
+
     groupWsOverrides =
         [ (ConfigMapKey Nothing (Just Type), Whitespace WsNone WsAfter False)
         , ( ConfigMapKey Nothing (Just Pattern)
@@ -159,10 +175,11 @@ cramerCfg = safeFlexConfig $
           , Whitespace WsBoth WsAfter False
           )
         ]
-    cfgOptions = OptionConfig { cfgOptionSortPragmas = True
-                              , cfgOptionSplitLanguagePragmas = True
-                              , cfgOptionSortImports = True
-                              , cfgOptionSortImportLists = True
+
+    cfgOptions = OptionConfig { cfgOptionSortPragmas           = True
+                              , cfgOptionSplitLanguagePragmas  = True
+                              , cfgOptionSortImports           = True
+                              , cfgOptionSortImportLists       = True
                               , cfgOptionPreserveVerticalSpace = True
                               }
 
@@ -176,31 +193,34 @@ gibianskyCfg = safeFlexConfig $
                       , cfgOptions
                       }
   where
-    cfgAlign = AlignConfig { cfgAlignLimits = (10, 25)
-                           , cfgAlignCase = True
-                           , cfgAlignClass = False
+    cfgAlign = AlignConfig { cfgAlignLimits       = (10, 25)
+                           , cfgAlignCase         = True
+                           , cfgAlignClass        = False
                            , cfgAlignImportModule = True
-                           , cfgAlignImportSpec = False
-                           , cfgAlignLetBinds = False
+                           , cfgAlignImportSpec   = False
+                           , cfgAlignLetBinds     = False
                            , cfgAlignRecordFields = False
-                           , cfgAlignWhere = False
+                           , cfgAlignWhere        = False
                            }
-    cfgIndent = IndentConfig { cfgIndentOnside = 2
-                             , cfgIndentDeriving = 2
-                             , cfgIndentWhere = 2
-                             , cfgIndentApp = IndentBy 2
-                             , cfgIndentCase = IndentBy 2
-                             , cfgIndentClass = IndentBy 2
-                             , cfgIndentDo = IndentBy 2
-                             , cfgIndentIf = Align
-                             , cfgIndentLet = Align
-                             , cfgIndentLetBinds = Align
-                             , cfgIndentLetIn = Align
-                             , cfgIndentMultiIf = IndentBy 2
-                             , cfgIndentWhereBinds = IndentBy 2
-                             , cfgIndentExportSpecList = IndentBy 4
-                             , cfgIndentImportSpecList = IndentBy 4
-                             }
+
+    cfgIndent =
+        IndentConfig { cfgIndentOnside = 2
+                     , cfgIndentDeriving = 2
+                     , cfgIndentWhere = 2
+                     , cfgIndentApp = IndentBy 2
+                     , cfgIndentCase = IndentBy 2
+                     , cfgIndentClass = IndentBy 2
+                     , cfgIndentDo = IndentBy 2
+                     , cfgIndentIf = Align
+                     , cfgIndentLet = Align
+                     , cfgIndentLetBinds = Align
+                     , cfgIndentLetIn = Align
+                     , cfgIndentMultiIf = IndentBy 2
+                     , cfgIndentWhereBinds = IndentBy 2
+                     , cfgIndentExportSpecList = IndentBy 4
+                     , cfgIndentImportSpecList = IndentBy 4
+                     }
+
     cfgLayout = LayoutConfig { cfgLayoutApp = TryOneline
                              , cfgLayoutConDecls = Vertical
                              , cfgLayoutDeclaration = Flex
@@ -213,10 +233,12 @@ gibianskyCfg = safeFlexConfig $
                              , cfgLayoutRecord = TryOneline
                              , cfgLayoutTypesig = TryOneline
                              }
+
     cfgOp =
-        OpConfig ConfigMap { cfgMapDefault = Whitespace WsBoth WsBefore False
+        OpConfig ConfigMap { cfgMapDefault   = Whitespace WsBoth WsBefore False
                            , cfgMapOverrides = Map.fromList opWsOverrides
                            }
+
     opWsOverrides =
         [ (ConfigMapKey (Just ",") Nothing, Whitespace WsAfter WsBefore False)
         , ( ConfigMapKey (Just "record") Nothing
@@ -228,16 +250,20 @@ gibianskyCfg = safeFlexConfig $
         , (ConfigMapKey (Just "=") Nothing, Whitespace WsBoth WsAfter False)
         , (ConfigMapKey (Just ":") Nothing, Whitespace WsNone WsBefore False)
         ]
+
     cfgGroup =
-        GroupConfig ConfigMap { cfgMapDefault = Whitespace WsNone WsNone False
+        GroupConfig ConfigMap { cfgMapDefault   =
+                                    Whitespace WsNone WsNone False
                               , cfgMapOverrides = Map.fromList groupWsOverrides
                               }
+
     groupWsOverrides =
         [ (ConfigMapKey (Just "{") Nothing, Whitespace WsBoth WsAfter False) ]
-    cfgOptions = OptionConfig { cfgOptionSortPragmas = False
-                              , cfgOptionSplitLanguagePragmas = False
-                              , cfgOptionSortImports = False
-                              , cfgOptionSortImportLists = False
+
+    cfgOptions = OptionConfig { cfgOptionSortPragmas           = False
+                              , cfgOptionSplitLanguagePragmas  = False
+                              , cfgOptionSortImports           = False
+                              , cfgOptionSortImportLists       = False
                               , cfgOptionPreserveVerticalSpace = False
                               }
 
@@ -245,22 +271,24 @@ johanTibellCfg :: FlexConfig
 johanTibellCfg = safeFlexConfig $
     defaultFlexConfig { cfgIndent, cfgLayout, cfgOp, cfgGroup, cfgOptions }
   where
-    cfgIndent = IndentConfig { cfgIndentOnside = 4
-                             , cfgIndentDeriving = 4
-                             , cfgIndentWhere = 2
-                             , cfgIndentApp = IndentBy 4
-                             , cfgIndentCase = IndentBy 4
-                             , cfgIndentClass = IndentBy 4
-                             , cfgIndentDo = IndentBy 4
-                             , cfgIndentIf = IndentBy 4
-                             , cfgIndentLet = Align
-                             , cfgIndentLetBinds = Align
-                             , cfgIndentLetIn = Align
-                             , cfgIndentMultiIf = IndentBy 2
-                             , cfgIndentWhereBinds = IndentBy 2
-                             , cfgIndentExportSpecList = IndentBy 2
-                             , cfgIndentImportSpecList = IndentBy 7
-                             }
+    cfgIndent =
+        IndentConfig { cfgIndentOnside = 4
+                     , cfgIndentDeriving = 4
+                     , cfgIndentWhere = 2
+                     , cfgIndentApp = IndentBy 4
+                     , cfgIndentCase = IndentBy 4
+                     , cfgIndentClass = IndentBy 4
+                     , cfgIndentDo = IndentBy 4
+                     , cfgIndentIf = IndentBy 4
+                     , cfgIndentLet = Align
+                     , cfgIndentLetBinds = Align
+                     , cfgIndentLetIn = Align
+                     , cfgIndentMultiIf = IndentBy 2
+                     , cfgIndentWhereBinds = IndentBy 2
+                     , cfgIndentExportSpecList = IndentBy 2
+                     , cfgIndentImportSpecList = IndentBy 7
+                     }
+
     cfgLayout = LayoutConfig { cfgLayoutApp = TryOneline
                              , cfgLayoutConDecls = Vertical
                              , cfgLayoutDeclaration = TryOneline
@@ -273,10 +301,12 @@ johanTibellCfg = safeFlexConfig $
                              , cfgLayoutRecord = Vertical
                              , cfgLayoutTypesig = TryOneline
                              }
+
     cfgOp =
-        OpConfig ConfigMap { cfgMapDefault = Whitespace WsBoth WsBefore False
+        OpConfig ConfigMap { cfgMapDefault   = Whitespace WsBoth WsBefore False
                            , cfgMapOverrides = Map.fromList opWsOverrides
                            }
+
     opWsOverrides =
         [ (ConfigMapKey (Just ",") Nothing, Whitespace WsAfter WsBefore False)
         , ( ConfigMapKey (Just "record") Nothing
@@ -299,56 +329,60 @@ johanTibellCfg = safeFlexConfig $
           , Whitespace WsAfter WsAfter False
           )
         ]
+
     cfgGroup =
-        GroupConfig ConfigMap { cfgMapDefault = Whitespace WsNone WsNone False
+        GroupConfig ConfigMap { cfgMapDefault   =
+                                    Whitespace WsNone WsNone False
                               , cfgMapOverrides = Map.fromList groupWsOverrides
                               }
+
     groupWsOverrides =
         [ (ConfigMapKey (Just "{") Nothing, Whitespace WsBoth WsAfter False)
         , ( ConfigMapKey (Just "{") (Just Pattern)
           , Whitespace WsNone WsNone False
           )
         ]
-    cfgOptions = OptionConfig { cfgOptionSortPragmas = False
-                              , cfgOptionSplitLanguagePragmas = False
-                              , cfgOptionSortImports = False
-                              , cfgOptionSortImportLists = False
+
+    cfgOptions = OptionConfig { cfgOptionSortPragmas           = False
+                              , cfgOptionSplitLanguagePragmas  = False
+                              , cfgOptionSortImports           = False
+                              , cfgOptionSortImportLists       = False
                               , cfgOptionPreserveVerticalSpace = False
                               }
 
 -- | Base style definition.
 base :: Style
-base = Style { styleName = "base"
-             , styleAuthor = "Enno Cramer"
-             , styleDescription = "Configurable formatting style"
+base = Style { styleName         = "base"
+             , styleAuthor       = "Enno Cramer"
+             , styleDescription  = "Configurable formatting style"
              , styleInitialState = safeFlexConfig $ defaultFlexConfig
              }
 
 chrisDone :: Style
-chrisDone = Style { styleName = "chris-done"
-                  , styleAuthor = "Chris Done"
-                  , styleDescription = "Chris Done's style"
+chrisDone = Style { styleName         = "chris-done"
+                  , styleAuthor       = "Chris Done"
+                  , styleDescription  = "Chris Done's style"
                   , styleInitialState = chrisDoneCfg
                   }
 
 cramer :: Style
-cramer = Style { styleName = "cramer"
-               , styleAuthor = "Enno Cramer"
-               , styleDescription = "Enno Cramer's style"
+cramer = Style { styleName         = "cramer"
+               , styleAuthor       = "Enno Cramer"
+               , styleDescription  = "Enno Cramer's style"
                , styleInitialState = cramerCfg
                }
 
 gibiansky :: Style
-gibiansky = Style { styleName = "gibiansky"
-                  , styleAuthor = "Andrew Gibiansky"
-                  , styleDescription = "Andrew Gibiansky's style"
+gibiansky = Style { styleName         = "gibiansky"
+                  , styleAuthor       = "Andrew Gibiansky"
+                  , styleDescription  = "Andrew Gibiansky's style"
                   , styleInitialState = gibianskyCfg
                   }
 
 johanTibell :: Style
-johanTibell = Style { styleName = "johan-tibell"
-                    , styleAuthor = "Johan Tibell"
-                    , styleDescription = "Johan Tibell's style"
+johanTibell = Style { styleName         = "johan-tibell"
+                    , styleAuthor       = "Johan Tibell"
+                    , styleDescription  = "Johan Tibell's style"
                     , styleInitialState = johanTibellCfg
                     }
 

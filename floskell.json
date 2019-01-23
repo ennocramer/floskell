@@ -1,5 +1,193 @@
 {
-    "style": "cramer",
-    "language": "Haskell2010",
-    "extensions": []
+  "extensions": [
+    "BangPatterns",
+    "DefaultSignatures",
+    "DeriveGeneric",
+    "GeneralizedNewtypeDeriving",
+    "LambdaCase",
+    "NamedFieldPuns",
+    "OverloadedStrings",
+    "PatternGuards",
+    "RecordWildCards"
+  ],
+  "formatting": {
+    "align": {
+      "case": false,
+      "class": false,
+      "import-module": true,
+      "import-spec": true,
+      "let-binds": false,
+      "limits": [
+        10,
+        25
+      ],
+      "record-fields": true,
+      "where": false
+    },
+    "group": {
+      "$(": {
+        "force-linebreak": false,
+        "linebreaks": "none",
+        "spaces": "none"
+      },
+      "(": {
+        "force-linebreak": false,
+        "linebreaks": "after",
+        "spaces": "none"
+      },
+      "( in other": {
+        "force-linebreak": false,
+        "linebreaks": "after",
+        "spaces": "both"
+      },
+      "(# in expression": {
+        "force-linebreak": false,
+        "linebreaks": "after",
+        "spaces": "both"
+      },
+      "(# in pattern": {
+        "force-linebreak": false,
+        "linebreaks": "after",
+        "spaces": "both"
+      },
+      "* in pattern": {
+        "force-linebreak": false,
+        "linebreaks": "after",
+        "spaces": "none"
+      },
+      "* in type": {
+        "force-linebreak": false,
+        "linebreaks": "after",
+        "spaces": "none"
+      },
+      "[ in pattern": {
+        "force-linebreak": false,
+        "linebreaks": "after",
+        "spaces": "both"
+      },
+      "[d|": {
+        "force-linebreak": false,
+        "linebreaks": "none",
+        "spaces": "none"
+      },
+      "[p|": {
+        "force-linebreak": false,
+        "linebreaks": "none",
+        "spaces": "none"
+      },
+      "[t|": {
+        "force-linebreak": false,
+        "linebreaks": "none",
+        "spaces": "none"
+      },
+      "[|": {
+        "force-linebreak": false,
+        "linebreaks": "none",
+        "spaces": "none"
+      },
+      "default": {
+        "force-linebreak": false,
+        "linebreaks": "after",
+        "spaces": "both"
+      }
+    },
+    "indent": {
+      "app": "align",
+      "case": "indent-by 4",
+      "class": "indent-by 4",
+      "deriving": 4,
+      "do": "indent-by 4",
+      "export-spec-list": "indent-by 4",
+      "if": "align",
+      "import-spec-list": "align-or-indent-by 17",
+      "let": "align",
+      "let-binds": "align",
+      "let-in": "indent-by 4",
+      "multi-if": "indent-by 4",
+      "onside": 4,
+      "where": 2,
+      "where-binds": "indent-by 2"
+    },
+    "layout": {
+      "app": "try-oneline",
+      "con-decls": "try-oneline",
+      "declaration": "flex",
+      "export-spec-list": "try-oneline",
+      "if": "try-oneline",
+      "import-spec-list": "try-oneline",
+      "infix-app": "flex",
+      "let": "try-oneline",
+      "list-comp": "try-oneline",
+      "record": "try-oneline",
+      "typesig": "try-oneline"
+    },
+    "op": {
+      "$": {
+        "force-linebreak": false,
+        "linebreaks": "after",
+        "spaces": "both"
+      },
+      ",": {
+        "force-linebreak": false,
+        "linebreaks": "before",
+        "spaces": "after"
+      },
+      "-> in expression": {
+        "force-linebreak": false,
+        "linebreaks": "after",
+        "spaces": "both"
+      },
+      ". in expression": {
+        "force-linebreak": false,
+        "linebreaks": "before",
+        "spaces": "both"
+      },
+      ". in type": {
+        "force-linebreak": false,
+        "linebreaks": "after",
+        "spaces": "after"
+      },
+      "=": {
+        "force-linebreak": false,
+        "linebreaks": "after",
+        "spaces": "both"
+      },
+      "@": {
+        "force-linebreak": false,
+        "linebreaks": "none",
+        "spaces": "none"
+      },
+      "default": {
+        "force-linebreak": false,
+        "linebreaks": "before",
+        "spaces": "both"
+      },
+      "record": {
+        "force-linebreak": false,
+        "linebreaks": "none",
+        "spaces": "after"
+      },
+      "record in pattern": {
+        "force-linebreak": false,
+        "linebreaks": "none",
+        "spaces": "none"
+      }
+    },
+    "options": {
+      "preserve-vertical-space": true,
+      "sort-import-lists": true,
+      "sort-imports": true,
+      "sort-pragmas": true,
+      "split-language-pragmas": true
+    },
+    "penalty": {
+      "indent": 1,
+      "linebreak": 100,
+      "max-line-length": 80,
+      "overfull": 10,
+      "overfull-once": 200
+    }
+  },
+  "language": "Haskell2010",
+  "style": "base"
 }

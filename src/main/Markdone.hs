@@ -1,6 +1,7 @@
-{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE DeriveGeneric #-}
+
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE LambdaCase        #-}
 
 -- | A subset of markdown that only supports @#headings@ and code
 -- fences.
@@ -26,19 +27,19 @@ data Token = Heading !Int !ByteString
            | PlainLine !ByteString
            | BeginFence !ByteString
            | EndFence
-    deriving (Show)
+    deriving ( Show )
 
 -- | A markdone document.
 data Markdone = Section !ByteString ![Markdone]
               | CodeFence !ByteString !ByteString
               | PlainText !ByteString
-    deriving (Show, Generic)
+    deriving ( Show, Generic )
 
 instance NFData Markdone
 
 -- | Parse error.
 data MarkdownError = NoFenceEnd | ExpectedSection
-    deriving (Typeable, Show)
+    deriving ( Typeable, Show )
 
 instance Exception MarkdownError
 
@@ -68,38 +69,38 @@ parse = go (0 :: Int)
                                               Heading nextN _ -> nextN > n
                                               _ -> True)
                                          rest
-            in do
-                childs <- go (level + 1) children
-                siblings <- go level rest'
-                return (Section label childs : siblings)
-        (BeginFence label : rest) | level > 0 ->
-                                        let (content, rest') =
-                                                (span (\case
-                                                           PlainLine{} -> True
-                                                           _ -> False)
-                                                      rest)
-                                        in
-                                            case rest' of
-                                                (EndFence : rest'') ->
-                                                    fmap (CodeFence label
-                                                                    (S8.intercalate "\n"
-                                                                                    (map getPlain
-                                                                                         content)) :)
-                                                         (go level rest'')
-                                                _ -> throwM NoFenceEnd
-        PlainLine p : rest | level > 0 ->
-                                 let (content, rest') =
-                                         (span (\case
-                                                    PlainLine{} -> True
-                                                    _ -> False)
-                                               (PlainLine p : rest))
-                                 in
-                                     fmap (PlainText (S8.intercalate "\n"
-                                                                     (map getPlain
-                                                                          content)) :)
-                                          (go level rest')
+            in
+                do
+                    childs <- go (level + 1) children
+                    siblings <- go level rest'
+                    return (Section label childs : siblings)
+        (BeginFence label : rest)
+            | level > 0 ->
+                let (content, rest') = (span (\case
+                                                  PlainLine{} -> True
+                                                  _ -> False)
+                                             rest)
+                in
+                    case rest' of
+                        (EndFence : rest'') ->
+                            fmap (CodeFence label
+                                            (S8.intercalate "\n"
+                                                            (map getPlain
+                                                                 content)) :)
+                                 (go level rest'')
+                        _ -> throwM NoFenceEnd
+        PlainLine p : rest
+            | level > 0 ->
+                let (content, rest') = (span (\case
+                                                  PlainLine{} -> True
+                                                  _ -> False)
+                                             (PlainLine p : rest))
+                in
+                    fmap (PlainText (S8.intercalate "\n" (map getPlain content)) :)
+                         (go level rest')
         [] -> return []
         _ -> throwM ExpectedSection
+
     getPlain (PlainLine x) = x
     getPlain _ = ""
 
@@ -110,12 +111,9 @@ print = mconcat . map (go (0 :: Int))
         (Section heading children) ->
             let level' = level + 1
             in
-                B.byteString (S8.replicate level' '#') <> B.char7 ' ' <>
-                    B.byteString heading <>
-                    B.byteString "\n" <>
-                    mconcat (map (go level') children)
-        (CodeFence lang code) ->
-            B.byteString "``` " <> B.byteString lang <> B.char7 '\n' <>
-                B.byteString code <>
-                B.byteString "\n```\n"
+                B.byteString (S8.replicate level' '#') <> B.char7 ' '
+                <> B.byteString heading <> B.byteString "\n"
+                <> mconcat (map (go level') children)
+        (CodeFence lang code) -> B.byteString "``` " <> B.byteString lang
+            <> B.char7 '\n' <> B.byteString code <> B.byteString "\n```\n"
         (PlainText text) -> B.byteString text <> B.byteString "\n"
