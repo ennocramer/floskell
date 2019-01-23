@@ -50,7 +50,7 @@ Provide the following keybindings:
 ;; Customization properties
 
 (defcustom floskell-style
-  "base"
+  nil
   "The style to use for formatting."
   :group 'haskell
   :type 'string
@@ -62,14 +62,6 @@ Provide the following keybindings:
   :group 'haskell
   :type 'string
   :safe #'stringp)
-
-(defcustom floskell-line-length
-  nil
-  "Optionally override the line length of the formatting style."
-  :group 'haskell
-  :type '(choice (const :tag "From style" nil)
-                 (integer :tag "Override" 80))
-  :safe (lambda (val) (or (integerp val) (not val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Interactive functions
@@ -152,13 +144,9 @@ This is the place where floskell is actually called."
                                           floskell-process-path
                                           nil ; delete
                                           temp ; output
-                                          nil
-                                          "--style"
-                                          floskell-style)
-                                    (when floskell-line-length
-                                      (list "--line-length"
-                                            (number-to-string
-                                             floskell-line-length)))
+                                          nil)
+                                    (when floskell-style
+                                      (list "--style" floskell-style))
                                     (floskell-extra-arguments)))))
             (cond
              ((= ret 1)

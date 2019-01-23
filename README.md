@@ -234,10 +234,12 @@ To enable it, add the following to your init file:
 (add-hook 'haskell-mode-hook #'floskell-mode)
 ```
 
-By default it uses the style called `base`, if you want to use
-another, run `M-x customize-variable floskell-style`. If you want to
-configure per-project, make a file called `.dir-locals.el` in the
-project root directory like this:
+By default, Floskell uses the style called `base`.  If you want to use
+another, run `M-x customize-variable floskell-style` or create a
+Floskell configuration file in your home directory. If you want to
+configure per-project, add a configuration file in the project root or
+make a file called `.dir-locals.el` in the project root directory like
+this:
 
 ``` lisp
 ((nil . ((floskell-style . "johan-tibell"))))
@@ -264,7 +266,8 @@ which provides a text object for top level bindings.
 
 Basic support is provided through
 [contrib/floskell.coffee](https://github.com/ennocramer/floskell/blob/master/contrib/floskell.coffee),
-which adds floskell to atom menu with each available style. Mode should
-be installed as package into `.atom\packages\${PACKAGE_NAME}`, here is
-simple example of atom
+which adds floskell to atom menu with each available style, and
+`Default` which will use the appropriate configuration file. Mode
+should be installed as package into `.atom\packages\${PACKAGE_NAME}`,
+here is simple example of atom
 [package](https://github.com/Heather/atom-hindent).

@@ -3,11 +3,11 @@
 {dirname} = require 'path'
 {statSync} = require 'fs'
 
-prettify = (style, text, workingDirectory, {onComplete, onFailure}) ->
+prettify = (args, text, workingDirectory, {onComplete, onFailure}) ->
   lines = []
   proc = new BufferedProcess
     command: 'floskell'
-    args: ['--style', style]
+    args: args
     options:
       cwd: workingDirectory
     stdout: (line) -> lines.push(line)
@@ -20,7 +20,7 @@ prettify = (style, text, workingDirectory, {onComplete, onFailure}) ->
   proc.process.stdin.write(text)
   proc.process.stdin.end()
 
-prettifyFile = (style, editor, format = 'haskell') ->
+prettifyFile = (args, editor, format = 'haskell') ->
   [firstCursor, cursors...] = editor.getCursors().map (cursor) ->
     cursor.getBufferPosition()
   try
@@ -29,7 +29,7 @@ prettifyFile = (style, editor, format = 'haskell') ->
       workDir = '.'
   catch
     workDir = '.'
-  prettify style, editor.getText(), workDir,
+  prettify args, editor.getText(), workDir,
     onComplete: (text) ->
       editor.setText(text)
       if editor.getLastCursor()?
@@ -49,25 +49,25 @@ module.exports = Floskell =
 
     @disposables.add \
       atom.commands.add 'atom-text-editor[data-grammar~="haskell"]',
-        'floskell:prettify-base': ({target}) =>
-          prettifyFile 'base', target.getModel()
+        'floskell:prettify-none': ({target}) =>
+          prettifyFile [], target.getModel()
         'floskell:prettify-chris-done': ({target}) =>
-          prettifyFile 'chris-done', target.getModel()
-        'floskell:prettify-johan-tibell': ({target}) =>
-          prettifyFile 'johan-tibell', target.getModel()
-        'floskell:prettify-gibiansky': ({target}) =>
-          prettifyFile 'gibiansky', target.getModel()
+          prettifyFile ['--style', 'chris-done'], target.getModel()
         'floskell:prettify-cramer': ({target}) =>
-          prettifyFile 'cramer', target.getModel()
+          prettifyFile ['--style', 'cramer'], target.getModel()
+        'floskell:prettify-gibiansky': ({target}) =>
+          prettifyFile ['--style', 'gibiansky'], target.getModel()
+        'floskell:prettify-johan-tibell': ({target}) =>
+          prettifyFile ['--style', 'johan-tibell'], target.getModel()
 
     @menu.add atom.menu.add [
       label: 'floskell'
       submenu : [
-        {label: 'Base', command: 'floskell:prettify-base'}
-        {label: 'Chris Done', command: 'floskell:prettify-chris-done'}
-        {label: 'Johan Tibell', command: 'floskell:prettify-johan-tibell'}
-        {label: 'Gibiansky', command: 'floskell:prettify-gibiansky'}
+        {label: 'Default', command: 'floskell:prettify-none'}
         {label: 'Cramer', command: 'floskell:prettify-cramer'}
+        {label: 'Chris Done', command: 'floskell:prettify-chris-done'}
+        {label: 'Gibiansky', command: 'floskell:prettify-gibiansky'}
+        {label: 'Johan Tibell', command: 'floskell:prettify-johan-tibell'}
       ]
     ]
 
