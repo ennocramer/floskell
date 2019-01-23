@@ -355,7 +355,7 @@ base :: Style
 base = Style { styleName         = "base"
              , styleAuthor       = "Enno Cramer"
              , styleDescription  = "Configurable formatting style"
-             , styleInitialState = safeFlexConfig $ defaultFlexConfig
+             , styleInitialState = safeFlexConfig defaultFlexConfig
              }
 
 chrisDone :: Style

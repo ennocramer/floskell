@@ -287,9 +287,8 @@ listVinternal ctx sep xs = aligned $ do
     printCommentsSimple loc ast =
         let comments = map comInfoComment $ filterComments (== Just loc) ast
         in
-            forM_ comments $ \comment -> do
-                printComment (Just $ srcInfoSpan $ nodeInfoSpan $ ann ast)
-                             comment
+            forM_ comments $
+            printComment (Just . srcInfoSpan . nodeInfoSpan $ ann ast)
 
 listH :: (Annotated ast, Pretty ast)
       => LayoutContext
@@ -315,8 +314,8 @@ listV :: (Annotated ast, Pretty ast)
 listV ctx open close sep xs = groupV ctx open close $ do
     ws <- getConfig (cfgOpWs ctx sep . cfgOp)
     ws' <- getConfig (cfgGroupWs ctx open . cfgGroup)
-    unless ((wsLinebreak Before ws') || (wsSpace After ws')
-            || (wsLinebreak After ws) || not (wsSpace After ws))
+    unless (wsLinebreak Before ws' || wsSpace After ws' || wsLinebreak After ws
+            || not (wsSpace After ws))
            space
     listVinternal ctx sep xs
 
@@ -345,7 +344,7 @@ listV' :: (Annotated ast, Pretty ast)
        -> ByteString
        -> [ast NodeInfo]
        -> Printer ()
-listV' ctx sep = listVinternal ctx sep
+listV' = listVinternal
 
 list' :: (Annotated ast, Pretty ast)
       => LayoutContext
@@ -513,7 +512,7 @@ skipBlank :: Annotated ast
 skipBlank skip a b = skip a b && null (comments After a)
     && null (comments Before b)
   where
-    comments loc ast = filterComments (== Just loc) ast
+    comments loc = filterComments (== Just loc)
 
 skipBlankAfterDecl :: Decl a -> Bool
 skipBlankAfterDecl a = case a of
@@ -1150,7 +1149,7 @@ instance Pretty InstDecl where
         mapM_ pretty derivings
 
 instance Pretty Deriving where
-    prettyPrint (Deriving _ mderivstrategy instrules) = do
+    prettyPrint (Deriving _ mderivstrategy instrules) =
         withIndentBy cfgIndentDeriving $ do
             write "deriving "
             mayM_ mderivstrategy $ withPostfix space pretty
@@ -1416,7 +1415,7 @@ instance Pretty Exp where
 
     prettyPrint (Lit _ literal) = pretty literal
 
-    prettyPrint (e@(InfixApp _ _ qop _)) =
+    prettyPrint e@(InfixApp _ _ qop _) =
         prettyInfixApp opName Expression $ flattenInfix flattenInfixApp e
       where
         flattenInfixApp (InfixApp _ lhs qop' rhs) =
@@ -1425,7 +1424,7 @@ instance Pretty Exp where
             else Nothing
         flattenInfixApp _ = Nothing
 
-    prettyPrint e@(App _ _ _) = case flattenApp flatten e of
+    prettyPrint e@App{} = case flattenApp flatten e of
         fn : args -> prettyApp fn args
         [] -> error "impossible"
       where
@@ -1767,7 +1766,7 @@ instance Pretty Pat where
         operator Pattern "+"
         int integer
 
-    prettyPrint (p@(PInfixApp _ _ qname _)) =
+    prettyPrint p@(PInfixApp _ _ qname _) =
         prettyInfixApp opName Pattern $ flattenInfix flattenPInfixApp p
       where
         flattenPInfixApp (PInfixApp _ lhs qname' rhs) =

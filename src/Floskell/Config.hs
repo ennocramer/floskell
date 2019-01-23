@@ -401,8 +401,8 @@ instance FromJSON a => FromJSON (ConfigMap a) where
         o <- parseJSON value
         cfgMapDefault <- maybe (fail "Missing key: default") return $
             HashMap.lookup "default" o
-        cfgMapOverrides <- either fail (return . Map.fromList) $ sequence $
-            map toKey $ HashMap.toList $ HashMap.delete "default" o
+        cfgMapOverrides <- either fail (return . Map.fromList) $ mapM toKey $
+            HashMap.toList $ HashMap.delete "default" o
         return ConfigMap { .. }
       where
         toKey (k, v) = case textToKey k of

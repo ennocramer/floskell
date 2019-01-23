@@ -38,12 +38,12 @@ toCriterion style = go
         : go next
     go (PlainText desc : CodeFence lang code : next) =
         if lang == "haskell"
-        then (bench (UTF8.toString desc)
-                    (nf (either error id . reformat style
-                                                    Haskell2010
-                                                    defaultExtensions
-                                                    (Just "BENCHMARK.md"))
-                        code)) : go next
+        then bench (UTF8.toString desc)
+                   (nf (either error id . reformat style
+                                                   Haskell2010
+                                                   defaultExtensions
+                                                   (Just "BENCHMARK.md"))
+                       code) : go next
         else go next
     go (PlainText{} : next) = go next
     go (CodeFence{} : next) = go next

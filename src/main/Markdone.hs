@@ -47,17 +47,16 @@ instance Exception MarkdownError
 tokenize :: ByteString -> [Token]
 tokenize = map token . S8.lines
   where
-    token line =
-        if S8.isPrefixOf "#" line
-        then let (hashes, title) = S8.span (== '#') line
-             in
-                 Heading (S8.length hashes) (S8.dropWhile isSpace title)
-        else if S8.isPrefixOf "```" line
-             then if line == "```"
-                  then EndFence
-                  else BeginFence (S8.dropWhile (\c -> c == '`' || c == ' ')
-                                                line)
-             else PlainLine line
+    token line
+        | S8.isPrefixOf "#" line =
+            let (hashes, title) = S8.span (== '#') line
+            in
+                Heading (S8.length hashes) (S8.dropWhile isSpace title)
+        | S8.isPrefixOf "```" line =
+            if line == "```"
+            then EndFence
+            else BeginFence (S8.dropWhile (\c -> c == '`' || c == ' ') line)
+        | otherwise = PlainLine line
 
 -- | Parse into a forest.
 parse :: MonadThrow m => [Token] -> m [Markdone]
@@ -76,10 +75,10 @@ parse = go (0 :: Int)
                     return (Section label childs : siblings)
         (BeginFence label : rest)
             | level > 0 ->
-                let (content, rest') = (span (\case
-                                                  PlainLine{} -> True
-                                                  _ -> False)
-                                             rest)
+                let (content, rest') = span (\case
+                                                 PlainLine{} -> True
+                                                 _ -> False)
+                                            rest
                 in
                     case rest' of
                         (EndFence : rest'') ->
@@ -91,10 +90,10 @@ parse = go (0 :: Int)
                         _ -> throwM NoFenceEnd
         PlainLine p : rest
             | level > 0 ->
-                let (content, rest') = (span (\case
-                                                  PlainLine{} -> True
-                                                  _ -> False)
-                                             (PlainLine p : rest))
+                let (content, rest') = span (\case
+                                                 PlainLine{} -> True
+                                                 _ -> False)
+                                            (PlainLine p : rest)
                 in
                     fmap (PlainText (S8.intercalate "\n" (map getPlain content)) :)
                          (go level rest')

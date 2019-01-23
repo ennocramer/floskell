@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 -- | An outout buffer for ByteStrings that keeps track of line and
 -- column numbers.
 module Floskell.Buffer

@@ -137,8 +137,8 @@ reformat style language langextensions mfilepath x = preserveTrailingNewline x
 --
 -- will become five blocks, one for each CPP line and one for each pair of declarations.
 cppSplitBlocks :: ByteString -> [CodeBlock]
-cppSplitBlocks inp = map (classify . unlines')
-    . groupBy ((==) `on` (cppLine . snd)) . zip [ 0 .. ] . S8.lines $ inp
+cppSplitBlocks = map (classify . unlines') . groupBy ((==) `on` (cppLine . snd))
+    . zip [ 0 .. ] . S8.lines
   where
     cppLine :: ByteString -> Bool
     cppLine src =
@@ -173,16 +173,14 @@ prettyPrint style m comments =
                              comments
         csComments = map comInfoComment cs
     in
-        case style of
-            style ->
-                Right (runPrinterStyle style
-                                       -- For the time being, assume that all "free-floating" comments come at the beginning.
-                                       -- If they were not at the beginning, they would be after some ast node.
-                                       -- Thus, print them before going for the ast.
-                                       (do
-                                            mapM_ (printComment Nothing)
-                                                  (reverse csComments)
-                                            pretty ast))
+        Right (runPrinterStyle style
+                               -- For the time being, assume that all "free-floating" comments come at the beginning.
+                               -- If they were not at the beginning, they would be after some ast node.
+                               -- Thus, print them before going for the ast.
+                               (do
+                                    mapM_ (printComment Nothing)
+                                          (reverse csComments)
+                                    pretty ast))
 
 -- | Pretty print the given printable thing.
 runPrinterStyle :: Style -> Printer () -> L.ByteString

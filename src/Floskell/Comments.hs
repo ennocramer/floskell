@@ -1,11 +1,10 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 -- | Comment handling.
 module Floskell.Comments where
 
 import           Control.Arrow              ( first, second )
 import           Control.Monad.State.Strict
 
+import           Data.Foldable              ( traverse_ )
 import qualified Data.Map.Strict            as M
 
 import           Floskell.Types
@@ -42,7 +41,7 @@ annotateComments :: Traversable ast
                  -> ([ComInfo], ast NodeInfo)
 annotateComments src comments =
     evalState (do
-                   _ <- traverse assignComment comments
+                   traverse_ assignComment comments
                    cis <- gets fst
                    ast <- traverse transferComments src
                    return (cis, ast))
@@ -69,7 +68,7 @@ annotateComments src comments =
                     case nodeinfo of
                         -- We've already collected comments for this
                         -- node and this comment is a continuation.
-                        NodeInfo _ ((ComInfo c' _) : _)
+                        NodeInfo _ (ComInfo c' _ : _)
                             | aligned c' comment -> insertComment After ssi
 
                         -- The comment does not belong to this node.
@@ -108,11 +107,11 @@ annotateComments src comments =
         modify $ second $ M.adjust (\(NodeInfo s _) -> NodeInfo s []) ssi
         return ni { nodeInfoComments = reverse $ nodeInfoComments ni }
 
-    nodeBefore (Comment _ ss _) = fmap snd $ (OrderByEnd ss)
-        `M.lookupLT` spansByEnd
+    nodeBefore (Comment _ ss _) =
+        fmap snd $ OrderByEnd ss `M.lookupLT` spansByEnd
 
-    nodeAfter (Comment _ ss _) = fmap snd $ (OrderByStart ss)
-        `M.lookupGT` spansByStart
+    nodeAfter (Comment _ ss _) =
+        fmap snd $ OrderByStart ss `M.lookupGT` spansByStart
 
     spansByStart = foldr (\ssi -> M.insert (OrderByStart $ srcInfoSpan ssi) ssi)
                          M.empty

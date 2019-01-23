@@ -38,7 +38,7 @@ instance Show Readable where
 -- | Version of 'shouldBe' that prints strings in a readable way,
 -- better for our use-case.
 shouldBeReadable :: ByteString -> ByteString -> Expectation
-shouldBeReadable x y = (Readable x) `shouldBe` (Readable y)
+shouldBeReadable x y = Readable x `shouldBe` Readable y
 
 haskell :: ByteString
 haskell = "haskell"
@@ -54,7 +54,7 @@ loadMarkdone filename = do
     MD.parse (MD.tokenize bytes)
 
 saveMarkdone :: String -> [Markdone] -> IO ()
-saveMarkdone filename doc = do
+saveMarkdone filename doc =
     S.writeFile filename $ L.toStrict $ L.toLazyByteString $ MD.print doc
 
 -- | Extract code snippets from a Markdone document.
@@ -83,9 +83,9 @@ expectedFailures = []
 toSpec :: Style -> [Int] -> [TestTree] -> [TestTree] -> Spec
 toSpec style path inp ref =
     forM_ (zip3 [ 1 :: Int .. ] inp (ref ++ repeat TestMismatchMarker)) $ \case
-        (n, (TestSection title children), (TestSection _ children')) ->
+        (n, TestSection title children, TestSection _ children') ->
             describe title $ toSpec style (path ++ [ n ]) children children'
-        (n, (TestSnippet code), (TestSnippet code')) -> do
+        (n, TestSnippet code, TestSnippet code') -> do
             let path' = (styleName style, path ++ [ n ])
             it (name n "formats as expected") $
                 case reformatSnippet style code of
