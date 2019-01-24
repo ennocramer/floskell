@@ -1,5 +1,5 @@
 name:                floskell
-version:             1.0.0
+version:             0.9.0
 synopsis:            A flexible Haskell source code pretty printer
 description:         A flexible Haskell source code pretty printer.
                      .
@@ -9,7 +9,7 @@ stability:           Unstable
 license-file:        LICENSE.md
 author:              Chris Done, Andrew Gibiansky, Tobias Pflug, Pierre Radermecker, Enno Cramer
 maintainer:          ecramer@memfrob.de
-copyright:           2014 Chris Done, 2015 Andrew Gibiansky, 2016-2017 Enno Cramer
+copyright:           2014 Chris Done, 2015 Andrew Gibiansky, 2016-2019 Enno Cramer
 category:            Development
 build-type:          Simple
 cabal-version:       >=1.8
@@ -28,7 +28,7 @@ source-repository head
 
 library
   hs-source-dirs:    src/
-  ghc-options:       -Wall -O2
+  ghc-options:       -Wall
   exposed-modules:   Floskell
                      Floskell.Buffer
                      Floskell.Comments
@@ -53,7 +53,7 @@ library
 
 executable floskell
   hs-source-dirs:    src/main
-  ghc-options:       -Wall -O2 -Wno-missing-home-modules -optP-Wno-nonportable-include-path
+  ghc-options:       -Wall -Wno-missing-home-modules -optP-Wno-nonportable-include-path
   main-is:           Main.hs
   build-depends:     base >= 4 && < 5
                    , floskell
@@ -70,6 +70,7 @@ executable floskell
 test-suite floskell-test
   type: exitcode-stdio-1.0
   hs-source-dirs: src/main
+  ghc-options:       -Wall -threaded -rtsopts -with-rtsopts=-N
   main-is:           Test.hs
   other-modules:     Markdone
   build-depends:     base >= 4 && <5
@@ -88,7 +89,7 @@ test-suite floskell-test
 benchmark floskell-bench
   type: exitcode-stdio-1.0
   hs-source-dirs:    src/main
-  ghc-options:       -Wall -O2 -rtsopts
+  ghc-options:       -Wall -threaded -rtsopts -with-rtsopts=-N
   main-is:           Benchmark.hs
   other-modules:     Markdone
   build-depends:     base >= 4 && < 5
