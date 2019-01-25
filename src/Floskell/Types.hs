@@ -14,7 +14,7 @@ module Floskell.Types
     , psColumn
     , psNewline
     , Style(..)
-    , FlexConfig(..)
+    , Config(..)
     , NodeInfo(..)
     , ComInfo(..)
     , Location(..)
@@ -36,7 +36,7 @@ import           Data.Text                      ( Text )
 
 import           Floskell.Buffer                ( Buffer )
 import qualified Floskell.Buffer                as Buffer
-import           Floskell.Config                ( FlexConfig(..), Location(..) )
+import           Floskell.Config                ( Config(..), Location(..) )
 
 import           Language.Haskell.Exts.Comments
 import           Language.Haskell.Exts.SrcLoc
@@ -78,7 +78,7 @@ data PrintState =
                , psIndentLevel :: !Int64 -- ^ Current indentation level.
                , psOnside :: !Int64 -- ^ Extra indentation is necessary with next line break.
                , psTabStops :: !(Map TabStop Int64) -- ^ Tab stops for alignment.
-               , psUserState :: !FlexConfig -- ^ User state.
+               , psUserState :: !Config -- ^ User state.
                , psEolComment :: !Bool -- ^ An end of line comment has just been outputted.
                , psOutputRestriction :: OutputRestriction
                }
@@ -97,7 +97,7 @@ data Style =
     Style { styleName         :: !Text -- ^ Name of the style, used in the commandline interface.
           , styleAuthor       :: !Text -- ^ Author of the printer (as opposed to the author of the style).
           , styleDescription  :: !Text -- ^ Description of the style.
-          , styleInitialState :: !FlexConfig -- ^ User state, if needed.
+          , styleInitialState :: !Config -- ^ User state, if needed.
           }
 
 -- | Information for each node in the AST.

@@ -18,9 +18,9 @@ module Floskell.Config
     , OpConfig(..)
     , GroupConfig(..)
     , OptionConfig(..)
-    , FlexConfig(..)
-    , defaultFlexConfig
-    , safeFlexConfig
+    , Config(..)
+    , defaultConfig
+    , safeConfig
     , cfgMapFind
     , cfgOpWs
     , cfgGroupWs
@@ -211,28 +211,28 @@ instance Default OptionConfig where
                        , cfgOptionPreserveVerticalSpace = False
                        }
 
-data FlexConfig = FlexConfig { cfgPenalty :: !PenaltyConfig
-                             , cfgAlign   :: !AlignConfig
-                             , cfgIndent  :: !IndentConfig
-                             , cfgLayout  :: !LayoutConfig
-                             , cfgOp      :: !OpConfig
-                             , cfgGroup   :: !GroupConfig
-                             , cfgOptions :: !OptionConfig
-                             }
+data Config = Config { cfgPenalty :: !PenaltyConfig
+                     , cfgAlign   :: !AlignConfig
+                     , cfgIndent  :: !IndentConfig
+                     , cfgLayout  :: !LayoutConfig
+                     , cfgOp      :: !OpConfig
+                     , cfgGroup   :: !GroupConfig
+                     , cfgOptions :: !OptionConfig
+                     }
     deriving ( Generic )
 
-instance Default FlexConfig where
-    def = FlexConfig { cfgPenalty = def
-                     , cfgAlign   = def
-                     , cfgIndent  = def
-                     , cfgLayout  = def
-                     , cfgOp      = def
-                     , cfgGroup   = def
-                     , cfgOptions = def
-                     }
+instance Default Config where
+    def = Config { cfgPenalty = def
+                 , cfgAlign   = def
+                 , cfgIndent  = def
+                 , cfgLayout  = def
+                 , cfgOp      = def
+                 , cfgGroup   = def
+                 , cfgOptions = def
+                 }
 
-defaultFlexConfig :: FlexConfig
-defaultFlexConfig =
+defaultConfig :: Config
+defaultConfig =
     def { cfgOp = OpConfig ((unOpConfig def) { cfgMapOverrides =
                                                    Map.fromList opWsOverrides
                                              })
@@ -248,8 +248,8 @@ defaultFlexConfig =
           )
         ]
 
-safeFlexConfig :: FlexConfig -> FlexConfig
-safeFlexConfig cfg = cfg { cfgGroup = group, cfgOp = op }
+safeConfig :: Config -> Config
+safeConfig cfg = cfg { cfgGroup = group, cfgOp = op }
   where
     group = GroupConfig $
         updateOverrides (unGroupConfig $ cfgGroup cfg)
@@ -451,8 +451,8 @@ instance ToJSON OptionConfig where
 instance FromJSON OptionConfig where
     parseJSON = genericParseJSON (recordOptions 9)
 
-instance ToJSON FlexConfig where
+instance ToJSON Config where
     toJSON = genericToJSON (recordOptions 3)
 
-instance FromJSON FlexConfig where
+instance FromJSON Config where
     parseJSON = genericParseJSON (recordOptions 3)

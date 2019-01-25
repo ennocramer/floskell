@@ -76,7 +76,7 @@ import           Floskell.Config
 import           Floskell.Types
 
 -- | Query part of the pretty printer config
-getConfig :: (FlexConfig -> b) -> Printer b
+getConfig :: (Config -> b) -> Printer b
 getConfig f = f <$> gets psUserState
 
 -- | Query pretty printer options

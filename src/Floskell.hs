@@ -5,11 +5,11 @@
 -- | Haskell indenter.
 module Floskell
     ( -- * Configuration
-      Config(..)
-    , defaultConfig
-    , findConfig
-    , findConfigIn
-    , readConfig
+      AppConfig(..)
+    , defaultAppConfig
+    , findAppConfig
+    , findAppConfigIn
+    , readAppConfig
     , setStyle
     , setLanguage
     , setExtensions

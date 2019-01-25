@@ -8,9 +8,9 @@ import qualified Data.Map        as Map
 import           Floskell.Config
 import           Floskell.Types
 
-chrisDoneCfg :: FlexConfig
-chrisDoneCfg = safeFlexConfig $
-    defaultFlexConfig { cfgIndent, cfgLayout, cfgOp, cfgGroup, cfgOptions }
+chrisDoneCfg :: Config
+chrisDoneCfg = safeConfig $
+    defaultConfig { cfgIndent, cfgLayout, cfgOp, cfgGroup, cfgOptions }
   where
     cfgIndent =
         IndentConfig { cfgIndentOnside = 2
@@ -76,15 +76,15 @@ chrisDoneCfg = safeFlexConfig $
                               , cfgOptionPreserveVerticalSpace = False
                               }
 
-cramerCfg :: FlexConfig
-cramerCfg = safeFlexConfig $
-    defaultFlexConfig { cfgAlign
-                      , cfgIndent
-                      , cfgLayout
-                      , cfgOp
-                      , cfgGroup
-                      , cfgOptions
-                      }
+cramerCfg :: Config
+cramerCfg = safeConfig $
+    defaultConfig { cfgAlign
+                  , cfgIndent
+                  , cfgLayout
+                  , cfgOp
+                  , cfgGroup
+                  , cfgOptions
+                  }
   where
     cfgAlign = AlignConfig { cfgAlignLimits       = (10, 25)
                            , cfgAlignCase         = False
@@ -183,15 +183,15 @@ cramerCfg = safeFlexConfig $
                               , cfgOptionPreserveVerticalSpace = True
                               }
 
-gibianskyCfg :: FlexConfig
-gibianskyCfg = safeFlexConfig $
-    defaultFlexConfig { cfgAlign
-                      , cfgIndent
-                      , cfgLayout
-                      , cfgOp
-                      , cfgGroup
-                      , cfgOptions
-                      }
+gibianskyCfg :: Config
+gibianskyCfg = safeConfig $
+    defaultConfig { cfgAlign
+                  , cfgIndent
+                  , cfgLayout
+                  , cfgOp
+                  , cfgGroup
+                  , cfgOptions
+                  }
   where
     cfgAlign = AlignConfig { cfgAlignLimits       = (10, 25)
                            , cfgAlignCase         = True
@@ -267,9 +267,9 @@ gibianskyCfg = safeFlexConfig $
                               , cfgOptionPreserveVerticalSpace = False
                               }
 
-johanTibellCfg :: FlexConfig
-johanTibellCfg = safeFlexConfig $
-    defaultFlexConfig { cfgIndent, cfgLayout, cfgOp, cfgGroup, cfgOptions }
+johanTibellCfg :: Config
+johanTibellCfg = safeConfig $
+    defaultConfig { cfgIndent, cfgLayout, cfgOp, cfgGroup, cfgOptions }
   where
     cfgIndent =
         IndentConfig { cfgIndentOnside = 4
@@ -355,7 +355,7 @@ base :: Style
 base = Style { styleName         = "base"
              , styleAuthor       = "Enno Cramer"
              , styleDescription  = "Configurable formatting style"
-             , styleInitialState = safeFlexConfig defaultFlexConfig
+             , styleInitialState = safeConfig defaultConfig
              }
 
 chrisDone :: Style

@@ -18,8 +18,8 @@ import qualified Data.Text                       as T
 import           Data.Version                    ( showVersion )
 
 import           Floskell
-                 ( Config(..), defaultConfig, findConfig, readConfig, reformat
-                 , setExtensions, setLanguage, setStyle, styles )
+                 ( AppConfig(..), defaultAppConfig, findAppConfig, readAppConfig
+                 , reformat, setExtensions, setLanguage, setStyle, styles )
 import           Floskell.Types                  ( Style(styleName) )
 
 import           Foreign.C.Error                 ( Errno(..), eXDEV )
@@ -59,11 +59,11 @@ main = do
     mconfig <- case optConfig opts of
         Just c -> return $ Just c
         Nothing ->
-            if isJust (optStyle opts) then return Nothing else findConfig
+            if isJust (optStyle opts) then return Nothing else findAppConfig
     baseConfig <- case mconfig of
-        Just path -> readConfig path
-        Nothing -> return defaultConfig
-    let config = mergeConfig baseConfig opts
+        Just path -> readAppConfig path
+        Nothing -> return defaultAppConfig
+    let config = mergeAppConfig baseConfig opts
     if optPrintConfig opts
         then BL.putStr $ JSON.encodePretty config
         else run config (optFiles opts)
@@ -113,10 +113,10 @@ main = do
                                               . map PP.text $ sort xs)
 
 -- | Reformat files or stdin based on provided configuration.
-run :: Config -> [FilePath] -> IO ()
-run Config{..} files = case files of
-    [] -> reformatStdin cfgStyle cfgLanguage cfgExtensions
-    _ -> mapM_ (reformatFile cfgStyle cfgLanguage cfgExtensions) files
+run :: AppConfig -> [FilePath] -> IO ()
+run AppConfig{..} files = case files of
+    [] -> reformatStdin appStyle appLanguage appExtensions
+    _ -> mapM_ (reformatFile appStyle appLanguage appExtensions) files
 
 -- | Reformat stdin according to Style, Language, and Extensions.
 reformatStdin :: Style -> Language -> [Extension] -> IO ()
@@ -150,6 +150,6 @@ reformatByteString style language extensions mpath text =
     either error id $ reformat style language extensions mpath text
 
 -- | Update the program configuration from the program options.
-mergeConfig :: Config -> Options -> Config
-mergeConfig cfg Options{..} = cfg `setStyle` optStyle `setLanguage` optLanguage
-    `setExtensions` optExtensions
+mergeAppConfig :: AppConfig -> Options -> AppConfig
+mergeAppConfig cfg Options{..} = cfg `setStyle` optStyle
+    `setLanguage` optLanguage `setExtensions` optExtensions

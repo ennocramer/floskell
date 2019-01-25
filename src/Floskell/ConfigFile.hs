@@ -3,11 +3,11 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module Floskell.ConfigFile
-    ( Config(..)
-    , defaultConfig
-    , findConfig
-    , findConfigIn
-    , readConfig
+    ( AppConfig(..)
+    , defaultAppConfig
+    , findAppConfig
+    , findAppConfigIn
+    , readAppConfig
     , setStyle
     , setLanguage
     , setExtensions
@@ -38,39 +38,39 @@ import           System.Directory
 import           System.FilePath
                  ( joinPath, splitDirectories, takeDirectory )
 
-data Config = Config { cfgStyle      :: Style
-                     , cfgLanguage   :: Language
-                     , cfgExtensions :: [Extension]
-                     }
+data AppConfig = AppConfig { appStyle      :: Style
+                           , appLanguage   :: Language
+                           , appExtensions :: [Extension]
+                           }
     deriving ( Generic )
 
-instance ToJSON Config where
-    toJSON Config{..} = JSON.object [ "style" .= styleName cfgStyle
-                                    , "language" .= show cfgLanguage
-                                    , "extensions" .= map showExt cfgExtensions
-                                    , "formatting" .= styleInitialState cfgStyle
-                                    ]
+instance ToJSON AppConfig where
+    toJSON AppConfig{..} =
+        JSON.object [ "style" .= styleName appStyle
+                    , "language" .= show appLanguage
+                    , "extensions" .= map showExt appExtensions
+                    , "formatting" .= styleInitialState appStyle
+                    ]
       where
         showExt (EnableExtension x) = show x
         showExt (DisableExtension x) = "No" ++ show x
         showExt (UnknownExtension x) = x
 
-instance FromJSON Config where
+instance FromJSON AppConfig where
     parseJSON (JSON.Object o) = do
-        style <- maybe (cfgStyle defaultConfig) lookupStyle <$> o .:? "style"
-        language <- maybe (cfgLanguage defaultConfig) lookupLanguage
+        style <- maybe (appStyle defaultAppConfig) lookupStyle <$> o .:? "style"
+        language <- maybe (appLanguage defaultAppConfig) lookupLanguage
             <$> o .:? "language"
-        extensions <- maybe (cfgExtensions defaultConfig) (map lookupExtension)
-            <$> o .:? "extensions"
-        let flex = styleInitialState style
-        flex' <- maybe flex (updateFlexConfig flex) <$> o .:? "formatting"
-        let style' = style { styleInitialState = flex' }
-        return $ Config style' language extensions
+        extensions <- maybe (appExtensions defaultAppConfig)
+                            (map lookupExtension) <$> o .:? "extensions"
+        let fmt = styleInitialState style
+        fmt' <- maybe fmt (updateConfig fmt) <$> o .:? "formatting"
+        let style' = style { styleInitialState = fmt' }
+        return $ AppConfig style' language extensions
       where
-        updateFlexConfig cfg v =
-            case JSON.fromJSON $ mergeJSON (toJSON cfg) v of
-                JSON.Error e -> error e
-                JSON.Success x -> x
+        updateConfig cfg v = case JSON.fromJSON $ mergeJSON (toJSON cfg) v of
+            JSON.Error e -> error e
+            JSON.Success x -> x
 
         mergeJSON JSON.Null r = r
         mergeJSON l JSON.Null = l
@@ -78,11 +78,11 @@ instance FromJSON Config where
             JSON.Object (HashMap.unionWith mergeJSON l r)
         mergeJSON _ r = r
 
-    parseJSON v = JSON.typeMismatch "Config" v
+    parseJSON v = JSON.typeMismatch "AppConfig" v
 
 -- | Default program configuration.
-defaultConfig :: Config
-defaultConfig = Config (head styles) Haskell2010 []
+defaultAppConfig :: AppConfig
+defaultAppConfig = AppConfig (head styles) Haskell2010 []
 
 -- | Lookup a style by name.
 lookupStyle :: String -> Style
@@ -104,11 +104,11 @@ lookupExtension name = case classifyExtension name of
 
 -- | Try to find a configuration file based on current working
 -- directory, or in one of the application configuration directories.
-findConfig :: IO (Maybe FilePath)
-findConfig = getCurrentDirectory >>= findConfigIn
+findAppConfig :: IO (Maybe FilePath)
+findAppConfig = getCurrentDirectory >>= findAppConfigIn
 
-findConfigIn :: FilePath -> IO (Maybe FilePath)
-findConfigIn src = do
+findAppConfigIn :: FilePath -> IO (Maybe FilePath)
+findAppConfigIn src = do
     isFile <- doesFileExist src
     let startFrom = if isFile then takeDirectory src else src
 
@@ -125,19 +125,19 @@ findConfigIn src = do
     return $ localConfig <|> userConfig <|> dotfileConfig
 
 -- | Load a configuration file.
-readConfig :: FilePath -> IO Config
-readConfig file = do
+readAppConfig :: FilePath -> IO AppConfig
+readAppConfig file = do
     text <- BS.readFile file
     either (error . (++) (file ++ ": ")) return $ JSON.eitherDecodeStrict text
 
-setStyle :: Config -> Maybe String -> Config
+setStyle :: AppConfig -> Maybe String -> AppConfig
 setStyle cfg mbStyle =
-    cfg { cfgStyle = maybe (cfgStyle cfg) lookupStyle mbStyle }
+    cfg { appStyle = maybe (appStyle cfg) lookupStyle mbStyle }
 
-setLanguage :: Config -> Maybe String -> Config
+setLanguage :: AppConfig -> Maybe String -> AppConfig
 setLanguage cfg mbLanguage =
-    cfg { cfgLanguage = maybe (cfgLanguage cfg) lookupLanguage mbLanguage }
+    cfg { appLanguage = maybe (appLanguage cfg) lookupLanguage mbLanguage }
 
-setExtensions :: Config -> [String] -> Config
+setExtensions :: AppConfig -> [String] -> AppConfig
 setExtensions cfg exts =
-    cfg { cfgExtensions = cfgExtensions cfg ++ map lookupExtension exts }
+    cfg { appExtensions = appExtensions cfg ++ map lookupExtension exts }
