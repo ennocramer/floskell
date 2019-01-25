@@ -66,7 +66,6 @@ import           Data.ByteString            ( ByteString )
 import qualified Data.ByteString            as BS
 import qualified Data.ByteString.Builder    as BB
 import qualified Data.ByteString.Lazy       as BL
-import           Data.Int                   ( Int64 )
 import           Data.List                  ( intersperse )
 import qualified Data.Map.Strict            as Map
 import           Data.Monoid                ( (<>) )
@@ -84,17 +83,16 @@ getOption :: (OptionConfig -> Bool) -> Printer Bool
 getOption f = getConfig (f . cfgOptions)
 
 -- | Line penalty calculation
-linePenalty :: Bool -> Int64 -> Printer Penalty
+linePenalty :: Bool -> Int -> Printer Penalty
 linePenalty eol col = do
     indentLevel <- gets psIndentLevel
     config <- getConfig cfgPenalty
     let maxcol = penaltyMaxLineLength config
     let pLinebreak = onlyIf eol $ penaltyLinebreak config
-    let pIndent = fromIntegral indentLevel * (penaltyIndent config)
-    let pOverfull = onlyIf (col > fromIntegral maxcol) $ penaltyOverfull config
-            * fromIntegral (col - fromIntegral maxcol)
-            + penaltyOverfullOnce config
-    return . fromIntegral $ pLinebreak + pIndent + pOverfull
+    let pIndent = indentLevel * penaltyIndent config
+    let pOverfull = onlyIf (col > maxcol) $ penaltyOverfull config
+            * (col - maxcol) + penaltyOverfullOnce config
+    return . Penalty $ pLinebreak + pIndent + pOverfull
   where
     onlyIf cond penalty = if cond then penalty else 0
 
@@ -129,14 +127,14 @@ write x = do
   where
     write' x' = do
         state <- get
-        let indentLevel = fromIntegral (psIndentLevel state)
+        let indentLevel = psIndentLevel state
             out = if psNewline state
                   then BS.replicate indentLevel 32 <> x'
                   else x'
             buffer = psBuffer state
-            newCol = Buffer.column buffer + fromIntegral (BS.length out)
+            newCol = Buffer.column buffer + BS.length out
         guard $ psOutputRestriction state == Anything || newCol
-            < fromIntegral (penaltyMaxLineLength (cfgPenalty (psConfig state)))
+            < penaltyMaxLineLength (cfgPenalty (psConfig state))
         penalty <- linePenalty False newCol
         when (penalty /= mempty) $ cost mempty penalty
         modify (\s ->
@@ -184,9 +182,7 @@ withTabStops stops p = do
     oldstops <- gets psTabStops
     modify $ \s ->
         s { psTabStops =
-                foldr (\(k, v) ->
-                       Map.alter (const $ fmap (\x -> col + fromIntegral x) v)
-                                 k)
+                foldr (\(k, v) -> Map.alter (const $ fmap (\x -> col + x) v) k)
                       (psTabStops s)
                       stops
           }
@@ -199,7 +195,7 @@ atTabStop tabstop = do
     mstop <- gets (Map.lookup tabstop . psTabStops)
     mayM_ mstop $ \stop -> do
         col <- getNextColumn
-        let padding = max 0 $ fromIntegral (stop - col)
+        let padding = max 0 (stop - col)
         write (BS.replicate padding 32)
 
 mayM_ :: Maybe a -> (a -> Printer ()) -> Printer ()
@@ -262,7 +258,7 @@ inter :: Printer () -> [Printer ()] -> Printer ()
 inter x = sequence_ . intersperse x
 
 -- | Get the column for the next printed character.
-getNextColumn :: Printer Int64
+getNextColumn :: Printer Int
 getNextColumn = do
     st <- get
     return $ if psEolComment st
@@ -271,7 +267,7 @@ getNextColumn = do
 
 -- | Set the (newline-) indent level to the given column for the given
 -- printer.
-column :: Int64 -> Printer a -> Printer a
+column :: Int -> Printer a -> Printer a
 column i p = do
     level <- gets psIndentLevel
     onside' <- gets psOnside
@@ -286,7 +282,7 @@ column i p = do
 indent :: Int -> Printer a -> Printer a
 indent i p = do
     level <- gets psIndentLevel
-    column (level + fromIntegral i) p
+    column (level + i) p
 
 aligned :: Printer a -> Printer a
 aligned p = do
@@ -309,7 +305,7 @@ onside p = do
     onsideIndent <- getConfig (cfgIndentOnside . cfgIndent)
     level <- gets psIndentLevel
     onside' <- gets psOnside
-    modify (\s -> s { psOnside = fromIntegral onsideIndent })
+    modify (\s -> s { psOnside = onsideIndent })
     m <- p
     modify (\s -> s { psIndentLevel = level, psOnside = onside' })
     return m

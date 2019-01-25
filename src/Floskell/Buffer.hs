@@ -15,13 +15,11 @@ import           Data.ByteString.Builder ( Builder )
 import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Lazy    as BL
 
-import           Data.Int                ( Int64 )
-
 data Buffer =
     Buffer { bufferData        :: !Builder -- ^ The current output.
            , bufferDataNoSpace :: !Builder -- ^ The current output without trailing spaces.
-           , bufferLine        :: !Int64   -- ^ Current line number.
-           , bufferColumn      :: !Int64   -- ^ Current column number.
+           , bufferLine        :: !Int     -- ^ Current line number.
+           , bufferColumn      :: !Int     -- ^ Current column number.
            }
 
 -- | An empty output buffer.
@@ -39,7 +37,7 @@ write str buf =
     buf { bufferData        = newBufferData
         , bufferDataNoSpace =
               if BS.all (== 32) str then bufferData buf else newBufferData
-        , bufferColumn      = bufferColumn buf + fromIntegral (BS.length str)
+        , bufferColumn      = bufferColumn buf + BS.length str
         }
   where
     newBufferData = bufferData buf `mappend` BB.byteString str
@@ -55,11 +53,11 @@ newline buf = buf { bufferData        = newBufferData
     newBufferData = bufferDataNoSpace buf `mappend` BB.char7 '\n'
 
 -- | Return the current line number, counting from 0.
-line :: Buffer -> Int64
+line :: Buffer -> Int
 line = bufferLine
 
 -- | Return the column number, counting from 0.
-column :: Buffer -> Int64
+column :: Buffer -> Int
 column = bufferColumn
 
 -- | Return the contents of the output buffer as a lazy ByteString.

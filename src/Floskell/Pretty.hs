@@ -389,7 +389,7 @@ measure p = do
     let s' = s { psBuffer = Buffer.empty, psEolComment = False }
     return $ case execPrinter (oneline p) s' of
         Nothing -> Nothing
-        Just (_, s'') -> Just . fromIntegral . (\x -> x - psIndentLevel s)
+        Just (_, s'') -> Just . (\x -> x - psIndentLevel s) . fromIntegral
             . BL.length . Buffer.toLazyByteString $ psBuffer s''
 
 measureDecl :: Decl NodeInfo -> Printer (Maybe [Int])

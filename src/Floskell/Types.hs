@@ -28,7 +28,6 @@ import           Control.Monad.Search
 import           Control.Monad.State.Strict
                  ( MonadState(..), StateT, execStateT, runStateT )
 
-import           Data.Int                       ( Int64 )
 import           Data.Map.Strict                ( Map )
 
 import           Data.Semigroup                 as Sem
@@ -75,18 +74,18 @@ runPrinter m s = runSearchBest $ runStateT (unPrinter m) s
 -- | The state of the pretty printer.
 data PrintState =
     PrintState { psBuffer :: !Buffer -- ^ Output buffer
-               , psIndentLevel :: !Int64 -- ^ Current indentation level.
-               , psOnside :: !Int64 -- ^ Extra indentation is necessary with next line break.
-               , psTabStops :: !(Map TabStop Int64) -- ^ Tab stops for alignment.
+               , psIndentLevel :: !Int -- ^ Current indentation level.
+               , psOnside :: !Int -- ^ Extra indentation is necessary with next line break.
+               , psTabStops :: !(Map TabStop Int) -- ^ Tab stops for alignment.
                , psConfig :: !Config -- ^ Style definition.
                , psEolComment :: !Bool -- ^ An end of line comment has just been outputted.
                , psOutputRestriction :: OutputRestriction
                }
 
-psLine :: PrintState -> Int64
+psLine :: PrintState -> Int
 psLine = Buffer.line . psBuffer
 
-psColumn :: PrintState -> Int64
+psColumn :: PrintState -> Int
 psColumn = Buffer.column . psBuffer
 
 psNewline :: PrintState -> Bool
