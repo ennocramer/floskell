@@ -77,7 +77,7 @@ import           Floskell.Types
 
 -- | Query part of the pretty printer config
 getConfig :: (Config -> b) -> Printer b
-getConfig f = f <$> gets psUserState
+getConfig f = f <$> gets psConfig
 
 -- | Query pretty printer options
 getOption :: (OptionConfig -> Bool) -> Printer Bool
@@ -136,7 +136,7 @@ write x = do
             buffer = psBuffer state
             newCol = Buffer.column buffer + fromIntegral (BS.length out)
         guard $ psOutputRestriction state == Anything || newCol
-            < fromIntegral (penaltyMaxLineLength (cfgPenalty (psUserState state)))
+            < fromIntegral (penaltyMaxLineLength (cfgPenalty (psConfig state)))
         penalty <- linePenalty False newCol
         when (penalty /= mempty) $ cost mempty penalty
         modify (\s ->

@@ -352,38 +352,38 @@ johanTibellCfg = safeConfig $
 
 -- | Base style definition.
 base :: Style
-base = Style { styleName         = "base"
-             , styleAuthor       = "Enno Cramer"
-             , styleDescription  = "Configurable formatting style"
-             , styleInitialState = safeConfig defaultConfig
+base = Style { styleName        = "base"
+             , styleAuthor      = "Enno Cramer"
+             , styleDescription = "Configurable formatting style"
+             , styleConfig      = safeConfig defaultConfig
              }
 
 chrisDone :: Style
-chrisDone = Style { styleName         = "chris-done"
-                  , styleAuthor       = "Chris Done"
-                  , styleDescription  = "Chris Done's style"
-                  , styleInitialState = chrisDoneCfg
+chrisDone = Style { styleName        = "chris-done"
+                  , styleAuthor      = "Chris Done"
+                  , styleDescription = "Chris Done's style"
+                  , styleConfig      = chrisDoneCfg
                   }
 
 cramer :: Style
-cramer = Style { styleName         = "cramer"
-               , styleAuthor       = "Enno Cramer"
-               , styleDescription  = "Enno Cramer's style"
-               , styleInitialState = cramerCfg
+cramer = Style { styleName        = "cramer"
+               , styleAuthor      = "Enno Cramer"
+               , styleDescription = "Enno Cramer's style"
+               , styleConfig      = cramerCfg
                }
 
 gibiansky :: Style
-gibiansky = Style { styleName         = "gibiansky"
-                  , styleAuthor       = "Andrew Gibiansky"
-                  , styleDescription  = "Andrew Gibiansky's style"
-                  , styleInitialState = gibianskyCfg
+gibiansky = Style { styleName        = "gibiansky"
+                  , styleAuthor      = "Andrew Gibiansky"
+                  , styleDescription = "Andrew Gibiansky's style"
+                  , styleConfig      = gibianskyCfg
                   }
 
 johanTibell :: Style
-johanTibell = Style { styleName         = "johan-tibell"
-                    , styleAuthor       = "Johan Tibell"
-                    , styleDescription  = "Johan Tibell's style"
-                    , styleInitialState = johanTibellCfg
+johanTibell = Style { styleName        = "johan-tibell"
+                    , styleAuthor      = "Johan Tibell"
+                    , styleDescription = "Johan Tibell's style"
+                    , styleConfig      = johanTibellCfg
                     }
 
 -- | Styles list, useful for programmatically choosing.

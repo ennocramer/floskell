@@ -49,7 +49,7 @@ instance ToJSON AppConfig where
         JSON.object [ "style" .= styleName appStyle
                     , "language" .= show appLanguage
                     , "extensions" .= map showExt appExtensions
-                    , "formatting" .= styleInitialState appStyle
+                    , "formatting" .= styleConfig appStyle
                     ]
       where
         showExt (EnableExtension x) = show x
@@ -63,9 +63,9 @@ instance FromJSON AppConfig where
             <$> o .:? "language"
         extensions <- maybe (appExtensions defaultAppConfig)
                             (map lookupExtension) <$> o .:? "extensions"
-        let fmt = styleInitialState style
+        let fmt = styleConfig style
         fmt' <- maybe fmt (updateConfig fmt) <$> o .:? "formatting"
-        let style' = style { styleInitialState = fmt' }
+        let style' = style { styleConfig = fmt' }
         return $ AppConfig style' language extensions
       where
         updateConfig cfg v = case JSON.fromJSON $ mergeJSON (toJSON cfg) v of

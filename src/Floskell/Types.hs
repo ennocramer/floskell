@@ -78,7 +78,7 @@ data PrintState =
                , psIndentLevel :: !Int64 -- ^ Current indentation level.
                , psOnside :: !Int64 -- ^ Extra indentation is necessary with next line break.
                , psTabStops :: !(Map TabStop Int64) -- ^ Tab stops for alignment.
-               , psUserState :: !Config -- ^ User state.
+               , psConfig :: !Config -- ^ Style definition.
                , psEolComment :: !Bool -- ^ An end of line comment has just been outputted.
                , psOutputRestriction :: OutputRestriction
                }
@@ -94,16 +94,16 @@ psNewline = (== 0) . Buffer.column . psBuffer
 
 -- | A printer style.
 data Style =
-    Style { styleName         :: !Text -- ^ Name of the style, used in the commandline interface.
-          , styleAuthor       :: !Text -- ^ Author of the printer (as opposed to the author of the style).
-          , styleDescription  :: !Text -- ^ Description of the style.
-          , styleInitialState :: !Config -- ^ User state, if needed.
+    Style { styleName        :: !Text   -- ^ Name of the style, used in the commandline interface.
+          , styleAuthor      :: !Text   -- ^ Author of the style definition.
+          , styleDescription :: !Text   -- ^ Description of the style.
+          , styleConfig      :: !Config -- ^ Style definition.
           }
 
 -- | Information for each node in the AST.
 data NodeInfo =
     NodeInfo { nodeInfoSpan     :: !SrcSpanInfo -- ^ Location info from the parser.
-             , nodeInfoComments :: ![ComInfo] -- ^ Comments which are attached to this node.
+             , nodeInfoComments :: ![ComInfo]   -- ^ Comments which are attached to this node.
              }
     deriving ( Show )
 
