@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Floskell.Pretty where
+module Floskell.Pretty ( Pretty(..), pretty, printComment ) where
 
 import           Control.Applicative            ( (<|>) )
 import           Control.Monad
@@ -446,25 +446,6 @@ withComputedTabStop name predicate fn xs p = do
 -- | Extract the name as a String from a ModuleName
 moduleName :: ModuleName a -> String
 moduleName (ModuleName _ s) = s
-
-nameLength :: Name a -> Int
-nameLength (Ident _ i) = length i
-nameLength (Symbol _ s) = 2 + length s
-
-qnameLength :: QName a -> Int
-qnameLength (Qual _ mname name) = length (moduleName mname) + nameLength name
-    + 1
-qnameLength (UnQual _ name) = nameLength name
-qnameLength (Special _ con) = case con of
-    UnitCon _ -> 2
-    ListCon _ -> 2
-    FunCon _ -> 2
-    TupleCon _ boxed n -> 2 + n + case boxed of
-        Boxed -> 2
-        Unboxed -> 0
-    Cons _ -> 1
-    UnboxedSingleCon _ -> 5
-    ExprHole _ -> 1
 
 prettyPragmas :: [ModulePragma NodeInfo] -> Printer ()
 prettyPragmas ps = do

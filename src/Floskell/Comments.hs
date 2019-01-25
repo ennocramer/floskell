@@ -1,5 +1,5 @@
 -- | Comment handling.
-module Floskell.Comments where
+module Floskell.Comments ( annotateComments ) where
 
 import           Control.Arrow              ( first, second )
 import           Control.Monad.State.Strict
