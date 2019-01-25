@@ -10,6 +10,7 @@ import           Control.Exception               ( catch, throw )
 import           Data.Aeson
                  ( (.:?), (.=), FromJSON(..), ToJSON(..) )
 import qualified Data.Aeson                      as JSON
+import qualified Data.Aeson.Encode.Pretty        as JSON ( encodePretty )
 import qualified Data.Aeson.Types                as JSON ( typeMismatch )
 import qualified Data.ByteString                 as BS
 import qualified Data.ByteString.Lazy            as BL
@@ -118,7 +119,7 @@ main = do
         Nothing -> return defaultConfig
     let config = mergeConfig baseConfig opts
     if optPrintConfig opts
-        then BL.putStr $ JSON.encode config
+        then BL.putStr $ JSON.encodePretty config
         else run config (optFiles opts)
   where
     parser = info (helper <*> versioner <*> options)

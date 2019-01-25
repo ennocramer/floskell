@@ -58,6 +58,7 @@ executable floskell
   build-depends:     base >= 4 && < 5
                    , floskell
                    , aeson
+                   , aeson-pretty
                    , bytestring
                    , optparse-applicative
                    , haskell-src-exts
