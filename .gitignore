@@ -2,6 +2,9 @@
 *.hi
 *~
 dist/
+dist-newstyle/
+.ghc.environment*
+cabal.project.local
 cabal-dev/
 .hsenv
 TAGS

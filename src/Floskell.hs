@@ -4,8 +4,16 @@
 
 -- | Haskell indenter.
 module Floskell
-    ( -- * Formatting functions.
-      reformat
+    ( -- * Configuration
+      Config(..)
+    , defaultConfig
+    , findConfig
+    , readConfig
+    , setStyle
+    , setLanguage
+    , setExtensions
+      -- * Formatting functions.
+    , reformat
     , prettyPrint
       -- * Style
     , Style(..)
@@ -20,8 +28,10 @@ import qualified Data.ByteString.Char8      as S8
 import qualified Data.ByteString.Internal   as S
 import qualified Data.ByteString.Lazy       as L
 import qualified Data.ByteString.Lazy.Char8 as L8
+
 import qualified Data.ByteString.UTF8       as UTF8
 import qualified Data.ByteString.Unsafe     as S
+
 import           Data.Function              ( on )
 import           Data.List
 import qualified Data.Map.Strict            as Map
@@ -30,6 +40,7 @@ import           Data.Monoid
 
 import qualified Floskell.Buffer            as Buffer
 import           Floskell.Comments
+import           Floskell.ConfigFile
 import           Floskell.Pretty            ( pretty, printComment )
 import           Floskell.Styles            ( styles )
 import           Floskell.Types
