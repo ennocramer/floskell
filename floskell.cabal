@@ -33,6 +33,7 @@ library
                      Floskell.Buffer
                      Floskell.Comments
                      Floskell.Config
+                     Floskell.ConfigFile
                      Floskell.Pretty
                      Floskell.Printers
                      Floskell.Styles
@@ -42,7 +43,9 @@ library
                    , containers
                    , unordered-containers
                    , data-default
-                   , haskell-src-exts >= 1.20
+                   , directory
+                   , filepath
+                   , haskell-src-exts == 1.20.3
                    , monad-loops
                    , monad-dijkstra
                    , mtl
@@ -61,7 +64,7 @@ executable floskell
                    , aeson-pretty
                    , bytestring
                    , optparse-applicative
-                   , haskell-src-exts
+                   , haskell-src-exts == 1.20.3
                    , ghc-prim
                    , directory
                    , filepath
@@ -76,7 +79,7 @@ test-suite floskell-test
   other-modules:     Markdone
   build-depends:     base >= 4 && <5
                    , floskell
-                   , haskell-src-exts
+                   , haskell-src-exts == 1.20.3
                    , monad-loops
                    , mtl
                    , bytestring
@@ -97,7 +100,7 @@ benchmark floskell-bench
                    , floskell
                    , bytestring
                    , utf8-string
-                   , haskell-src-exts
+                   , haskell-src-exts == 1.20.3
                    , ghc-prim
                    , directory
                    , criterion

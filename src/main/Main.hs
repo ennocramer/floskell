@@ -4,35 +4,30 @@
 -- | Main entry point to floskell.
 module Main ( main ) where
 
-import           Control.Applicative             ( (<|>), many, optional )
+import           Control.Applicative             ( many, optional )
 import           Control.Exception               ( catch, throw )
 
-import           Data.Aeson
-                 ( (.:?), (.=), FromJSON(..), ToJSON(..) )
-import qualified Data.Aeson                      as JSON
 import qualified Data.Aeson.Encode.Pretty        as JSON ( encodePretty )
-import qualified Data.Aeson.Types                as JSON ( typeMismatch )
 import qualified Data.ByteString                 as BS
 import qualified Data.ByteString.Lazy            as BL
-import qualified Data.HashMap.Lazy               as HashMap
-import           Data.List                       ( inits, sort )
+import           Data.List                       ( sort )
 import           Data.Maybe                      ( isJust )
 import           Data.Monoid                     ( (<>) )
 
 import qualified Data.Text                       as T
 import           Data.Version                    ( showVersion )
 
-import           Floskell                        ( reformat, styles )
-import           Floskell.Types
-                 ( Style(styleName, styleInitialState) )
+import           Floskell
+                 ( Config(..), defaultConfig, findConfig, readConfig, reformat
+                 , setExtensions, setLanguage, setStyle, styles )
+import           Floskell.Types                  ( Style(styleName) )
 
 import           Foreign.C.Error                 ( Errno(..), eXDEV )
 
 import           GHC.IO.Exception                ( ioe_errno )
 
 import           Language.Haskell.Exts
-                 ( Extension(..), Language(..), classifyExtension
-                 , classifyLanguage, knownExtensions, knownLanguages )
+                 ( Extension(..), Language(..), knownExtensions, knownLanguages )
 
 import           Options.Applicative
                  ( ParseError(..), abortOption, argument, execParser, footerDoc
@@ -43,11 +38,8 @@ import qualified Options.Applicative.Help.Pretty as PP
 import           Paths_floskell                  ( version )
 
 import           System.Directory
-                 ( XdgDirectory(..), copyFile, copyPermissions, doesFileExist
-                 , findFileWith, getAppUserDataDirectory, getCurrentDirectory
-                 , getHomeDirectory, getTemporaryDirectory, getXdgDirectory
-                 , removeFile, renameFile )
-import           System.FilePath                 ( joinPath, splitDirectories )
+                 ( copyFile, copyPermissions, getTemporaryDirectory, removeFile
+                 , renameFile )
 import           System.IO
                  ( FilePath, hClose, hFlush, openTempFile )
 
@@ -59,52 +51,6 @@ data Options = Options { optStyle       :: Maybe String
                        , optPrintConfig :: Bool
                        , optFiles       :: [FilePath]
                        }
-
--- | Program configuration.
-data Config = Config { cfgStyle      :: Style
-                     , cfgLanguage   :: Language
-                     , cfgExtensions :: [Extension]
-                     }
-
-instance ToJSON Config where
-    toJSON Config{..} = JSON.object [ "style" .= styleName cfgStyle
-                                    , "language" .= show cfgLanguage
-                                    , "extensions" .= map showExt cfgExtensions
-                                    , "formatting" .= styleInitialState cfgStyle
-                                    ]
-      where
-        showExt (EnableExtension x) = show x
-        showExt (DisableExtension x) = "No" ++ show x
-        showExt (UnknownExtension x) = x
-
-instance FromJSON Config where
-    parseJSON (JSON.Object o) = do
-        style <- maybe (cfgStyle defaultConfig) lookupStyle <$> o .:? "style"
-        language <- maybe (cfgLanguage defaultConfig) lookupLanguage
-            <$> o .:? "language"
-        extensions <- maybe (cfgExtensions defaultConfig) (map lookupExtension)
-            <$> o .:? "extensions"
-        let flex = styleInitialState style
-        flex' <- maybe flex (updateFlexConfig flex) <$> o .:? "formatting"
-        let style' = style { styleInitialState = flex' }
-        return $ Config style' language extensions
-      where
-        updateFlexConfig cfg v =
-            case JSON.fromJSON $ mergeJSON (toJSON cfg) v of
-                JSON.Error e -> error e
-                JSON.Success x -> x
-
-        mergeJSON JSON.Null r = r
-        mergeJSON l JSON.Null = l
-        mergeJSON (JSON.Object l) (JSON.Object r) =
-            JSON.Object (HashMap.unionWith mergeJSON l r)
-        mergeJSON _ r = r
-
-    parseJSON v = JSON.typeMismatch "Config" v
-
--- | Default program configuration.
-defaultConfig :: Config
-defaultConfig = Config (head styles) Haskell2010 []
 
 -- | Main entry point.
 main :: IO ()
@@ -203,49 +149,7 @@ reformatByteString :: Style
 reformatByteString style language extensions mpath text =
     either error id $ reformat style language extensions mpath text
 
--- | Try to find a configuration file based on current working
--- directory, or in one of the application configuration directories.
-findConfig :: IO (Maybe FilePath)
-findConfig = do
-    dotfilePaths <- sequence [ getHomeDirectory, getXdgDirectory XdgConfig "" ]
-    dotfileConfig <- findFileWith doesFileExist dotfilePaths ".floskell.json"
-    userPaths <- sequence [ getAppUserDataDirectory "floskell"
-                          , getXdgDirectory XdgConfig "floskell"
-                          ]
-    userConfig <- findFileWith doesFileExist userPaths "config.json"
-    localPaths <- map joinPath . reverse . drop 1 . inits . splitDirectories
-        <$> getCurrentDirectory
-    localConfig <- findFileWith doesFileExist localPaths "floskell.json"
-    return $ localConfig <|> userConfig <|> dotfileConfig
-
--- | Load a configuration file.
-readConfig :: FilePath -> IO Config
-readConfig file = do
-    text <- BS.readFile file
-    either (error . (++) (file ++ ": ")) return $ JSON.eitherDecodeStrict text
-
 -- | Update the program configuration from the program options.
 mergeConfig :: Config -> Options -> Config
-mergeConfig cfg@Config{..} Options{..} =
-    cfg { cfgStyle      = maybe cfgStyle lookupStyle optStyle
-        , cfgLanguage   = maybe cfgLanguage lookupLanguage optLanguage
-        , cfgExtensions = cfgExtensions ++ map lookupExtension optExtensions
-        }
-
--- | Lookup a style by name.
-lookupStyle :: String -> Style
-lookupStyle name = case filter ((== T.pack name) . styleName) styles of
-    [] -> error $ "Unknown style: " ++ name
-    x : _ -> x
-
--- | Lookup a language by name.
-lookupLanguage :: String -> Language
-lookupLanguage name = case classifyLanguage name of
-    UnknownLanguage _ -> error $ "Unknown language: " ++ name
-    x -> x
-
--- | Lookup an extension by name.
-lookupExtension :: String -> Extension
-lookupExtension name = case classifyExtension name of
-    UnknownExtension _ -> error $ "Unkown extension: " ++ name
-    x -> x
+mergeConfig cfg Options{..} = cfg `setStyle` optStyle `setLanguage` optLanguage
+    `setExtensions` optExtensions
