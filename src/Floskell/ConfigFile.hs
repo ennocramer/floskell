@@ -1,42 +1,48 @@
-{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
-module Floskell.ConfigFile
-( Config(..)
-, defaultConfig
-, findConfig
-, findConfigIn
-, readConfig
-, setStyle
-, setLanguage
-, setExtensions
-)
-where
+{-# LANGUAGE RecordWildCards #-}
 
-import           Control.Applicative   ((<|>))
-import           Data.Aeson            (FromJSON (..), ToJSON (..), (.:?), (.=))
+module Floskell.ConfigFile
+    ( Config(..)
+    , defaultConfig
+    , findConfig
+    , findConfigIn
+    , readConfig
+    , setStyle
+    , setLanguage
+    , setExtensions
+    ) where
+
+import           Control.Applicative   ( (<|>) )
+
+import           Data.Aeson            ( (.:?), (.=), FromJSON(..), ToJSON(..) )
 import qualified Data.Aeson            as JSON
-import qualified Data.Aeson.Types      as JSON (typeMismatch)
+import qualified Data.Aeson.Types      as JSON ( typeMismatch )
 import qualified Data.ByteString       as BS
 import qualified Data.HashMap.Lazy     as HashMap
-import           Data.List             (inits)
+import           Data.List             ( inits )
 import qualified Data.Text             as T
-import           Floskell.Styles       (styles)
-import           Floskell.Types        (Style (..))
-import           GHC.Generics          (Generic)
-import           Language.Haskell.Exts (Extension (..), Language (..),
-                                        classifyExtension, classifyLanguage)
-import           System.Directory      (XdgDirectory (..), doesFileExist,
-                                        findFileWith, getAppUserDataDirectory,
-                                        getCurrentDirectory, getHomeDirectory,
-                                        getXdgDirectory)
-import           System.FilePath       (joinPath, splitDirectories,
-                                        takeDirectory)
+
+import           Floskell.Styles       ( styles )
+import           Floskell.Types        ( Style(..) )
+
+import           GHC.Generics          ( Generic )
+
+import           Language.Haskell.Exts ( Extension(..), Language(..)
+                                       , classifyExtension, classifyLanguage )
+
+import           System.Directory
+                 ( XdgDirectory(..), doesFileExist, findFileWith
+                 , getAppUserDataDirectory, getCurrentDirectory
+                 , getHomeDirectory, getXdgDirectory )
+import           System.FilePath
+                 ( joinPath, splitDirectories, takeDirectory )
 
 data Config = Config { cfgStyle      :: Style
                      , cfgLanguage   :: Language
                      , cfgExtensions :: [Extension]
-                     } deriving (Generic)
+                     }
+    deriving ( Generic )
 
 instance ToJSON Config where
     toJSON Config{..} = JSON.object [ "style" .= styleName cfgStyle
@@ -45,7 +51,7 @@ instance ToJSON Config where
                                     , "formatting" .= styleInitialState cfgStyle
                                     ]
       where
-        showExt (EnableExtension x)  = show x
+        showExt (EnableExtension x) = show x
         showExt (DisableExtension x) = "No" ++ show x
         showExt (UnknownExtension x) = x
 
@@ -63,7 +69,7 @@ instance FromJSON Config where
       where
         updateFlexConfig cfg v =
             case JSON.fromJSON $ mergeJSON (toJSON cfg) v of
-                JSON.Error e   -> error e
+                JSON.Error e -> error e
                 JSON.Success x -> x
 
         mergeJSON JSON.Null r = r
@@ -81,26 +87,25 @@ defaultConfig = Config (head styles) Haskell2010 []
 -- | Lookup a style by name.
 lookupStyle :: String -> Style
 lookupStyle name = case filter ((== T.pack name) . styleName) styles of
-    []    -> error $ "Unknown style: " ++ name
+    [] -> error $ "Unknown style: " ++ name
     x : _ -> x
 
 -- | Lookup a language by name.
 lookupLanguage :: String -> Language
 lookupLanguage name = case classifyLanguage name of
     UnknownLanguage _ -> error $ "Unknown language: " ++ name
-    x                 -> x
+    x -> x
 
 -- | Lookup an extension by name.
 lookupExtension :: String -> Extension
 lookupExtension name = case classifyExtension name of
     UnknownExtension _ -> error $ "Unkown extension: " ++ name
-    x                  -> x
+    x -> x
 
 -- | Try to find a configuration file based on current working
 -- directory, or in one of the application configuration directories.
 findConfig :: IO (Maybe FilePath)
-findConfig =
-  getCurrentDirectory >>= findConfigIn
+findConfig = getCurrentDirectory >>= findConfigIn
 
 findConfigIn :: FilePath -> IO (Maybe FilePath)
 findConfigIn src = do
@@ -113,7 +118,9 @@ findConfigIn src = do
                           , getXdgDirectory XdgConfig "floskell"
                           ]
     userConfig <- findFileWith doesFileExist userPaths "config.json"
-    let localPaths = map joinPath . reverse . drop 1 . inits . splitDirectories $ startFrom
+    let localPaths =
+            map joinPath . reverse . drop 1 . inits . splitDirectories $
+            startFrom
     localConfig <- findFileWith doesFileExist localPaths "floskell.json"
     return $ localConfig <|> userConfig <|> dotfileConfig
 
@@ -125,12 +132,12 @@ readConfig file = do
 
 setStyle :: Config -> Maybe String -> Config
 setStyle cfg mbStyle =
-  cfg { cfgStyle = maybe (cfgStyle cfg) lookupStyle mbStyle }
+    cfg { cfgStyle = maybe (cfgStyle cfg) lookupStyle mbStyle }
 
 setLanguage :: Config -> Maybe String -> Config
 setLanguage cfg mbLanguage =
-  cfg { cfgLanguage = maybe (cfgLanguage cfg) lookupLanguage mbLanguage }
+    cfg { cfgLanguage = maybe (cfgLanguage cfg) lookupLanguage mbLanguage }
 
 setExtensions :: Config -> [String] -> Config
 setExtensions cfg exts =
-  cfg { cfgExtensions = cfgExtensions cfg ++ map lookupExtension exts }
+    cfg { cfgExtensions = cfgExtensions cfg ++ map lookupExtension exts }
