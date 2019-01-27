@@ -27,7 +27,7 @@ import           Foreign.C.Error                 ( Errno(..), eXDEV )
 import           GHC.IO.Exception                ( ioe_errno )
 
 import           Language.Haskell.Exts
-                 ( Extension(..), Language(..), knownExtensions, knownLanguages )
+                 ( Extension(..), knownExtensions, knownLanguages )
 
 import           Options.Applicative
                  ( ParseError(..), abortOption, argument, execParser, footerDoc
@@ -114,23 +114,22 @@ main = do
 
 -- | Reformat files or stdin based on provided configuration.
 run :: AppConfig -> [FilePath] -> IO ()
-run AppConfig{..} files = case files of
-    [] -> reformatStdin appStyle appLanguage appExtensions
-    _ -> mapM_ (reformatFile appStyle appLanguage appExtensions) files
+run config files = case files of
+    [] -> reformatStdin config
+    _ -> mapM_ (reformatFile config) files
 
 -- | Reformat stdin according to Style, Language, and Extensions.
-reformatStdin :: Style -> Language -> [Extension] -> IO ()
-reformatStdin style language extensions = BL.interact $
-    reformatByteString style language extensions Nothing . BL.toStrict
+reformatStdin :: AppConfig -> IO ()
+reformatStdin config =
+    BL.interact $ reformatByteString config Nothing . BL.toStrict
 
 -- | Reformat a file according to Style, Language, and Extensions.
-reformatFile :: Style -> Language -> [Extension] -> FilePath -> IO ()
-reformatFile style language extensions file = do
+reformatFile :: AppConfig -> FilePath -> IO ()
+reformatFile config file = do
     text <- BS.readFile file
     tmpDir <- getTemporaryDirectory
     (fp, h) <- openTempFile tmpDir "floskell.hs"
-    BL.hPutStr h $
-        reformatByteString style language extensions (Just file) text
+    BL.hPutStr h $ reformatByteString config (Just file) text
     hFlush h
     hClose h
     let exdev e = if ioe_errno e == Just ((\(Errno a) -> a) eXDEV)
@@ -140,14 +139,12 @@ reformatFile style language extensions file = do
     renameFile fp file `catch` exdev
 
 -- | Reformat a ByteString according to Style, Language, and Extensions.
-reformatByteString :: Style
-                   -> Language
-                   -> [Extension]
+reformatByteString :: AppConfig
                    -> Maybe FilePath
                    -> BS.ByteString
                    -> BL.ByteString
-reformatByteString style language extensions mpath text =
-    either error id $ reformat style language extensions mpath text
+reformatByteString config mpath text =
+    either error id $ reformat config mpath text
 
 -- | Update the program configuration from the program options.
 mergeAppConfig :: AppConfig -> Options -> AppConfig

@@ -26,23 +26,21 @@ main = do
     bytes <- S.readFile "BENCHMARK.md"
     !forest <- fmap force (parse (tokenize bytes))
     defaultMain [ bgroup (T.unpack $ styleName style) $
-                    toCriterion style forest
+                    toCriterion (AppConfig style Haskell2010 defaultExtensions)
+                                forest
                 | style <- styles
                 ]
 
 -- | Convert the Markdone document to Criterion benchmarks.
-toCriterion :: Style -> [Markdone] -> [Benchmark]
-toCriterion style = go
+toCriterion :: AppConfig -> [Markdone] -> [Benchmark]
+toCriterion config = go
   where
     go (Section name children : next) = bgroup (S8.unpack name) (go children)
         : go next
     go (PlainText desc : CodeFence lang code : next) =
         if lang == "haskell"
         then bench (UTF8.toString desc)
-                   (nf (either error id . reformat style
-                                                   Haskell2010
-                                                   defaultExtensions
-                                                   (Just "BENCHMARK.md"))
+                   (nf (either error id . reformat config (Just "BENCHMARK.md"))
                        code) : go next
         else go next
     go (PlainText{} : next) = go next

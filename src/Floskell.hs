@@ -54,14 +54,12 @@ data CodeBlock = HaskellSource Int ByteString | CPPDirectives ByteString
     deriving ( Show, Eq )
 
 -- | Format the given source.
-reformat :: Style
-         -> Language
-         -> [Extension]
+reformat :: AppConfig
          -> Maybe FilePath
          -> ByteString
          -> Either String L.ByteString
-reformat style language langextensions mfilepath x = preserveTrailingNewline x
-    . mconcat . intersperse "\n" <$> mapM processBlock (cppSplitBlocks x)
+reformat config mfilepath x = preserveTrailingNewline x . mconcat
+    . intersperse "\n" <$> mapM processBlock (cppSplitBlocks x)
   where
     processBlock :: CodeBlock -> Either String L.ByteString
     processBlock (CPPDirectives text) = Right $ L.fromStrict text
@@ -81,7 +79,8 @@ reformat style language langextensions mfilepath x = preserveTrailingNewline x
         in
             case parseModuleWithComments mode'' (UTF8.toString code) of
                 ParseOk (m, comments) ->
-                    fmap (addPrefix prefix) (prettyPrint style m comments)
+                    fmap (addPrefix prefix)
+                         (prettyPrint (appStyle config) m comments)
                 ParseFailed loc e -> Left $
                     Exts.prettyPrint (loc { srcLine = srcLine loc + offset })
                     ++ ": " ++ e
@@ -126,8 +125,8 @@ reformat style language langextensions mfilepath x = preserveTrailingNewline x
             else ""
 
     mode' = defaultParseMode { parseFilename = fromMaybe "<stdin>" mfilepath
-                             , baseLanguage  = language
-                             , extensions    = langextensions
+                             , baseLanguage  = appLanguage config
+                             , extensions    = appExtensions config
                              }
 
     preserveTrailingNewline x x' = if not (S8.null x) && S8.last x == '\n'
@@ -196,7 +195,7 @@ prettyPrint style m comments =
 
 -- | Pretty print the given printable thing.
 runPrinterStyle :: Style -> Printer () -> L.ByteString
-runPrinterStyle (Style _name _author _desc st) m =
+runPrinterStyle style m =
     maybe (error "Printer failed with mzero call.")
           (Buffer.toLazyByteString . psBuffer)
           (snd <$> execPrinter m
@@ -204,7 +203,7 @@ runPrinterStyle (Style _name _author _desc st) m =
                                            0
                                            0
                                            Map.empty
-                                           st
+                                           (styleConfig style)
                                            False
                                            Anything))
 
