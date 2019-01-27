@@ -1,12 +1,20 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Floskell.Styles ( styles ) where
+module Floskell.Styles ( Style(..), styles ) where
 
 import qualified Data.Map        as Map
+import           Data.Text       ( Text )
 
 import           Floskell.Config
-import           Floskell.Types
+
+-- | A printer style.
+data Style =
+    Style { styleName        :: !Text   -- ^ Name of the style, used in the commandline interface.
+          , styleAuthor      :: !Text   -- ^ Author of the style definition.
+          , styleDescription :: !Text   -- ^ Description of the style.
+          , styleConfig      :: !Config -- ^ Style definition.
+          }
 
 chrisDoneCfg :: Config
 chrisDoneCfg = safeConfig $

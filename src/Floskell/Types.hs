@@ -13,7 +13,6 @@ module Floskell.Types
     , psLine
     , psColumn
     , psNewline
-    , Style(..)
     , Config(..)
     , NodeInfo(..)
     , ComInfo(..)
@@ -31,7 +30,6 @@ import           Control.Monad.State.Strict
 import           Data.Map.Strict                ( Map )
 
 import           Data.Semigroup                 as Sem
-import           Data.Text                      ( Text )
 
 import           Floskell.Buffer                ( Buffer )
 import qualified Floskell.Buffer                as Buffer
@@ -90,14 +88,6 @@ psColumn = Buffer.column . psBuffer
 
 psNewline :: PrintState -> Bool
 psNewline = (== 0) . Buffer.column . psBuffer
-
--- | A printer style.
-data Style =
-    Style { styleName        :: !Text   -- ^ Name of the style, used in the commandline interface.
-          , styleAuthor      :: !Text   -- ^ Author of the style definition.
-          , styleDescription :: !Text   -- ^ Description of the style.
-          , styleConfig      :: !Config -- ^ Style definition.
-          }
 
 -- | Information for each node in the AST.
 data NodeInfo =

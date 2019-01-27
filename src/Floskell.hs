@@ -43,7 +43,7 @@ import qualified Floskell.Buffer            as Buffer
 import           Floskell.Comments
 import           Floskell.ConfigFile
 import           Floskell.Pretty            ( pretty, printComment )
-import           Floskell.Styles            ( styles )
+import           Floskell.Styles            ( Style(..), styles )
 import           Floskell.Types
 
 import           Language.Haskell.Exts

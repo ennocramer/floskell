@@ -18,9 +18,9 @@ import qualified Data.Text                       as T
 import           Data.Version                    ( showVersion )
 
 import           Floskell
-                 ( AppConfig(..), defaultAppConfig, findAppConfig, readAppConfig
-                 , reformat, setExtensions, setLanguage, setStyle, styles )
-import           Floskell.Types                  ( Style(styleName) )
+                 ( AppConfig(..), Style(..), defaultAppConfig, findAppConfig
+                 , readAppConfig, reformat, setExtensions, setLanguage, setStyle
+                 , styles )
 
 import           Foreign.C.Error                 ( Errno(..), eXDEV )
 

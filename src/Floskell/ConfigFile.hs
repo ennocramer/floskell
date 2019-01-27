@@ -23,8 +23,7 @@ import qualified Data.HashMap.Lazy     as HashMap
 import           Data.List             ( inits )
 import qualified Data.Text             as T
 
-import           Floskell.Styles       ( styles )
-import           Floskell.Types        ( Style(..) )
+import           Floskell.Styles       ( Style(..), styles )
 
 import           GHC.Generics          ( Generic )
 
