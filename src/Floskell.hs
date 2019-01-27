@@ -8,6 +8,7 @@ module Floskell
       Config(..)
     , defaultConfig
     , findConfig
+    , findConfigIn
     , readConfig
     , setStyle
     , setLanguage
