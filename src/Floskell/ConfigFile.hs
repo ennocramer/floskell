@@ -5,6 +5,7 @@ module Floskell.ConfigFile
 ( Config(..)
 , defaultConfig
 , findConfig
+, findConfigIn
 , readConfig
 , setStyle
 , setLanguage
@@ -29,7 +30,8 @@ import           System.Directory      (XdgDirectory (..), doesFileExist,
                                         findFileWith, getAppUserDataDirectory,
                                         getCurrentDirectory, getHomeDirectory,
                                         getXdgDirectory)
-import           System.FilePath       (joinPath, splitDirectories)
+import           System.FilePath       (joinPath, splitDirectories,
+                                        takeDirectory)
 
 data Config = Config { cfgStyle      :: Style
                      , cfgLanguage   :: Language
@@ -97,15 +99,21 @@ lookupExtension name = case classifyExtension name of
 -- | Try to find a configuration file based on current working
 -- directory, or in one of the application configuration directories.
 findConfig :: IO (Maybe FilePath)
-findConfig = do
+findConfig =
+  getCurrentDirectory >>= findConfigIn
+
+findConfigIn :: FilePath -> IO (Maybe FilePath)
+findConfigIn src = do
+    isFile <- doesFileExist src
+    let startFrom = if isFile then takeDirectory src else src
+
     dotfilePaths <- sequence [ getHomeDirectory, getXdgDirectory XdgConfig "" ]
     dotfileConfig <- findFileWith doesFileExist dotfilePaths ".floskell.json"
     userPaths <- sequence [ getAppUserDataDirectory "floskell"
                           , getXdgDirectory XdgConfig "floskell"
                           ]
     userConfig <- findFileWith doesFileExist userPaths "config.json"
-    localPaths <- map joinPath . reverse . drop 1 . inits . splitDirectories
-        <$> getCurrentDirectory
+    let localPaths = map joinPath . reverse . drop 1 . inits . splitDirectories $ startFrom
     localConfig <- findFileWith doesFileExist localPaths "floskell.json"
     return $ localConfig <|> userConfig <|> dotfileConfig
 
