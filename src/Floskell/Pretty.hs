@@ -128,10 +128,7 @@ compareAST :: (Functor ast, Ord (ast ()))
 compareAST a b = void a `compare` void b
 
 -- | Return comments with matching location.
-filterComments :: Annotated a
-               => (Maybe Location -> Bool)
-               -> a NodeInfo
-               -> [ComInfo]
+filterComments :: Annotated a => (Location -> Bool) -> a NodeInfo -> [ComInfo]
 filterComments f = filter (f . comInfoLocation) . nodeInfoComments . ann
 
 -- | Copy comments from one AST node to another.
@@ -145,9 +142,9 @@ copyComments loc from to = amap updateComments to
     updateComments info =
         info { nodeInfoComments = oldComments ++ newComments }
 
-    oldComments = filterComments (/= Just loc) to
+    oldComments = filterComments (/= loc) to
 
-    newComments = filterComments (== Just loc) from
+    newComments = filterComments (== loc) from
 
 -- | Pretty print a comment.
 printComment :: Maybe SrcSpan -> Comment -> Printer ()
@@ -177,7 +174,7 @@ printComment mayNodespan (Comment inline cspan str) = do
 -- | Print comments of a node.
 printComments :: Annotated ast => Location -> ast NodeInfo -> Printer ()
 printComments loc' ast = do
-    let correctLocation comment = comInfoLocation comment == Just loc'
+    let correctLocation comment = comInfoLocation comment == loc'
         commentsWithLocation = filter correctLocation (nodeInfoComments info)
         comments = map comInfoComment commentsWithLocation
 
@@ -231,10 +228,10 @@ lineDelta prev next = nextLine - prevLine
     annSrcSpan = srcInfoSpan . nodeInfoSpan . ann
 
     prevCommentLines = map (srcSpanEndLine . commentSrcSpan) $
-        filterComments (== Just After) prev
+        filterComments (== After) prev
 
     nextCommentLines = map (srcSpanStartLine . commentSrcSpan) $
-        filterComments (== Just Before) next
+        filterComments (== Before) next
 
     commentSrcSpan = (\(Comment _ sp _) -> sp) . comInfoComment
 
@@ -289,7 +286,7 @@ listVinternal ctx sep xs = aligned $ do
                 printComments After x'
   where
     printCommentsSimple loc ast =
-        let comments = map comInfoComment $ filterComments (== Just loc) ast
+        let comments = map comInfoComment $ filterComments (== loc) ast
         in
             forM_ comments $
             printComment (Just . srcInfoSpan . nodeInfoSpan $ ann ast)
@@ -497,7 +494,7 @@ skipBlank :: Annotated ast
 skipBlank skip a b = skip a b && null (comments After a)
     && null (comments Before b)
   where
-    comments loc = filterComments (== Just loc)
+    comments loc = filterComments (== loc)
 
 skipBlankAfterDecl :: Decl a -> Bool
 skipBlankAfterDecl a = case a of
