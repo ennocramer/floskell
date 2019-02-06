@@ -11,7 +11,6 @@ module Floskell.Printers
     , int
     , space
     , newline
-    , linebreak
     , blankline
     , spaceOrNewline
       -- * Tab stops
@@ -166,9 +165,6 @@ newline = do
     modify (\s -> s { psBuffer     = Buffer.newline (psBuffer state)
                     , psEolComment = False
                     })
-
-linebreak :: Printer ()
-linebreak = return () <|> newline
 
 blankline :: Printer ()
 blankline = newline >> newline
