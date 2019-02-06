@@ -114,7 +114,7 @@ withOutputRestriction r p = do
 oneline :: Printer a -> Printer a
 oneline p = do
     eol <- gets psEolComment
-    when eol $ newline
+    when eol newline
     withOutputRestriction NoOverflowOrLinebreak p
 
 -- | Write out a string, updating the current position information.
