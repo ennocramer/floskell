@@ -98,7 +98,7 @@ data NodeInfo =
 
 -- | Comment with some more info.
 data ComInfo =
-    ComInfo { comInfoComment  :: !Comment          -- ^ The normal comment type.
-            , comInfoLocation :: !(Maybe Location) -- ^ Where the comment lies relative to the node.
+    ComInfo { comInfoComment  :: !Comment  -- ^ The normal comment type.
+            , comInfoLocation :: !Location -- ^ Where the comment lies relative to the node.
             }
     deriving ( Show )

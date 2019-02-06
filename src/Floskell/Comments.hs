@@ -86,8 +86,7 @@ annotateWithComments src comments =
         insertComment :: Location
                       -> SrcSpanInfo
                       -> State (M.Map SrcSpanInfo [ComInfo]) ()
-        insertComment l ssi = modify $
-            M.adjust (ComInfo comment (Just l) :) ssi
+        insertComment l ssi = modify $ M.adjust (ComInfo comment l :) ssi
 
     -- Transfer collected comments into the AST.
     transferComments :: SrcSpanInfo
