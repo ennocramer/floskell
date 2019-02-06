@@ -808,3 +808,14 @@ foo = do
     if condition -- comment
         then this else that
 ```
+
+## Comments
+
+Don't be too eager in assigning comments to the following AST node.
+
+``` haskell
+data Foo = Foo { fooBar :: Text
+        -- ^A comment, long enough to end up on its own line, or at least I hope so.
+    }
+    deriving ( Eq )
+```

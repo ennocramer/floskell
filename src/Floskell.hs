@@ -42,7 +42,7 @@ import           Data.Monoid
 import qualified Floskell.Buffer            as Buffer
 import           Floskell.Comments
 import           Floskell.ConfigFile
-import           Floskell.Pretty            ( pretty, printComment )
+import           Floskell.Pretty            ( pretty )
 import           Floskell.Styles            ( Style(..), styles )
 import           Floskell.Types
 
@@ -179,19 +179,10 @@ prettyPrint :: Style
             -> [Comment]
             -> Either a L.ByteString
 prettyPrint style m comments =
-    let (cs, ast) =
-            annotateComments (fromMaybe m $ applyFixities baseFixities m)
-                             comments
-        csComments = map comInfoComment cs
+    let ast = annotateWithComments (fromMaybe m $ applyFixities baseFixities m)
+                                   comments
     in
-        Right (runPrinterStyle style
-                               -- For the time being, assume that all "free-floating" comments come at the beginning.
-                               -- If they were not at the beginning, they would be after some ast node.
-                               -- Thus, print them before going for the ast.
-                               (do
-                                    mapM_ (printComment Nothing)
-                                          (reverse csComments)
-                                    pretty ast))
+        Right (runPrinterStyle style (pretty ast))
 
 -- | Pretty print the given printable thing.
 runPrinterStyle :: Style -> Printer () -> L.ByteString
