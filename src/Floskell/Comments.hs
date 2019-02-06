@@ -1,7 +1,6 @@
 -- | Comment handling.
-module Floskell.Comments ( annotateComments ) where
+module Floskell.Comments ( annotateWithComments ) where
 
-import           Control.Arrow              ( first, second )
 import           Control.Monad.State.Strict
 
 import           Data.Foldable              ( traverse_ )
@@ -34,84 +33,78 @@ instance Ord OrderByEnd where
         `mappend` compare (srcSpanStartLine r) (srcSpanStartLine l)
         `mappend` compare (srcSpanStartColumn r) (srcSpanStartColumn l)
 
+onSameLine :: SrcSpan -> SrcSpan -> Bool
+onSameLine ss ss' = srcSpanEndLine ss == srcSpanStartLine ss'
+
+isAfterComment :: Comment -> Bool
+isAfterComment (Comment _ _ str) =
+    take 1 (dropWhile (== ' ') $ dropWhile (== '-') str) == "^"
+
+isAlignedWith :: Comment -> Comment -> Bool
+isAlignedWith (Comment _ before _) (Comment _ after _) =
+    srcSpanEndLine before == srcSpanStartLine after - 1
+    && srcSpanStartColumn before == srcSpanStartColumn after
+
 -- | Annotate the AST with comments.
-annotateComments :: Traversable ast
-                 => ast SrcSpanInfo
-                 -> [Comment]
-                 -> ([ComInfo], ast NodeInfo)
-annotateComments src comments =
+annotateWithComments :: Traversable ast
+                     => ast SrcSpanInfo
+                     -> [Comment]
+                     -> ast NodeInfo
+annotateWithComments src comments =
     evalState (do
                    traverse_ assignComment comments
-                   cis <- gets fst
-                   ast <- traverse transferComments src
-                   return (cis, ast))
-              ([], nodeinfos)
+                   traverse transferComments src)
+              nodeinfos
   where
-    nodeinfos :: M.Map SrcSpanInfo NodeInfo
-    nodeinfos = foldr (\ssi -> M.insert ssi (NodeInfo ssi [])) M.empty src
+    nodeinfos :: M.Map SrcSpanInfo [ComInfo]
+    nodeinfos = foldr (\ssi -> M.insert ssi []) M.empty src
 
     -- Assign a single comment to the right AST node
-    assignComment :: Comment
-                  -> State ([ComInfo], M.Map SrcSpanInfo NodeInfo) ()
-    assignComment comment@(Comment _ cspan _) =
-        -- Find the biggest AST node directly in front of this comment.
-        case nodeBefore comment of
-            -- Comments before any AST node are handled separately.
-            Nothing -> modify $ first $ (:) (ComInfo comment Nothing)
+    assignComment :: Comment -> State (M.Map SrcSpanInfo [ComInfo]) ()
+    assignComment comment@(Comment _ cspan _) = case surrounding comment of
+        (Nothing, Nothing) -> error "No target nodes for comment"
+        (Just before, Nothing) -> insertComment After before
+        (Nothing, Just after) -> insertComment Before after
+        (Just before, Just after) ->
+            if srcInfoSpan before `onSameLine` cspan || isAfterComment comment
+            then insertComment After before
+            else do
+                cmts <- gets (M.! before)
+                case cmts of
+                    -- We've already collected comments for this
+                    -- node and this comment is a continuation.
+                    (ComInfo c' _ : _)
+                        | c' `isAlignedWith` comment ->
+                            insertComment After before
 
-            Just ssi ->
-                -- Comments on the same line as the AST node belong to this node.
-                if sameline (srcInfoSpan ssi) cspan
-                then insertComment After ssi
-                else do
-                    nodeinfo <- gets ((M.! ssi) . snd)
-                    case nodeinfo of
-                        -- We've already collected comments for this
-                        -- node and this comment is a continuation.
-                        NodeInfo _ (ComInfo c' _ : _)
-                            | aligned c' comment -> insertComment After ssi
-
-                        -- The comment does not belong to this node.
-                        -- If there is a node following this comment,
-                        -- assign it to that node, else keep it here,
-                        -- anyway.
-                        _ -> case nodeAfter comment of
-                            Nothing -> insertComment After ssi
-                            Just ssi' -> insertComment Before ssi'
+                    -- The comment does not belong to this node.
+                    -- If there is a node following this comment,
+                    -- assign it to that node, else keep it here,
+                    -- anyway.
+                    _ -> insertComment Before after
       where
-        sameline :: SrcSpan -> SrcSpan -> Bool
-        sameline before after = srcSpanEndLine before == srcSpanStartLine after
-
-        aligned :: Comment -> Comment -> Bool
-        aligned (Comment _ before _) (Comment _ after _) =
-            srcSpanEndLine before == srcSpanStartLine after - 1
-            && srcSpanStartColumn before == srcSpanStartColumn after
-
         insertComment :: Location
                       -> SrcSpanInfo
-                      -> State ([ComInfo], M.Map SrcSpanInfo NodeInfo) ()
-        insertComment l ssi = modify $ second $
-            M.adjust (addComment (ComInfo comment (Just l))) ssi
-
-        addComment :: ComInfo -> NodeInfo -> NodeInfo
-        addComment x (NodeInfo s xs) = NodeInfo s (x : xs)
+                      -> State (M.Map SrcSpanInfo [ComInfo]) ()
+        insertComment l ssi = modify $
+            M.adjust (ComInfo comment (Just l) :) ssi
 
     -- Transfer collected comments into the AST.
     transferComments :: SrcSpanInfo
-                     -> State ([ComInfo], M.Map SrcSpanInfo NodeInfo) NodeInfo
+                     -> State (M.Map SrcSpanInfo [ComInfo]) NodeInfo
     transferComments ssi = do
-        ni <- gets ((M.! ssi) . snd)
+        cmts <- gets (M.! ssi)
         -- Sometimes, there are multiple AST nodes with the same
         -- SrcSpan.  Make sure we assign comments to only one of
         -- them.
-        modify $ second $ M.adjust (\(NodeInfo s _) -> NodeInfo s []) ssi
-        return ni { nodeInfoComments = reverse $ nodeInfoComments ni }
+        modify $ M.insert ssi []
+        return $ NodeInfo ssi (reverse cmts)
 
-    nodeBefore (Comment _ ss _) =
-        fmap snd $ OrderByEnd ss `M.lookupLT` spansByEnd
+    surrounding (Comment _ ss _) = (nodeBefore ss, nodeAfter ss)
 
-    nodeAfter (Comment _ ss _) =
-        fmap snd $ OrderByStart ss `M.lookupGT` spansByStart
+    nodeBefore ss = fmap snd $ OrderByEnd ss `M.lookupLT` spansByEnd
+
+    nodeAfter ss = fmap snd $ OrderByStart ss `M.lookupGT` spansByStart
 
     spansByStart = foldr (\ssi -> M.insert (OrderByStart $ srcInfoSpan ssi) ssi)
                          M.empty

@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Floskell.Pretty ( Pretty(..), pretty, printComment ) where
+module Floskell.Pretty ( Pretty(..), pretty ) where
 
 import           Control.Applicative            ( (<|>) )
 import           Control.Monad
@@ -187,6 +187,7 @@ printComments loc' ast = do
         onside' <- gets psOnside
         when nl $ modify $ \s -> s { psOnside = 0 }
         when (loc' == Before && not nl) newline
+        when (loc' == After && not nl && notSameLine (head comments)) newline
 
         forM_ comments $ printComment (Just $ srcInfoSpan $ nodeInfoSpan info)
 
@@ -196,6 +197,9 @@ printComments loc' ast = do
         when nl $ modify $ \s -> s { psOnside = onside' }
   where
     info = ann ast
+
+    notSameLine (Comment _ ss _) =
+        srcSpanEndLine (srcInfoSpan $ nodeInfoSpan info) < srcSpanStartLine ss
 
 -- | Return the configuration name of an operator
 opName :: QOp a -> ByteString
@@ -277,7 +281,7 @@ listVinternal ctx sep xs = aligned $ do
             cut $ do
                 printCommentsSimple Before x
                 cut . onside $ prettyPrint x
-                printCommentsSimple After x
+                printComments After x
             forM_ xs' $ \x' -> do
                 printComments Before x'
                 column sepCol $ operatorV ctx sep
