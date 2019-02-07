@@ -759,3 +759,22 @@ data Foo = Foo
   -- ^A comment, long enough to end up on its own line, or at least I hope so.
   } deriving (Eq)
 ```
+
+Keep comments together and aligned.
+
+``` haskell
+-- block
+-- one
+data Foo = Foo  -- some
+                -- comments
+         | Quux -- more
+                -- comments
+-- block
+-- two
+```
+
+Only comments.
+
+``` haskell
+-- some comment
+```
