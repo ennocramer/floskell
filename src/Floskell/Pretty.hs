@@ -147,18 +147,11 @@ copyComments loc from to = amap updateComments to
     newComments = filterComments (== loc) from
 
 -- | Pretty print a comment.
-printComment :: Maybe SrcSpan -> Comment -> Printer ()
-printComment mayNodespan (Comment inline cspan str) = do
-    -- Insert proper amount of space before comment.
-    -- This maintains alignment. This cannot force comments
-    -- to go before the left-most possible indent (specified by depends).
-    case mayNodespan of
-        Just nodespan -> do
-            let neededSpaces = srcSpanStartColumn cspan
-                    - max 1 (srcSpanEndColumn nodespan)
-            replicateM_ neededSpaces space
-        Nothing -> return ()
-
+printComment :: Int -> Comment -> Printer ()
+printComment correction (Comment inline cspan str) = do
+    col <- getNextColumn
+    let padding = max 0 $ srcSpanStartColumn cspan + correction - col
+    write $ BS.replicate padding 32
     if inline
         then do
             write "{-"
@@ -173,30 +166,35 @@ printComment mayNodespan (Comment inline cspan str) = do
 
 -- | Print comments of a node.
 printComments :: Annotated ast => Location -> ast NodeInfo -> Printer ()
-printComments loc' ast = do
-    let correctLocation comment = comInfoLocation comment == loc'
-        commentsWithLocation = filter correctLocation (nodeInfoComments info)
-        comments = map comInfoComment commentsWithLocation
+printComments = printCommentsInternal True
 
-    unless (null comments) $ do
-        -- Preceeding comments must have a newline before them, but not break onside indent.
-        nl <- gets psNewline
-        onside' <- gets psOnside
-        when nl $ modify $ \s -> s { psOnside = 0 }
-        when (loc' == Before && not nl) newline
-        when (loc' == After && not nl && notSameLine (head comments)) newline
+-- | Print comments of a node, but do not force newline before leading comments.
+printComments' :: Annotated ast => Location -> ast NodeInfo -> Printer ()
+printComments' = printCommentsInternal False
 
-        forM_ comments $ printComment (Just $ srcInfoSpan $ nodeInfoSpan info)
+printCommentsInternal :: Annotated ast => Bool -> Location -> ast NodeInfo -> Printer ()
+printCommentsInternal nlBefore loc ast = unless (null comments) $ do
+    let firstComment = head comments
+    -- Preceeding comments must have a newline before them, but not break onside indent.
+    nl <- gets psNewline
+    onside' <- gets psOnside
+    when nl $ modify $ \s -> s { psOnside = 0 }
+    when (loc == Before && not nl && nlBefore) newline
+    when (loc == After && not nl && notSameLine firstComment) newline
 
-        -- Write newline before restoring onside indent.
-        eol <- gets psEolComment
-        when (loc' == Before && eol && onside' > 0) newline
-        when nl $ modify $ \s -> s { psOnside = onside' }
+    col <- getNextColumn
+    forM_ comments $ printComment (col - srcSpanEndColumn ssi)
+
+    -- Write newline before restoring onside indent.
+    eol <- gets psEolComment
+    when (loc == Before && eol && onside' > 0) newline
+    when nl $ modify $ \s -> s { psOnside = onside' }
   where
-    info = ann ast
+    ssi = srcInfoSpan . nodeInfoSpan $ ann ast
 
-    notSameLine (Comment _ ss _) =
-        srcSpanEndLine (srcInfoSpan $ nodeInfoSpan info) < srcSpanStartLine ss
+    comments = map comInfoComment $ filterComments (== loc) ast
+
+    notSameLine (Comment _ ss _) = srcSpanEndLine ssi < srcSpanStartLine ss
 
 -- | Return the configuration name of an operator
 opName :: QOp a -> ByteString
@@ -276,7 +274,7 @@ listVinternal ctx sep xs = aligned $ do
         [] -> newline
         (x : xs') -> column itemCol $ do
             cut $ do
-                printCommentsSimple Before x
+                printComments' Before x
                 cut . onside $ prettyPrint x
                 printComments After x
             forM_ xs' $ \x' -> do
@@ -284,12 +282,6 @@ listVinternal ctx sep xs = aligned $ do
                 column sepCol $ operatorV ctx sep
                 cut . onside $ prettyPrint x'
                 printComments After x'
-  where
-    printCommentsSimple loc ast =
-        let comments = map comInfoComment $ filterComments (== loc) ast
-        in
-            forM_ comments $
-            printComment (Just . srcInfoSpan . nodeInfoSpan $ ann ast)
 
 listH :: (Annotated ast, Pretty ast)
       => LayoutContext
