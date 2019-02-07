@@ -1,16 +1,15 @@
 -- | Comment handling.
 module Floskell.Comments ( annotateWithComments ) where
 
-import           Control.Arrow              ( first, second )
+import           Control.Arrow                ( first, second )
 import           Control.Monad.State.Strict
 
-import           Data.Foldable              ( traverse_ )
-import qualified Data.Map.Strict            as M
+import           Data.Foldable                ( traverse_ )
+import qualified Data.Map.Strict              as M
 
 import           Floskell.Types
 
-import           Language.Haskell.Exts
-                 hiding ( Pretty, Style, parse, prettyPrint, style )
+import           Language.Haskell.Exts.SrcLoc ( SrcSpanInfo(..) )
 
 -- Order by start of span, larger spans before smaller spans.
 newtype OrderByStart = OrderByStart SrcSpan
@@ -101,7 +100,7 @@ annotateWithComments src comments =
         -- SrcSpan.  Make sure we assign comments to only one of
         -- them.
         modify $ M.insert ssi ([], [])
-        return $ NodeInfo ssi (reverse c) (reverse c')
+        return $ NodeInfo (srcInfoSpan ssi) (reverse c) (reverse c')
 
     surrounding (Comment _ ss _) = (nodeBefore ss, nodeAfter ss)
 

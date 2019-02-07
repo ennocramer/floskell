@@ -5,30 +5,25 @@
 
 module Floskell.Pretty ( Pretty(..), pretty ) where
 
-import           Control.Applicative            ( (<|>) )
+import           Control.Applicative          ( (<|>) )
 import           Control.Monad
                  ( forM_, guard, replicateM_, unless, void, when )
-import           Control.Monad.State.Strict     ( get, gets, modify )
+import           Control.Monad.State.Strict   ( get, gets, modify )
 
-import           Data.ByteString                ( ByteString )
-import qualified Data.ByteString                as BS
-import qualified Data.ByteString.Char8          as BS8
-import qualified Data.ByteString.Lazy           as BL
+import           Data.ByteString              ( ByteString )
+import qualified Data.ByteString              as BS
+import qualified Data.ByteString.Char8        as BS8
+import qualified Data.ByteString.Lazy         as BL
 
-import           Data.List                      ( groupBy, sortBy, sortOn )
-import           Data.Maybe                     ( catMaybes, fromMaybe )
+import           Data.List                    ( groupBy, sortBy, sortOn )
+import           Data.Maybe                   ( catMaybes, fromMaybe )
 
-import qualified Floskell.Buffer                as Buffer
+import qualified Floskell.Buffer              as Buffer
 import           Floskell.Config
 import           Floskell.Printers
-
 import           Floskell.Types
 
-import           Language.Haskell.Exts.Comments ( Comment(..) )
-import qualified Language.Haskell.Exts.Pretty   as HSE
-
-import           Language.Haskell.Exts.SrcLoc
-                 ( SrcSpan(..), noSrcSpan, srcInfoSpan )
+import qualified Language.Haskell.Exts.Pretty as HSE
 import           Language.Haskell.Exts.Syntax
 
 -- | Like `span`, but comparing adjacent items.
@@ -120,10 +115,6 @@ prettyOnside ast = do
             printComments After ast
         else onside $ pretty ast
 
--- | Empty NodeInfo
-noNodeInfo :: NodeInfo
-noNodeInfo = NodeInfo noSrcSpan [] []
-
 -- | Compare two AST nodes ignoring the annotation
 compareAST :: (Functor ast, Ord (ast ()))
            => ast NodeInfo
@@ -199,11 +190,12 @@ printCommentsInternal nlBefore loc ast = unless (null comments) $ do
     when (loc == Before && eol && onside' > 0) newline
     when nl $ modify $ \s -> s { psOnside = onside' }
   where
-    ssi = srcInfoSpan . nodeInfoSpan $ ann ast
+    ssi = nodeSpan ast
 
     comments = filterComments loc ast
 
-    notSameLine (Comment _ ss _) = srcSpanEndLine ssi < srcSpanStartLine ss
+    notSameLine comment = srcSpanEndLine ssi
+        < srcSpanStartLine (commentSpan comment)
 
 -- | Return the configuration name of an operator
 opName :: QOp a -> ByteString
@@ -228,19 +220,15 @@ lineDelta prev next = nextLine - prevLine
 
     nextLine = minimum (nextNodeLine : nextCommentLines)
 
-    prevNodeLine = srcSpanEndLine $ annSrcSpan prev
+    prevNodeLine = srcSpanEndLine $ nodeSpan prev
 
-    nextNodeLine = srcSpanStartLine $ annSrcSpan next
+    nextNodeLine = srcSpanStartLine $ nodeSpan next
 
-    annSrcSpan = srcInfoSpan . nodeInfoSpan . ann
-
-    prevCommentLines = map (srcSpanEndLine . commentSrcSpan) $
+    prevCommentLines = map (srcSpanEndLine . commentSpan) $
         filterComments After prev
 
-    nextCommentLines = map (srcSpanStartLine . commentSrcSpan) $
+    nextCommentLines = map (srcSpanStartLine . commentSpan) $
         filterComments Before next
-
-    commentSrcSpan (Comment _ sp _) = sp
 
 linedFn :: Annotated ast
         => (ast NodeInfo -> Printer ())

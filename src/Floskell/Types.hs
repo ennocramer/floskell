@@ -14,7 +14,12 @@ module Floskell.Types
     , psColumn
     , psNewline
     , Config(..)
+    , SrcSpan(..)
+    , Comment(..)
+    , commentSpan
     , NodeInfo(..)
+    , noNodeInfo
+    , nodeSpan
     , Location(..)
     ) where
 
@@ -34,8 +39,10 @@ import           Floskell.Buffer                ( Buffer )
 import qualified Floskell.Buffer                as Buffer
 import           Floskell.Config                ( Config(..), Location(..) )
 
-import           Language.Haskell.Exts.Comments
+import           Language.Haskell.Exts.Comments ( Comment(..) )
 import           Language.Haskell.Exts.SrcLoc
+                 ( SrcSpan(..), mkSrcSpan, noLoc )
+import           Language.Haskell.Exts.Syntax   ( Annotated(..) )
 
 data OutputRestriction = Anything | NoOverflow | NoOverflowOrLinebreak
     deriving ( Eq, Ord, Show )
@@ -88,10 +95,20 @@ psColumn = Buffer.column . psBuffer
 psNewline :: PrintState -> Bool
 psNewline = (== 0) . Buffer.column . psBuffer
 
+commentSpan :: Comment -> SrcSpan
+commentSpan (Comment _ ss _) = ss
+
 -- | Information for each node in the AST.
 data NodeInfo =
-    NodeInfo { nodeInfoSpan :: !SrcSpanInfo           -- ^ Location info from the parser.
+    NodeInfo { nodeInfoSpan :: !SrcSpan               -- ^ Location info from the parser.
              , nodeInfoLeadingComments :: ![Comment]  -- ^ Leading comments attached to this node.
              , nodeInfoTrailingComments :: ![Comment] -- ^ Trailing comments attached to this node.
              }
     deriving ( Show )
+
+-- | Empty NodeInfo
+noNodeInfo :: NodeInfo
+noNodeInfo = NodeInfo (mkSrcSpan noLoc noLoc) [] []
+
+nodeSpan :: Annotated ast => ast NodeInfo -> SrcSpan
+nodeSpan = nodeInfoSpan . ann
