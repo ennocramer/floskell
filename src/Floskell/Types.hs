@@ -15,7 +15,6 @@ module Floskell.Types
     , psNewline
     , Config(..)
     , NodeInfo(..)
-    , ComInfo(..)
     , Location(..)
     ) where
 
@@ -91,14 +90,8 @@ psNewline = (== 0) . Buffer.column . psBuffer
 
 -- | Information for each node in the AST.
 data NodeInfo =
-    NodeInfo { nodeInfoSpan     :: !SrcSpanInfo -- ^ Location info from the parser.
-             , nodeInfoComments :: ![ComInfo]   -- ^ Comments which are attached to this node.
+    NodeInfo { nodeInfoSpan :: !SrcSpanInfo           -- ^ Location info from the parser.
+             , nodeInfoLeadingComments :: ![Comment]  -- ^ Leading comments attached to this node.
+             , nodeInfoTrailingComments :: ![Comment] -- ^ Trailing comments attached to this node.
              }
-    deriving ( Show )
-
--- | Comment with some more info.
-data ComInfo =
-    ComInfo { comInfoComment  :: !Comment  -- ^ The normal comment type.
-            , comInfoLocation :: !Location -- ^ Where the comment lies relative to the node.
-            }
     deriving ( Show )

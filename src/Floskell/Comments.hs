@@ -1,6 +1,7 @@
 -- | Comment handling.
 module Floskell.Comments ( annotateWithComments ) where
 
+import           Control.Arrow              ( first, second )
 import           Control.Monad.State.Strict
 
 import           Data.Foldable              ( traverse_ )
@@ -56,11 +57,12 @@ annotateWithComments src comments =
                    traverse transferComments src)
               nodeinfos
   where
-    nodeinfos :: M.Map SrcSpanInfo [ComInfo]
-    nodeinfos = foldr (\ssi -> M.insert ssi []) M.empty src
+    nodeinfos :: M.Map SrcSpanInfo ([Comment], [Comment])
+    nodeinfos = foldr (\ssi -> M.insert ssi ([], [])) M.empty src
 
     -- Assign a single comment to the right AST node
-    assignComment :: Comment -> State (M.Map SrcSpanInfo [ComInfo]) ()
+    assignComment :: Comment
+                  -> State (M.Map SrcSpanInfo ([Comment], [Comment])) ()
     assignComment comment@(Comment _ cspan _) = case surrounding comment of
         (Nothing, Nothing) -> error "No target nodes for comment"
         (Just before, Nothing) -> insertComment After before
@@ -73,7 +75,7 @@ annotateWithComments src comments =
                 case cmts of
                     -- We've already collected comments for this
                     -- node and this comment is a continuation.
-                    (ComInfo c' _ : _)
+                    (_, c' : _)
                         | c' `isAlignedWith` comment ->
                             insertComment After before
 
@@ -85,19 +87,21 @@ annotateWithComments src comments =
       where
         insertComment :: Location
                       -> SrcSpanInfo
-                      -> State (M.Map SrcSpanInfo [ComInfo]) ()
-        insertComment l ssi = modify $ M.adjust (ComInfo comment l :) ssi
+                      -> State (M.Map SrcSpanInfo ([Comment], [Comment])) ()
+        insertComment Before ssi = modify $ M.adjust (first (comment :)) ssi
+        insertComment After ssi = modify $ M.adjust (second (comment :)) ssi
 
     -- Transfer collected comments into the AST.
-    transferComments :: SrcSpanInfo
-                     -> State (M.Map SrcSpanInfo [ComInfo]) NodeInfo
+    transferComments
+        :: SrcSpanInfo
+        -> State (M.Map SrcSpanInfo ([Comment], [Comment])) NodeInfo
     transferComments ssi = do
-        cmts <- gets (M.! ssi)
+        (c, c') <- gets (M.! ssi)
         -- Sometimes, there are multiple AST nodes with the same
         -- SrcSpan.  Make sure we assign comments to only one of
         -- them.
-        modify $ M.insert ssi []
-        return $ NodeInfo ssi (reverse cmts)
+        modify $ M.insert ssi ([], [])
+        return $ NodeInfo ssi (reverse c) (reverse c')
 
     surrounding (Comment _ ss _) = (nodeBefore ss, nodeAfter ss)
 

@@ -60,7 +60,9 @@ flattenApp :: Annotated ast
            => (ast NodeInfo -> Maybe (ast NodeInfo, ast NodeInfo))
            -> ast NodeInfo
            -> [ast NodeInfo]
-flattenApp fn = go . amap (\info -> info { nodeInfoComments = [] })
+flattenApp fn = go . amap (\info -> info { nodeInfoLeadingComments  = []
+                                         , nodeInfoTrailingComments = []
+                                         })
   where
     go x = case fn x of
         Just (lhs, rhs) -> let lhs' = go $ copyComments Before x lhs
@@ -74,7 +76,9 @@ flattenInfix
     => (ast1 NodeInfo -> Maybe (ast1 NodeInfo, ast2 NodeInfo, ast1 NodeInfo))
     -> ast1 NodeInfo
     -> (ast1 NodeInfo, [(ast2 NodeInfo, ast1 NodeInfo)])
-flattenInfix fn = go . amap (\info -> info { nodeInfoComments = [] })
+flattenInfix fn = go . amap (\info -> info { nodeInfoLeadingComments  = []
+                                           , nodeInfoTrailingComments = []
+                                           })
   where
     go x = case fn x of
         Just (lhs, op, rhs) ->
@@ -118,7 +122,7 @@ prettyOnside ast = do
 
 -- | Empty NodeInfo
 noNodeInfo :: NodeInfo
-noNodeInfo = NodeInfo noSrcSpan []
+noNodeInfo = NodeInfo noSrcSpan [] []
 
 -- | Compare two AST nodes ignoring the annotation
 compareAST :: (Functor ast, Ord (ast ()))
@@ -127,9 +131,10 @@ compareAST :: (Functor ast, Ord (ast ()))
            -> Ordering
 compareAST a b = void a `compare` void b
 
--- | Return comments with matching location.
-filterComments :: Annotated a => (Location -> Bool) -> a NodeInfo -> [ComInfo]
-filterComments f = filter (f . comInfoLocation) . nodeInfoComments . ann
+-- | Return leading comments.
+filterComments :: Annotated a => Location -> a NodeInfo -> [Comment]
+filterComments Before = nodeInfoLeadingComments . ann
+filterComments After = nodeInfoTrailingComments . ann
 
 -- | Copy comments from one AST node to another.
 copyComments :: (Annotated ast1, Annotated ast2)
@@ -137,14 +142,14 @@ copyComments :: (Annotated ast1, Annotated ast2)
              -> ast1 NodeInfo
              -> ast2 NodeInfo
              -> ast2 NodeInfo
-copyComments loc from to = amap updateComments to
-  where
-    updateComments info =
-        info { nodeInfoComments = oldComments ++ newComments }
-
-    oldComments = filterComments (/= loc) to
-
-    newComments = filterComments (== loc) from
+copyComments Before from to =
+    amap (\n ->
+          n { nodeInfoLeadingComments = nodeInfoLeadingComments $ ann from })
+         to
+copyComments After from to =
+    amap (\n ->
+          n { nodeInfoTrailingComments = nodeInfoTrailingComments $ ann from })
+         to
 
 -- | Pretty print a comment.
 printComment :: Int -> Comment -> Printer ()
@@ -172,7 +177,11 @@ printComments = printCommentsInternal True
 printComments' :: Annotated ast => Location -> ast NodeInfo -> Printer ()
 printComments' = printCommentsInternal False
 
-printCommentsInternal :: Annotated ast => Bool -> Location -> ast NodeInfo -> Printer ()
+printCommentsInternal :: Annotated ast
+                      => Bool
+                      -> Location
+                      -> ast NodeInfo
+                      -> Printer ()
 printCommentsInternal nlBefore loc ast = unless (null comments) $ do
     let firstComment = head comments
     -- Preceeding comments must have a newline before them, but not break onside indent.
@@ -192,7 +201,7 @@ printCommentsInternal nlBefore loc ast = unless (null comments) $ do
   where
     ssi = srcInfoSpan . nodeInfoSpan $ ann ast
 
-    comments = map comInfoComment $ filterComments (== loc) ast
+    comments = filterComments loc ast
 
     notSameLine (Comment _ ss _) = srcSpanEndLine ssi < srcSpanStartLine ss
 
@@ -226,12 +235,12 @@ lineDelta prev next = nextLine - prevLine
     annSrcSpan = srcInfoSpan . nodeInfoSpan . ann
 
     prevCommentLines = map (srcSpanEndLine . commentSrcSpan) $
-        filterComments (== After) prev
+        filterComments After prev
 
     nextCommentLines = map (srcSpanStartLine . commentSrcSpan) $
-        filterComments (== Before) next
+        filterComments Before next
 
-    commentSrcSpan = (\(Comment _ sp _) -> sp) . comInfoComment
+    commentSrcSpan (Comment _ sp _) = sp
 
 linedFn :: Annotated ast
         => (ast NodeInfo -> Printer ())
@@ -486,7 +495,7 @@ skipBlank :: Annotated ast
 skipBlank skip a b = skip a b && null (comments After a)
     && null (comments Before b)
   where
-    comments loc = filterComments (== loc)
+    comments loc = filterComments loc
 
 skipBlankAfterDecl :: Decl a -> Bool
 skipBlankAfterDecl a = case a of
