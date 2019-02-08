@@ -1,0 +1,97 @@
+version: 2.1
+
+stack_build: &stack_build
+  steps:
+    - checkout
+
+    - restore_cache:
+        key: "{{ arch }}-{{ .Environment.CIRCLE_JOB }}"
+
+    - run:
+        name: Setup Stack on MacOS
+        command: |
+          if [ $(uname) = Darwin ]; then
+            curl -L "https://www.stackage.org/stack/osx-x86_64" | tar xz --strip-components=1 -C ~/.local/bin/
+          fi
+
+    - run:
+        name: Setup GHC
+        command: stack --resolver $RESOLVER --no-terminal setup
+
+    - run:
+        name: Show Environment
+        command: |
+          stack --version
+          stack --resolver $RESOLVER ghc -- --version
+
+    - run:
+        name: Build Dependencies
+        command: stack --resolver $RESOLVER --no-terminal build --test --bench --only-dependencies
+
+    - run:
+        name: Build Project
+        command: stack --resolver $RESOLVER --no-terminal build --test --bench --no-run-benchmarks --haddock --no-haddock-deps
+
+    - save_cache:
+        key: "{{ arch }}-{{ .Environment.CIRCLE_JOB }}"
+        paths:
+          - /root/.stack
+          - .stack-work
+
+stack_linux: &stack_linux
+  <<: *stack_build
+  docker:
+    - image: fpco/stack-build:lts
+
+stack_macos: &stack_macos
+  <<: *stack_build
+  macos:
+    xcode: "10.0"
+
+jobs:
+  stack-lts-7:
+    <<: *stack_linux
+    environment:
+      RESOLVER: lts-7
+
+  stack-lts-9:
+    <<: *stack_linux
+    environment:
+      RESOLVER: lts-9
+
+  stack-lts-11:
+    <<: *stack_linux
+    environment:
+      RESOLVER: lts-11
+
+  stack-lts-12:
+    <<: *stack_linux
+    environment:
+      RESOLVER: lts-12
+
+  stack-lts-13:
+    <<: *stack_linux
+    environment:
+      RESOLVER: lts-13
+
+  stack-nightly:
+    <<: *stack_linux
+    environment:
+      RESOLVER: nightly
+
+  stack-lts-13-macos:
+    <<: *stack_macos
+    environment:
+      RESOLVER: lts-13
+
+workflows:
+  version: 2
+  main:
+    jobs:
+      - stack-lts-7
+      - stack-lts-9
+      - stack-lts-11
+      - stack-lts-12
+      - stack-lts-13
+      - stack-nightly
+      # - stack-lts-13-macos
