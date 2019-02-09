@@ -885,7 +885,7 @@ instance Pretty Decl where
     prettyPrint (TypeSig _ names ty) =
         onside $ prettyTypesig Declaration names ty
 
-    prettyPrint (PatSynSig _ names mtyvarbinds mcontext mcontext' ty) =
+    prettyPrint (PatSynSig _ names mtyvarbinds mcontext _ mcontext' ty) =
         depend "pattern" $ do
             inter comma $ map pretty names
             operator Declaration "::"
@@ -1160,7 +1160,7 @@ instance Pretty QualConDecl where
         pretty condecl
 
 instance Pretty GadtDecl where
-    prettyPrint (GadtDecl _ name mfielddecls ty) = do
+    prettyPrint (GadtDecl _ name _ _ mfielddecls ty) = do
         pretty name
         operator Declaration "::"
         mayM_ mfielddecls $ \decls -> do
@@ -1337,27 +1337,8 @@ instance Pretty Type where
         write "|"
         string str'
         write "|]"
-
-instance Pretty Kind where
-    prettyPrint (KindStar _) = write "*"
-
-    prettyPrint (KindFn _ kind kind') = do
-        pretty kind
-        operator Type "->"
-        pretty kind'
-
-    prettyPrint (KindParen _ kind) = parens $ pretty kind
-
-    prettyPrint (KindVar _ qname) = pretty qname
-
-    prettyPrint (KindApp _ kind kind') = do
-        pretty kind
-        space
-        pretty kind'
-
-    prettyPrint (KindTuple _ kinds) = list Type "'(" ")" "," kinds
-
-    prettyPrint (KindList _ kind) = group Type "'[" "]" $ pretty kind
+    
+    prettyPrint (TyStar _) = write "*"
 
 instance Pretty TyVarBind where
     prettyPrint (KindedVar _ name kind) = parens $ do
