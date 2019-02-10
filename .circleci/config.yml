@@ -38,13 +38,67 @@ stack_build: &stack_build
           - /root/.stack
           - .stack-work
 
+cabal_build: &cabal_build
+  steps:
+    - checkout
+
+    - restore_cache:
+        key: "{{ arch }}-{{ .Environment.CIRCLE_JOB }}"
+
+    - run:
+        name: Setup Stack on MacOS
+        command: |
+          if [ $(uname) = Darwin ]; then
+            curl -L "https://www.stackage.org/stack/osx-x86_64" | tar xz --strip-components=1 -C ~/.local/bin/
+          fi
+
+    - run:
+        name: Setup GHC & Cabal
+        command: |
+          stack --resolver $RESOLVER --no-terminal setup
+          stack install cabal-install
+          echo "export PATH=$HOME/.local/bin:$(stack --resolver $RESOLVER --no-terminal path --bin-path)" >> $BASH_ENV
+
+    - run:
+        name: Show Environment
+        command: |
+          stack --version
+          stack --resolver $RESOLVER ghc -- --version
+
+    - run:
+        name: Build Dependencies
+        command: |
+          cabal new-update
+          cabal new-build all --enable-tests --enable-benchmarks --only-dependencies
+
+    - run:
+        name: Build Project
+        command: |
+          cabal new-test all --enable-tests --enable-benchmarks
+
+    - save_cache:
+        key: "{{ arch }}-{{ .Environment.CIRCLE_JOB }}"
+        paths:
+          - /root/.stack
+          - .cabal
+
 stack_linux: &stack_linux
   <<: *stack_build
   docker:
     - image: fpco/stack-build:lts
 
+cabal_linux: &cabal_linux
+  <<: *cabal_build
+  docker:
+    - image: fpco/stack-build:latest
+
 stack_macos: &stack_macos
   <<: *stack_build
+  macos:
+    xcode: "10.0"
+
+cabal_macos: &cabal_macos
+  <<: *cabal_build
   macos:
     xcode: "10.0"
 
@@ -74,6 +128,31 @@ jobs:
     environment:
       RESOLVER: lts-13
 
+  cabal-lts-7:
+    <<: *cabal_linux
+    environment:
+      RESOLVER: lts-7
+
+  cabal-lts-9:
+    <<: *cabal_linux
+    environment:
+      RESOLVER: lts-9
+
+  cabal-lts-11:
+    <<: *cabal_linux
+    environment:
+      RESOLVER: lts-11
+
+  cabal-lts-12:
+    <<: *cabal_linux
+    environment:
+      RESOLVER: lts-12
+
+  cabal-lts-13:
+    <<: *cabal_linux
+    environment:
+      RESOLVER: lts-13
+
   stack-nightly:
     <<: *stack_linux
     environment:
@@ -93,5 +172,10 @@ workflows:
       - stack-lts-11
       - stack-lts-12
       - stack-lts-13
+      - cabal-lts-7
+      - cabal-lts-9
+      - cabal-lts-11
+      - cabal-lts-12
+      - cabal-lts-13
       - stack-nightly
       # - stack-lts-13-macos

@@ -38,38 +38,34 @@ library
                      Floskell.Printers
                      Floskell.Styles
                      Floskell.Types
-  build-depends:     base >= 4.7 && <5
-                   , aeson
-                   , containers
-                   , unordered-containers
-                   , data-default
-                   , directory
-                   , filepath
+  build-depends:     base >=4.9 && <4.13
+                   , aeson >=0.11.3.0 && <1.4.3
+                   , bytestring >=0.10.8.1 && <0.10.9
+                   , containers >=0.5.7.1 && <0.6.1
+                   , data-default >=0.7.1.1 && <0.7.2
+                   , directory >=1.2.6.2 && <1.3.4
+                   , filepath >=1.4.1.0 && <1.4.3
                    , haskell-src-exts >= 1.19 && < 1.22
-                   , monad-loops
-                   , monad-dijkstra
-                   , mtl
-                   , bytestring
-                   , utf8-string
-                   , transformers
-                   , text
+                   , monad-dijkstra ==0.1.1.*
+                   , mtl >=2.2.1 && <2.3
+                   , text >=1.2.2.2 && <1.2.4
+                   , transformers >=0.5.2.0 && <0.5.6
+                   , unordered-containers >=0.2.8.0 && <0.2.10
+                   , utf8-string >=1.0.1.1 && <1.0.2
 
 executable floskell
   hs-source-dirs:    src/main
   ghc-options:       -Wall -Wno-missing-home-modules -optP-Wno-nonportable-include-path
   main-is:           Main.hs
-  build-depends:     base >= 4 && < 5
+  build-depends:     base >=4.9 && <4.13
                    , floskell
-                   , aeson
-                   , aeson-pretty
-                   , bytestring
-                   , optparse-applicative
+                   , aeson-pretty >=0.8.2 && <0.9
+                   , bytestring >=0.10.8.1 && <0.10.9
+                   , directory >=1.2.6.2 && <1.3.4
+                   , ghc-prim >=0.5.0.0 && <0.5.4
                    , haskell-src-exts >= 1.19 && < 1.22
-                   , ghc-prim
-                   , directory
-                   , filepath
-                   , unordered-containers
-                   , text
+                   , optparse-applicative >=0.12.1.0 && <0.14.4
+                   , text >=1.2.2.2 && <1.2.4
 
 test-suite floskell-test
   type: exitcode-stdio-1.0
@@ -77,18 +73,15 @@ test-suite floskell-test
   ghc-options:       -Wall -threaded -rtsopts -with-rtsopts=-N
   main-is:           Test.hs
   other-modules:     Markdone
-  build-depends:     base >= 4 && <5
+  build-depends:     base >=4.9 && <4.13
                    , floskell
+                   , bytestring >=0.10.8.1 && <0.10.9
+                   , deepseq >=1.4.2.0 && <1.4.5
+                   , exceptions >=0.8.3 && <0.11
                    , haskell-src-exts >= 1.19 && < 1.22
-                   , monad-loops
-                   , mtl
-                   , bytestring
-                   , utf8-string
-                   , hspec
-                   , directory
-                   , text
-                   , deepseq
-                   , exceptions
+                   , hspec >=2.2.4 && <2.7
+                   , text >=1.2.2.2 && <1.2.4
+                   , utf8-string >=1.0.1.1 && <1.0.2
 
 benchmark floskell-bench
   type: exitcode-stdio-1.0
@@ -96,14 +89,13 @@ benchmark floskell-bench
   ghc-options:       -Wall -threaded -rtsopts -with-rtsopts=-N
   main-is:           Benchmark.hs
   other-modules:     Markdone
-  build-depends:     base >= 4 && < 5
+  build-depends:     base >=4.9 && <4.13
                    , floskell
-                   , bytestring
-                   , utf8-string
+                   , bytestring >=0.10.8.1 && <0.10.9
+                   , criterion >=1.1.1.0 && <1.5.4
+                   , deepseq >=1.4.2.0 && <1.4.5
+                   , exceptions >=0.8.3 && <0.11
+                   , ghc-prim >=0.5.0.0 && <0.5.4
                    , haskell-src-exts >= 1.19 && < 1.22
-                   , ghc-prim
-                   , directory
-                   , criterion
-                   , deepseq
-                   , exceptions
-                   , text
+                   , text >=1.2.2.2 && <1.2.4
+                   , utf8-string >=1.0.1.1 && <1.0.2
