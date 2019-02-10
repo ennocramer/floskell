@@ -2,6 +2,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE CPP #-}
 
 module Floskell.Pretty ( Pretty(..), pretty ) where
 
@@ -863,9 +864,15 @@ instance Pretty Decl where
                 withComputedTabStop stopRhs cfgAlignClass measureInstDecl decls $
                 prettyDecls skipBlankInstDecl decls
 
+#if MIN_VERSION_haskell_src_exts(1,20,0)
     prettyPrint (DerivDecl _ mderivstrategy moverlap instrule) =
+#else
+    prettyPrint (DerivDecl _ moverlap instrule) =
+#endif
         depend "deriving" $ do
+#if MIN_VERSION_haskell_src_exts(1,20,0)
             mayM_ mderivstrategy $ withPostfix space pretty
+#endif
             write "instance "
             mayM_ moverlap $ withPostfix space pretty
             pretty instrule
@@ -885,7 +892,11 @@ instance Pretty Decl where
     prettyPrint (TypeSig _ names ty) =
         onside $ prettyTypesig Declaration names ty
 
+#if MIN_VERSION_haskell_src_exts(1,20,0)
     prettyPrint (PatSynSig _ names mtyvarbinds mcontext _ mcontext' ty) =
+#else
+    prettyPrint (PatSynSig _ name mtyvarbinds mcontext mcontext' ty) = let names = [name] in
+#endif
         depend "pattern" $ do
             inter comma $ map pretty names
             operator Declaration "::"
@@ -1120,10 +1131,16 @@ instance Pretty InstDecl where
         mapM_ pretty derivings
 
 instance Pretty Deriving where
+#if MIN_VERSION_haskell_src_exts(1,20,0)
     prettyPrint (Deriving _ mderivstrategy instrules) =
+#else
+    prettyPrint (Deriving _ instrules) =
+#endif        
         withIndentBy cfgIndentDeriving $ do
             write "deriving "
+#if MIN_VERSION_haskell_src_exts(1,20,0)
             mayM_ mderivstrategy $ withPostfix space pretty
+#endif
             case instrules of
                 [ i@IRule{} ] -> pretty i
                 [ IParen _ i ] -> listAutoWrap Other "(" ")" "," [ i ]
@@ -1160,7 +1177,11 @@ instance Pretty QualConDecl where
         pretty condecl
 
 instance Pretty GadtDecl where
+#if MIN_VERSION_haskell_src_exts(1,20,0)
     prettyPrint (GadtDecl _ name _ _ mfielddecls ty) = do
+#else
+    prettyPrint (GadtDecl _ name mfielddecls ty) = do
+#endif
         pretty name
         operator Declaration "::"
         mayM_ mfielddecls $ \decls -> do
@@ -1284,8 +1305,6 @@ instance Pretty Type where
         Unboxed -> list Type "(#" "#)" "," tys
         Boxed -> list Type "(" ")" "," tys
 
-    prettyPrint (TyUnboxedSum _ tys) = list Type "(#" "#)" "|" tys
-
     prettyPrint (TyList _ ty) = group Type "[" "]" $ pretty ty
 
     prettyPrint (TyParArray _ ty) = group Type "[:" ":]" $ pretty ty
@@ -1301,6 +1320,7 @@ instance Pretty Type where
 
     prettyPrint (TyParen _ ty) = parens $ pretty ty
 
+#if MIN_VERSION_haskell_src_exts(1,20,0)
     prettyPrint (TyInfix _ ty op ty') = do
         pretty ty
         withOperatorFormatting Type opname (prettyHSE op) id
@@ -1309,6 +1329,12 @@ instance Pretty Type where
         opname = opName' $ case op of
             PromotedName _ qname -> qname
             UnpromotedName _ qname -> qname
+#else
+    prettyPrint (TyInfix _ ty qname ty') = do
+        pretty ty
+        withOperatorFormatting Type (opName' qname) (prettyHSE qname) id
+        pretty ty'
+#endif
 
     prettyPrint (TyKind _ ty kind) = do
         pretty ty
@@ -1337,8 +1363,36 @@ instance Pretty Type where
         write "|"
         string str'
         write "|]"
+
+#if MIN_VERSION_haskell_src_exts(1,20,0)
+    prettyPrint (TyUnboxedSum _ tys) = list Type "(#" "#)" "|" tys
     
     prettyPrint (TyStar _) = write "*"
+#endif
+
+#if MIN_VERSION_haskell_src_exts(1,21,0)
+#else
+instance Pretty Kind where
+    prettyPrint (KindStar _) = write "*"
+
+    prettyPrint (KindFn _ kind kind') = do
+        pretty kind
+        operator Type "->"
+        pretty kind'
+
+    prettyPrint (KindParen _ kind) = parens $ pretty kind
+
+    prettyPrint (KindVar _ qname) = pretty qname
+
+    prettyPrint (KindApp _ kind kind') = do
+        pretty kind
+        space
+        pretty kind'
+
+    prettyPrint (KindTuple _ kinds) = list Type "'(" ")" "," kinds
+
+    prettyPrint (KindList _ kind) = group Type "'[" "]" $ pretty kind
+#endif
 
 instance Pretty TyVarBind where
     prettyPrint (KindedVar _ name kind) = parens $ do
@@ -1461,9 +1515,11 @@ instance Pretty Exp where
         Boxed -> list Expression "(" ")" "," exprs
         Unboxed -> list Expression "(#" "#)" "," exprs
 
+#if MIN_VERSION_haskell_src_exts(1,20,0)
     prettyPrint (UnboxedSum _ before after expr) = group Expression "(#" "#)"
         . inter space $ replicate before (write "|") ++ [ pretty expr ]
         ++ replicate after (write "|")
+#endif
 
     prettyPrint (TupleSection _ boxed mexprs) = case boxed of
         Boxed -> list Expression "(" ")" "," $ map MayAst mexprs
@@ -1733,10 +1789,6 @@ instance Pretty Pat where
         Boxed -> list Pattern "(" ")" "," pats
         Unboxed -> list Pattern "(#" "#)" "," pats
 
-    prettyPrint (PUnboxedSum _ before after pat) = group Pattern "(#" "#)"
-        . inter space $ replicate before (write "|") ++ [ pretty pat ]
-        ++ replicate after (write "|")
-
     prettyPrint (PList _ pats) = list Pattern "[" "]" "," pats
 
     prettyPrint (PParen _ pat) = parens $ pretty pat
@@ -1795,8 +1847,6 @@ instance Pretty Pat where
         inter space $ map pretty rpats
         write "%>"
 
-    prettyPrint (PSplice _ splice) = pretty splice
-
     prettyPrint (PQuasiQuote _ str str') = do
         write "[$"
         string str
@@ -1807,6 +1857,14 @@ instance Pretty Pat where
     prettyPrint (PBangPat _ pat) = do
         write "!"
         pretty pat
+    
+#if MIN_VERSION_haskell_src_exts(1,20,0)
+    prettyPrint (PSplice _ splice) = pretty splice
+
+    prettyPrint (PUnboxedSum _ before after pat) = group Pattern "(#" "#)"
+        . inter space $ replicate before (write "|") ++ [ pretty pat ]
+        ++ replicate after (write "|")
+#endif
 
 instance Pretty PatField where
     prettyPrint (PFieldPat _ qname pat) = do
@@ -2020,7 +2078,9 @@ instance Pretty BooleanFormula where
     prettyPrint (ParenFormula _ booleanformula) = parens $ pretty booleanformula
 
 -- Stick with HSE
+#if MIN_VERSION_haskell_src_exts(1,20,0)
 instance Pretty DerivStrategy
+#endif
 
 instance Pretty DataOrNew
 
