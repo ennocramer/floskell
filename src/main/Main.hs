@@ -8,7 +8,6 @@ import           Control.Applicative             ( many, optional )
 import           Control.Exception               ( catch, throw )
 
 import qualified Data.Aeson.Encode.Pretty        as JSON ( encodePretty )
-import qualified Data.ByteString                 as BS
 import qualified Data.ByteString.Lazy            as BL
 import           Data.List                       ( sort )
 import           Data.Maybe                      ( isJust )
@@ -120,13 +119,12 @@ run config files = case files of
 
 -- | Reformat stdin according to Style, Language, and Extensions.
 reformatStdin :: AppConfig -> IO ()
-reformatStdin config =
-    BL.interact $ reformatByteString config Nothing . BL.toStrict
+reformatStdin config = BL.interact $ reformatByteString config Nothing
 
 -- | Reformat a file according to Style, Language, and Extensions.
 reformatFile :: AppConfig -> FilePath -> IO ()
 reformatFile config file = do
-    text <- BS.readFile file
+    text <- BL.readFile file
     tmpDir <- getTemporaryDirectory
     (fp, h) <- openTempFile tmpDir "floskell.hs"
     BL.hPutStr h $ reformatByteString config (Just file) text
@@ -141,7 +139,7 @@ reformatFile config file = do
 -- | Reformat a ByteString according to Style, Language, and Extensions.
 reformatByteString :: AppConfig
                    -> Maybe FilePath
-                   -> BS.ByteString
+                   -> BL.ByteString
                    -> BL.ByteString
 reformatByteString config mpath text =
     either error id $ reformat config mpath text

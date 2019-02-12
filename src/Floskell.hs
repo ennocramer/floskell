@@ -23,15 +23,9 @@ module Floskell
     , defaultExtensions
     ) where
 
-import           Data.ByteString            ( ByteString )
-import qualified Data.ByteString            as S
-import qualified Data.ByteString.Char8      as S8
-import qualified Data.ByteString.Internal   as S
-import qualified Data.ByteString.Lazy       as L
+import           Data.ByteString.Lazy       ( ByteString )
 import qualified Data.ByteString.Lazy.Char8 as L8
-
-import qualified Data.ByteString.UTF8       as UTF8
-import qualified Data.ByteString.Unsafe     as S
+import qualified Data.ByteString.Lazy.UTF8  as UTF8
 
 import           Data.Function              ( on )
 import           Data.List
@@ -57,16 +51,16 @@ data CodeBlock = HaskellSource Int ByteString | CPPDirectives ByteString
 reformat :: AppConfig
          -> Maybe FilePath
          -> ByteString
-         -> Either String L.ByteString
-reformat config mfilepath x = preserveTrailingNewline x . mconcat
-    . intersperse "\n" <$> mapM processBlock (cppSplitBlocks x)
+         -> Either String ByteString
+reformat config mfilepath x = preserveTrailingNewline x . L8.intercalate "\n"
+    <$> mapM processBlock (cppSplitBlocks x)
   where
-    processBlock :: CodeBlock -> Either String L.ByteString
-    processBlock (CPPDirectives text) = Right $ L.fromStrict text
+    processBlock :: CodeBlock -> Either String ByteString
+    processBlock (CPPDirectives text) = Right text
     processBlock (HaskellSource offset text) =
-        let ls = S8.lines text
+        let ls = L8.lines text
             prefix = findPrefix ls
-            code = unlines' (map (stripPrefix prefix) ls)
+            code = L8.intercalate "\n" (map (stripPrefix prefix) ls)
             exts = readExtensions (UTF8.toString code)
             mode'' = case exts of
                 Nothing -> mode'
@@ -85,43 +79,39 @@ reformat config mfilepath x = preserveTrailingNewline x . mconcat
                     Exts.prettyPrint (loc { srcLine = srcLine loc + offset })
                     ++ ": " ++ e
 
-    unlines' = S.concat . intersperse "\n"
-
-    unlines'' = L.concat . intersperse "\n"
-
-    addPrefix :: ByteString -> L8.ByteString -> L8.ByteString
-    addPrefix prefix = unlines'' . map (L8.fromStrict prefix <>) . L8.lines
+    addPrefix :: ByteString -> ByteString -> ByteString
+    addPrefix prefix = L8.intercalate "\n" . map (prefix <>) . L8.lines
 
     stripPrefix :: ByteString -> ByteString -> ByteString
-    stripPrefix prefix line = if S.null (S8.dropWhile (== '\n') line)
+    stripPrefix prefix line = if L8.null (L8.dropWhile (== '\n') line)
                               then line
                               else fromMaybe (error "Missing expected prefix")
-                                  . s8_stripPrefix prefix $ line
+                                  . L8.stripPrefix prefix $ line
 
     findPrefix :: [ByteString] -> ByteString
     findPrefix = takePrefix False . findSmallestPrefix . dropNewlines
 
     dropNewlines :: [ByteString] -> [ByteString]
-    dropNewlines = filter (not . S.null . S8.dropWhile (== '\n'))
+    dropNewlines = filter (not . L8.null . L8.dropWhile (== '\n'))
 
     takePrefix :: Bool -> ByteString -> ByteString
-    takePrefix bracketUsed txt = case S8.uncons txt of
+    takePrefix bracketUsed txt = case L8.uncons txt of
         Nothing -> ""
         Just ('>', txt') ->
-            if not bracketUsed then S8.cons '>' (takePrefix True txt') else ""
+            if not bracketUsed then L8.cons '>' (takePrefix True txt') else ""
         Just (c, txt') -> if c == ' ' || c == '\t'
-                          then S8.cons c (takePrefix bracketUsed txt')
+                          then L8.cons c (takePrefix bracketUsed txt')
                           else ""
 
     findSmallestPrefix :: [ByteString] -> ByteString
     findSmallestPrefix [] = ""
     findSmallestPrefix ("" : _) = ""
     findSmallestPrefix (p : ps) =
-        let first = S8.head p
-            startsWithChar c x = S8.length x > 0 && S8.head x == c
+        let first = L8.head p
+            startsWithChar c x = L8.length x > 0 && L8.head x == c
         in
             if all (startsWithChar first) ps
-            then S8.cons first (findSmallestPrefix (S.tail p : map S.tail ps))
+            then L8.cons first (findSmallestPrefix (L8.tail p : map L8.tail ps))
             else ""
 
     mode' = defaultParseMode { parseFilename = fromMaybe "<stdin>" mfilepath
@@ -129,7 +119,7 @@ reformat config mfilepath x = preserveTrailingNewline x . mconcat
                              , extensions    = appExtensions config
                              }
 
-    preserveTrailingNewline x x' = if not (S8.null x) && S8.last x == '\n'
+    preserveTrailingNewline x x' = if not (L8.null x) && L8.last x == '\n'
                                        && not (L8.null x') && L8.last x' /= '\n'
                                    then x' <> "\n"
                                    else x'
@@ -149,11 +139,11 @@ reformat config mfilepath x = preserveTrailingNewline x . mconcat
 -- will become five blocks, one for each CPP line and one for each pair of declarations.
 cppSplitBlocks :: ByteString -> [CodeBlock]
 cppSplitBlocks = map (classify . unlines') . groupBy ((==) `on` (cppLine . snd))
-    . zip [ 0 .. ] . S8.lines
+    . zip [ 0 .. ] . L8.lines
   where
     cppLine :: ByteString -> Bool
     cppLine src =
-        any (`S8.isPrefixOf` src)
+        any (`L8.isPrefixOf` src)
             [ "#if"
             , "#end"
             , "#else"
@@ -167,17 +157,14 @@ cppSplitBlocks = map (classify . unlines') . groupBy ((==) `on` (cppLine . snd))
 
     unlines' :: [(Int, ByteString)] -> (Int, ByteString)
     unlines' [] = (0, "")
-    unlines' xs@((line, _) : _) = (line, S8.unlines $ map snd xs)
+    unlines' xs@((line, _) : _) = (line, L8.unlines $ map snd xs)
 
     classify :: (Int, ByteString) -> CodeBlock
     classify (ofs, text) =
         if cppLine text then CPPDirectives text else HaskellSource ofs text
 
 -- | Print the module.
-prettyPrint :: Style
-            -> Module SrcSpanInfo
-            -> [Comment]
-            -> Either a L.ByteString
+prettyPrint :: Style -> Module SrcSpanInfo -> [Comment] -> Either a ByteString
 prettyPrint style m comments =
     let ast = annotateWithComments (fromMaybe m $ applyFixities baseFixities m)
                                    comments
@@ -185,7 +172,7 @@ prettyPrint style m comments =
         Right (runPrinterStyle style (pretty ast))
 
 -- | Pretty print the given printable thing.
-runPrinterStyle :: Style -> Printer () -> L.ByteString
+runPrinterStyle :: Style -> Printer () -> ByteString
 runPrinterStyle style m =
     maybe (error "Printer failed with mzero call.")
           (Buffer.toLazyByteString . psBuffer)
@@ -216,9 +203,3 @@ badExtensions =
     , DoRec -- same
     , TypeApplications -- since GHC 8 and haskell-src-exts-1.19
     ]
-
--- ,QuasiQuotes -- breaks [x| ...], making whitespace free list comps break
-s8_stripPrefix :: ByteString -> ByteString -> Maybe ByteString
-s8_stripPrefix bs1@(S.PS _ _ l1) bs2
-    | bs1 `S.isPrefixOf` bs2 = Just (S.unsafeDrop l1 bs2)
-    | otherwise = Nothing

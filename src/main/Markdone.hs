@@ -13,11 +13,12 @@ module Markdone where
 import           Control.DeepSeq
 import           Control.Monad.Catch
 
-import           Data.ByteString         ( ByteString )
-import           Data.ByteString.Builder as B
-import qualified Data.ByteString.Char8   as S8
+import           Data.ByteString.Builder    as B
+import qualified Data.ByteString.Char8      as S8
+import           Data.ByteString.Lazy       ( ByteString )
+import qualified Data.ByteString.Lazy.Char8 as L8
 import           Data.Char
-import           Data.Monoid             ( (<>) )
+import           Data.Monoid                ( (<>) )
 import           Data.Typeable
 
 import           GHC.Generics
@@ -45,17 +46,17 @@ instance Exception MarkdownError
 
 -- | Tokenize the bytestring.
 tokenize :: ByteString -> [Token]
-tokenize = map token . S8.lines
+tokenize = map token . L8.lines
   where
     token line
-        | S8.isPrefixOf "#" line =
-            let (hashes, title) = S8.span (== '#') line
-            in
-                Heading (S8.length hashes) (S8.dropWhile isSpace title)
-        | S8.isPrefixOf "```" line =
+        | L8.isPrefixOf "#" line = let (hashes, title) = L8.span (== '#') line
+                                   in
+                                       Heading (fromIntegral $ L8.length hashes)
+                                               (L8.dropWhile isSpace title)
+        | L8.isPrefixOf "```" line =
             if line == "```"
             then EndFence
-            else BeginFence (S8.dropWhile (\c -> c == '`' || c == ' ') line)
+            else BeginFence (L8.dropWhile (\c -> c == '`' || c == ' ') line)
         | otherwise = PlainLine line
 
 -- | Parse into a forest.
@@ -83,7 +84,7 @@ parse = go (0 :: Int)
                     case rest' of
                         (EndFence : rest'') ->
                             fmap (CodeFence label
-                                            (S8.intercalate "\n"
+                                            (L8.intercalate "\n"
                                                             (map getPlain
                                                                  content)) :)
                                  (go level rest'')
@@ -95,7 +96,7 @@ parse = go (0 :: Int)
                                                  _ -> False)
                                             (PlainLine p : rest)
                 in
-                    fmap (PlainText (S8.intercalate "\n" (map getPlain content)) :)
+                    fmap (PlainText (L8.intercalate "\n" (map getPlain content)) :)
                          (go level rest')
         [] -> return []
         _ -> throwM ExpectedSection
@@ -111,8 +112,8 @@ print = mconcat . map (go (0 :: Int))
             let level' = level + 1
             in
                 B.byteString (S8.replicate level' '#') <> B.char7 ' '
-                <> B.byteString heading <> B.byteString "\n"
+                <> B.lazyByteString heading <> B.byteString "\n"
                 <> mconcat (map (go level') children)
-        (CodeFence lang code) -> B.byteString "``` " <> B.byteString lang
-            <> B.char7 '\n' <> B.byteString code <> B.byteString "\n```\n"
-        (PlainText text) -> B.byteString text <> B.byteString "\n"
+        (CodeFence lang code) -> B.byteString "``` " <> B.lazyByteString lang
+            <> B.char7 '\n' <> B.lazyByteString code <> B.byteString "\n```\n"
+        (PlainText text) -> B.lazyByteString text <> B.byteString "\n"

@@ -6,11 +6,10 @@ module Main where
 
 import           Control.Monad                ( forM_, guard )
 
-import           Data.ByteString              ( ByteString )
-import qualified Data.ByteString              as S
+import           Data.ByteString.Lazy         ( ByteString )
 import qualified Data.ByteString.Lazy         as L
-import qualified Data.ByteString.Lazy.Builder as L
-import qualified Data.ByteString.UTF8         as UTF8
+import qualified Data.ByteString.Lazy.Builder as B
+import qualified Data.ByteString.Lazy.UTF8    as UTF8
 import           Data.Maybe                   ( mapMaybe )
 import qualified Data.Text                    as T
 
@@ -50,12 +49,12 @@ referenceFile style = "styles/" ++ name ++ ".md"
 
 loadMarkdone :: String -> IO [Markdone]
 loadMarkdone filename = do
-    bytes <- S.readFile filename
+    bytes <- L.readFile filename
     MD.parse (MD.tokenize bytes)
 
 saveMarkdone :: String -> [Markdone] -> IO ()
 saveMarkdone filename doc =
-    S.writeFile filename $ L.toStrict $ L.toLazyByteString $ MD.print doc
+    L.writeFile filename . B.toLazyByteString $ MD.print doc
 
 -- | Extract code snippets from a Markdone document.
 extractSnippets :: ByteString -> [Markdone] -> [TestTree]
@@ -116,10 +115,8 @@ testAll = do
         return (name, style, tree)
 
 reformatSnippet :: Style -> ByteString -> Either String ByteString
-reformatSnippet style code = L.toStrict
-    <$> reformat (AppConfig style Haskell2010 defaultExtensions)
-                 (Just "TEST.md")
-                 code
+reformatSnippet style =
+    reformat (AppConfig style Haskell2010 defaultExtensions) (Just "TEST.md")
 
 regenerate :: Style -> [Markdone] -> [Markdone]
 regenerate style = map fmt
