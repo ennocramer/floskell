@@ -35,6 +35,7 @@ import           Data.Monoid
 
 import qualified Floskell.Buffer            as Buffer
 import           Floskell.Comments
+import           Floskell.Config
 import           Floskell.ConfigFile
 import           Floskell.Pretty            ( pretty )
 import           Floskell.Styles            ( Style(..), styles )
@@ -44,85 +45,143 @@ import           Language.Haskell.Exts
                  hiding ( Pretty, Style, parse, prettyPrint, style )
 import qualified Language.Haskell.Exts      as Exts
 
-data CodeBlock = HaskellSource Int ByteString | CPPDirectives ByteString
+data CodeBlock = HaskellSource Int [ByteString] | CPPDirectives [ByteString]
     deriving ( Show, Eq )
+
+trimBy :: (a -> Bool) -> [a] -> ([a], [a], [a])
+trimBy f xs = (prefix, middle, suffix)
+  where
+    (prefix, xs') = span f xs
+
+    (suffix', middle') = span f $ reverse xs'
+
+    middle = reverse middle'
+
+    suffix = reverse suffix'
+
+findLinePrefix :: (Char -> Bool) -> [ByteString] -> ByteString
+findLinePrefix _ [] = ""
+findLinePrefix f (x : xs') = go (L8.takeWhile f x) xs'
+  where
+    go prefix xs = if all (prefix `L8.isPrefixOf`) xs
+                   then prefix
+                   else go (L8.take (L8.length prefix - 1) prefix) xs
+
+findIndent :: (Char -> Bool) -> [ByteString] -> ByteString
+findIndent _ [] = ""
+findIndent f (x : xs') = go (L8.takeWhile f x) $ filter (not . L8.all f) xs'
+  where
+    go indent xs = if all (indent `L8.isPrefixOf`) xs
+                   then indent
+                   else go (L8.take (L8.length indent - 1) indent) xs
+
+preserveVSpace :: Monad m
+               => ([ByteString] -> m [ByteString])
+               -> [ByteString]
+               -> m [ByteString]
+preserveVSpace format input = do
+    output <- format input'
+    return $ prefix ++ output ++ suffix
+  where
+    (prefix, input', suffix) = trimBy L8.null input
+
+preservePrefix :: Monad m
+               => (Int -> [ByteString] -> m [ByteString])
+               -> [ByteString]
+               -> m [ByteString]
+preservePrefix format input = do
+    output <- format (prefixLength prefix) input'
+    return $ map (prefix <>) output
+  where
+    prefix = findLinePrefix allowed input
+
+    input' = map (L8.drop $ L8.length prefix) input
+
+    allowed c = c == ' ' || c == '\t' || c == '>'
+
+    prefixLength = sum . map (\c -> if c == '\t' then 8 else 1) . L8.unpack
+
+preserveIndent :: Monad m
+               => (Int -> [ByteString] -> m [ByteString])
+               -> [ByteString]
+               -> m [ByteString]
+preserveIndent format input = do
+    output <- format (prefixLength prefix) input'
+    return $ map (prefix <>) output
+  where
+    prefix = findIndent allowed input
+
+    input' = map (L8.drop $ L8.length prefix) input
+
+    allowed c = c == ' ' || c == '\t'
+
+    prefixLength = sum . map (\c -> if c == '\t' then 8 else 1) . L8.unpack
+
+withReducedLineLength :: Int -> Config -> Config
+withReducedLineLength offset config = config { cfgPenalty = penalty }
+  where
+    penalty = (cfgPenalty config) { penaltyMaxLineLength =
+                                        penaltyMaxLineLength (cfgPenalty config)
+                                        - offset
+                                  }
 
 -- | Format the given source.
 reformat :: AppConfig
          -> Maybe FilePath
          -> ByteString
          -> Either String ByteString
-reformat config mfilepath x = preserveTrailingNewline x . L8.intercalate "\n"
-    <$> mapM processBlock (cppSplitBlocks x)
+reformat config mfilepath input = fmap (L8.intercalate "\n")
+    . preserveVSpace (preservePrefix (reformatLines mode cfg)) $
+    L8.split '\n' input
   where
-    processBlock :: CodeBlock -> Either String ByteString
-    processBlock (CPPDirectives text) = Right text
-    processBlock (HaskellSource offset text) =
-        let ls = L8.lines text
-            prefix = findPrefix ls
-            code = L8.intercalate "\n" (map (stripPrefix prefix) ls)
-            exts = readExtensions (UTF8.toString code)
-            mode'' = case exts of
-                Nothing -> mode'
-                Just (Nothing, exts') ->
-                    mode' { extensions = exts' ++ extensions mode' }
-                Just (Just lang, exts') ->
-                    mode' { baseLanguage = lang
-                          , extensions   = exts' ++ extensions mode'
-                          }
-        in
-            case parseModuleWithComments mode'' (UTF8.toString code) of
-                ParseOk (m, comments) ->
-                    fmap (addPrefix prefix)
-                         (prettyPrint (appStyle config) m comments)
-                ParseFailed loc e -> Left $
-                    Exts.prettyPrint (loc { srcLine = srcLine loc + offset })
-                    ++ ": " ++ e
-
-    addPrefix :: ByteString -> ByteString -> ByteString
-    addPrefix prefix = L8.intercalate "\n" . map (prefix <>) . L8.lines
-
-    stripPrefix :: ByteString -> ByteString -> ByteString
-    stripPrefix prefix line = if L8.null (L8.dropWhile (== '\n') line)
-                              then line
-                              else fromMaybe (error "Missing expected prefix")
-                                  . L8.stripPrefix prefix $ line
-
-    findPrefix :: [ByteString] -> ByteString
-    findPrefix = takePrefix False . findSmallestPrefix . dropNewlines
-
-    dropNewlines :: [ByteString] -> [ByteString]
-    dropNewlines = filter (not . L8.null . L8.dropWhile (== '\n'))
-
-    takePrefix :: Bool -> ByteString -> ByteString
-    takePrefix bracketUsed txt = case L8.uncons txt of
-        Nothing -> ""
-        Just ('>', txt') ->
-            if not bracketUsed then L8.cons '>' (takePrefix True txt') else ""
-        Just (c, txt') -> if c == ' ' || c == '\t'
-                          then L8.cons c (takePrefix bracketUsed txt')
-                          else ""
-
-    findSmallestPrefix :: [ByteString] -> ByteString
-    findSmallestPrefix [] = ""
-    findSmallestPrefix ("" : _) = ""
-    findSmallestPrefix (p : ps) =
-        let first = L8.head p
-            startsWithChar c x = L8.length x > 0 && L8.head x == c
-        in
-            if all (startsWithChar first) ps
-            then L8.cons first (findSmallestPrefix (L8.tail p : map L8.tail ps))
-            else ""
+    mode = case readExtensions $ UTF8.toString input of
+        Nothing -> mode'
+        Just (Nothing, exts') ->
+            mode' { extensions = exts' ++ extensions mode' }
+        Just (Just lang, exts') ->
+            mode' { baseLanguage = lang
+                  , extensions   = exts' ++ extensions mode'
+                  }
 
     mode' = defaultParseMode { parseFilename = fromMaybe "<stdin>" mfilepath
                              , baseLanguage  = appLanguage config
                              , extensions    = appExtensions config
                              }
 
-    preserveTrailingNewline x x' = if not (L8.null x) && L8.last x == '\n'
-                                       && not (L8.null x') && L8.last x' /= '\n'
-                                   then x' <> "\n"
-                                   else x'
+    cfg = styleConfig $ appStyle config
+
+reformatLines :: ParseMode
+              -> Config
+              -> Int
+              -> [ByteString]
+              -> Either String [ByteString]
+reformatLines mode config indent = mapM (fmap (L8.intercalate "\n") . fmt)
+    . cppSplitBlocks
+  where
+    config' = withReducedLineLength indent config
+
+    fmt (CPPDirectives lines) = Right lines
+    fmt (HaskellSource offset lines) =
+        preserveVSpace (preserveIndent (reformatBlock mode config' offset))
+                       lines
+
+-- | Format a continuous block of code without CPP directives.
+reformatBlock :: ParseMode
+              -> Config
+              -> Int
+              -> Int
+              -> [ByteString]
+              -> Either String [ByteString]
+reformatBlock mode config offset indent lines =
+    case parseModuleWithComments mode code of
+        ParseOk (m, comments) -> (: []) <$> prettyPrint config' m comments
+        ParseFailed loc e -> Left $
+            Exts.prettyPrint (loc { srcLine = srcLine loc + offset }) ++ ": "
+            ++ e
+  where
+    code = UTF8.toString $ L8.intercalate "\n" lines
+
+    config' = withReducedLineLength indent config
 
 -- | Break a Haskell code string into chunks, using CPP as a delimiter.
 -- Lines that start with '#if', '#end', or '#else' are their own chunks, and
@@ -137,9 +196,9 @@ reformat config mfilepath x = preserveTrailingNewline x . L8.intercalate "\n"
 -- > #endif
 --
 -- will become five blocks, one for each CPP line and one for each pair of declarations.
-cppSplitBlocks :: ByteString -> [CodeBlock]
-cppSplitBlocks = map (classify . unlines') . groupBy ((==) `on` (cppLine . snd))
-    . zip [ 0 .. ] . L8.lines
+cppSplitBlocks :: [ByteString] -> [CodeBlock]
+cppSplitBlocks = map (classify . merge) . groupBy ((==) `on` (cppLine . snd))
+    . zip [ 0 .. ]
   where
     cppLine :: ByteString -> Bool
     cppLine src =
@@ -155,25 +214,26 @@ cppSplitBlocks = map (classify . unlines') . groupBy ((==) `on` (cppLine . snd))
             , "#warning"
             ]
 
-    unlines' :: [(Int, ByteString)] -> (Int, ByteString)
-    unlines' [] = (0, "")
-    unlines' xs@((line, _) : _) = (line, L8.unlines $ map snd xs)
+    merge :: [(Int, ByteString)] -> (Int, [ByteString])
+    merge [] = (0, [])
+    merge xs@((line, _) : _) = (line, map snd xs)
 
-    classify :: (Int, ByteString) -> CodeBlock
-    classify (ofs, text) =
-        if cppLine text then CPPDirectives text else HaskellSource ofs text
+    classify :: (Int, [ByteString]) -> CodeBlock
+    classify (ofs, lines) = if cppLine (head lines)
+                            then CPPDirectives lines
+                            else HaskellSource ofs lines
 
 -- | Print the module.
-prettyPrint :: Style -> Module SrcSpanInfo -> [Comment] -> Either a ByteString
-prettyPrint style m comments =
+prettyPrint :: Config -> Module SrcSpanInfo -> [Comment] -> Either a ByteString
+prettyPrint config m comments =
     let ast = annotateWithComments (fromMaybe m $ applyFixities baseFixities m)
                                    comments
     in
-        Right (runPrinterStyle style (pretty ast))
+        Right (runPrinterConfig config (pretty ast))
 
 -- | Pretty print the given printable thing.
-runPrinterStyle :: Style -> Printer () -> ByteString
-runPrinterStyle style m =
+runPrinterConfig :: Config -> Printer () -> ByteString
+runPrinterConfig config m =
     maybe (error "Printer failed with mzero call.")
           (Buffer.toLazyByteString . psBuffer)
           (snd <$> execPrinter m
@@ -181,7 +241,7 @@ runPrinterStyle style m =
                                            0
                                            0
                                            Map.empty
-                                           (styleConfig style)
+                                           config
                                            False
                                            Anything))
 
