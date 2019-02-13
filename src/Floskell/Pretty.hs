@@ -1337,7 +1337,7 @@ instance Pretty Type where
         write "|"
         string str'
         write "|]"
-    
+
     prettyPrint (TyStar _) = write "*"
 
 instance Pretty TyVarBind where

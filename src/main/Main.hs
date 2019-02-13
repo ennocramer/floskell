@@ -18,8 +18,9 @@ import           Data.Version                    ( showVersion )
 
 import           Floskell
                  ( AppConfig(..), Style(..), defaultAppConfig, findAppConfig
-                 , readAppConfig, reformat, setExtensions, setLanguage, setStyle
-                 , styles )
+                 , knownFixities, readAppConfig, reformat, setExtensions
+                 , setFixities, setLanguage, setStyle, styles )
+import           Floskell.ConfigFile             ( showFixity )
 
 import           Foreign.C.Error                 ( Errno(..), eXDEV )
 
@@ -46,6 +47,7 @@ import           System.IO
 data Options = Options { optStyle       :: Maybe String
                        , optLanguage    :: Maybe String
                        , optExtensions  :: [String]
+                       , optFixities    :: [String]
                        , optConfig      :: Maybe FilePath
                        , optPrintConfig :: Bool
                        , optFiles       :: [FilePath]
@@ -72,7 +74,8 @@ main = do
                    <> progDesc "Floskell reformats one or more Haskell modules."
                    <> header "floskell - A Haskell Source Code Pretty Printer"
                    <> footerDoc (Just (footerStyles PP.<$$> footerLanguages
-                                       PP.<$$> footerExtensions)))
+                                       PP.<$$> footerExtensions
+                                       PP.<$$> footerFixities)))
 
     versioner = abortOption (InfoMsg $ "floskell " ++ showVersion version)
                             (long "version"
@@ -88,6 +91,9 @@ main = do
         <*> many (option str
                          (long "extension" <> short 'X' <> metavar "EXTENSION"
                           <> help "Enable or disable language extensions"))
+        <*> many (option str
+                         (long "fixity" <> short 'F' <> metavar "FIXITY"
+                          <> help "Add fixity declaration"))
         <*> optional (option str
                              (long "config" <> short 'c' <> metavar "FILE"
                               <> help "Configuration file"))
@@ -105,6 +111,9 @@ main = do
     footerExtensions =
         makeFooter "Supported extensions:"
                    [ show e | EnableExtension e <- knownExtensions ]
+
+    footerFixities =
+        makeFooter "Default fixities:" (map showFixity knownFixities)
 
     makeFooter hdr xs =
         PP.empty PP.<$$> PP.text hdr PP.<$$> (PP.indent 2 . PP.fillSep
@@ -146,5 +155,6 @@ reformatByteString config mpath text =
 
 -- | Update the program configuration from the program options.
 mergeAppConfig :: AppConfig -> Options -> AppConfig
-mergeAppConfig cfg Options{..} = cfg `setStyle` optStyle
-    `setLanguage` optLanguage `setExtensions` optExtensions
+mergeAppConfig cfg Options{..} =
+    cfg `setStyle` optStyle `setLanguage` optLanguage
+    `setExtensions` optExtensions `setFixities` optFixities

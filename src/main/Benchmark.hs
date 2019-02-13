@@ -25,7 +25,10 @@ main = do
     bytes <- L8.readFile "BENCHMARK.md"
     !forest <- fmap force (parse (tokenize bytes))
     defaultMain [ bgroup (T.unpack $ styleName style) $
-                    toCriterion (AppConfig style Haskell2010 defaultExtensions)
+                    toCriterion (AppConfig style
+                                           Haskell2010
+                                           defaultExtensions
+                                           [])
                                 forest
                 | style <- styles
                 ]

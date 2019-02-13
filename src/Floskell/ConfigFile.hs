@@ -8,9 +8,18 @@ module Floskell.ConfigFile
     , findAppConfig
     , findAppConfigIn
     , readAppConfig
+    , showStyle
+    , showLanguage
+    , showExtension
+    , showFixity
+    , lookupStyle
+    , lookupLanguage
+    , lookupExtension
+    , lookupFixity
     , setStyle
     , setLanguage
     , setExtensions
+    , setFixities
     ) where
 
 import           Control.Applicative   ( (<|>) )
@@ -19,6 +28,7 @@ import           Data.Aeson            ( (.:?), (.=), FromJSON(..), ToJSON(..) )
 import qualified Data.Aeson            as JSON
 import qualified Data.Aeson.Types      as JSON ( typeMismatch )
 import qualified Data.ByteString       as BS
+import           Data.Char             ( isLetter, isSpace )
 import qualified Data.HashMap.Lazy     as HashMap
 import           Data.List             ( inits )
 import qualified Data.Text             as T
@@ -27,8 +37,9 @@ import           Floskell.Styles       ( Style(..), styles )
 
 import           GHC.Generics          ( Generic )
 
-import           Language.Haskell.Exts ( Extension(..), Language(..)
+import           Language.Haskell.Exts ( Extension(..), Fixity(..), Language(..)
                                        , classifyExtension, classifyLanguage )
+import qualified Language.Haskell.Exts as HSE
 
 import           System.Directory
                  ( XdgDirectory(..), doesFileExist, findFileWith
@@ -40,20 +51,18 @@ import           System.FilePath
 data AppConfig = AppConfig { appStyle      :: Style
                            , appLanguage   :: Language
                            , appExtensions :: [Extension]
+                           , appFixities   :: [Fixity]
                            }
     deriving ( Generic )
 
 instance ToJSON AppConfig where
     toJSON AppConfig{..} =
-        JSON.object [ "style" .= styleName appStyle
-                    , "language" .= show appLanguage
-                    , "extensions" .= map showExt appExtensions
+        JSON.object [ "style" .= showStyle appStyle
+                    , "language" .= showLanguage appLanguage
+                    , "extensions" .= map showExtension appExtensions
+                    , "fixities" .= map showFixity appFixities
                     , "formatting" .= styleConfig appStyle
                     ]
-      where
-        showExt (EnableExtension x) = show x
-        showExt (DisableExtension x) = "No" ++ show x
-        showExt (UnknownExtension x) = x
 
 instance FromJSON AppConfig where
     parseJSON (JSON.Object o) = do
@@ -62,10 +71,12 @@ instance FromJSON AppConfig where
             <$> o .:? "language"
         extensions <- maybe (appExtensions defaultAppConfig)
                             (map lookupExtension) <$> o .:? "extensions"
+        fixities <- maybe (appFixities defaultAppConfig) (map lookupFixity)
+            <$> o .:? "fixities"
         let fmt = styleConfig style
         fmt' <- maybe fmt (updateConfig fmt) <$> o .:? "formatting"
         let style' = style { styleConfig = fmt' }
-        return $ AppConfig style' language extensions
+        return $ AppConfig style' language extensions fixities
       where
         updateConfig cfg v = case JSON.fromJSON $ mergeJSON (toJSON cfg) v of
             JSON.Error e -> error e
@@ -81,7 +92,34 @@ instance FromJSON AppConfig where
 
 -- | Default program configuration.
 defaultAppConfig :: AppConfig
-defaultAppConfig = AppConfig (head styles) Haskell2010 []
+defaultAppConfig = AppConfig (head styles) Haskell2010 [] []
+
+-- | Show name of a style.
+showStyle :: Style -> String
+showStyle = T.unpack . styleName
+
+-- | Show a Haskell language name.
+showLanguage :: Language -> String
+showLanguage = show
+
+-- | Show a Haskell language extension.
+showExtension :: Extension -> String
+showExtension (EnableExtension x) = show x
+showExtension (DisableExtension x) = "No" ++ show x
+showExtension (UnknownExtension x) = x
+
+-- | Show a fixity declaration.
+showFixity :: Fixity -> String
+showFixity (Fixity assoc prec op) =
+    showAssoc assoc ++ " " ++ show prec ++ " " ++ showOp op
+  where
+    showAssoc (HSE.AssocNone _) = "infix"
+    showAssoc (HSE.AssocLeft _) = "infixl"
+    showAssoc (HSE.AssocRight _) = "infixr"
+
+    showOp (HSE.UnQual _ (HSE.Symbol _ symbol)) = "(" ++ symbol ++ ")"
+    showOp (HSE.UnQual _ (HSE.Ident _ ident)) = ident
+    showOp o = show o
 
 -- | Lookup a style by name.
 lookupStyle :: String -> Style
@@ -100,6 +138,26 @@ lookupExtension :: String -> Extension
 lookupExtension name = case classifyExtension name of
     UnknownExtension _ -> error $ "Unkown extension: " ++ name
     x -> x
+
+-- | Parse a fixity declaration.
+lookupFixity :: String -> Fixity
+lookupFixity decl =
+    let (assoc, decl') = break isSpace $ dropWhile isSpace decl
+        (prec, decl'') = break isSpace $ dropWhile isSpace decl'
+        (op, _) = break isSpace $ dropWhile isSpace decl''
+    in
+        Fixity (readAssoc assoc) (read prec) (readOp op)
+  where
+    readAssoc "infix" = HSE.AssocNone ()
+    readAssoc "infixl" = HSE.AssocLeft ()
+    readAssoc "infixr" = HSE.AssocRight ()
+    readAssoc assoc = error $ "Unknown associativity: " ++ assoc
+
+    readOp op = HSE.UnQual () $ case op of
+        '(' : op' -> HSE.Symbol () (init op')
+        '`' : op' -> HSE.Ident () (init op')
+        c : _ -> if isLetter c then HSE.Ident () op else HSE.Symbol () op
+        _ -> error "Missing operator in infix declaration"
 
 -- | Try to find a configuration file based on current working
 -- directory, or in one of the application configuration directories.
@@ -140,3 +198,7 @@ setLanguage cfg mbLanguage =
 setExtensions :: AppConfig -> [String] -> AppConfig
 setExtensions cfg exts =
     cfg { appExtensions = appExtensions cfg ++ map lookupExtension exts }
+
+setFixities :: AppConfig -> [String] -> AppConfig
+setFixities cfg fixities =
+    cfg { appFixities = appFixities cfg ++ map lookupFixity fixities }

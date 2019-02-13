@@ -13,6 +13,7 @@ module Floskell
     , setStyle
     , setLanguage
     , setExtensions
+    , setFixities
       -- * Formatting functions.
     , reformat
       -- * Style
@@ -20,6 +21,7 @@ module Floskell
     , styles
       -- * Testing
     , defaultExtensions
+    , knownFixities
     ) where
 
 import           Data.ByteString.Lazy       ( ByteString )
@@ -144,6 +146,8 @@ reformat config mfilepath input = fmap (L8.intercalate "\n")
     mode' = defaultParseMode { parseFilename = fromMaybe "<stdin>" mfilepath
                              , baseLanguage  = appLanguage config
                              , extensions    = appExtensions config
+                             , fixities      =
+                                   Just $ appFixities config ++ knownFixities
                              }
 
     cfg = styleConfig $ appStyle config
@@ -173,12 +177,11 @@ reformatBlock :: ParseMode
 reformatBlock mode config offset indent lines =
     case parseModuleWithComments mode code of
         ParseOk (m, comments) ->
-            let ast = annotateWithComments (fromMaybe m $
-                                            applyFixities baseFixities m)
-                                           comments
-            in case prettyPrint (pretty ast) config' of
-                Nothing -> Left "Printer failed with mzero call."
-                Just output -> Right [output]
+            let ast = annotateWithComments m comments
+            in
+                case prettyPrint (pretty ast) config' of
+                    Nothing -> Left "Printer failed with mzero call."
+                    Just output -> Right [ output ]
         ParseFailed loc e -> Left $
             Exts.prettyPrint (loc { srcLine = srcLine loc + offset }) ++ ": "
             ++ e
@@ -230,6 +233,9 @@ cppSplitBlocks = map (classify . merge) . groupBy ((==) `on` (cppLine . snd))
 prettyPrint :: Printer a -> Config -> Maybe ByteString
 prettyPrint printer = fmap (Buffer.toLazyByteString . psBuffer . snd)
     . execPrinter printer . initialPrintState
+
+knownFixities :: [Fixity]
+knownFixities = baseFixities
 
 -- | Default extensions.
 defaultExtensions :: [Extension]

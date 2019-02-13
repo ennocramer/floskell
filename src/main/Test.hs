@@ -116,7 +116,8 @@ testAll = do
 
 reformatSnippet :: Style -> ByteString -> Either String ByteString
 reformatSnippet style =
-    reformat (AppConfig style Haskell2010 defaultExtensions) (Just "TEST.md")
+    reformat (AppConfig style Haskell2010 defaultExtensions [])
+             (Just "TEST.md")
 
 regenerate :: Style -> [Markdone] -> [Markdone]
 regenerate style = map fmt
