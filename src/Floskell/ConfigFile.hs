@@ -117,9 +117,9 @@ showFixity (Fixity assoc prec op) =
     showAssoc (HSE.AssocLeft _) = "infixl"
     showAssoc (HSE.AssocRight _) = "infixr"
 
-    showOp (HSE.UnQual _ (HSE.Symbol _ symbol)) = "(" ++ symbol ++ ")"
-    showOp (HSE.UnQual _ (HSE.Ident _ ident)) = ident
-    showOp o = show o
+    showOp (HSE.UnQual _ (HSE.Symbol _ symbol)) = symbol
+    showOp (HSE.UnQual _ (HSE.Ident _ ident)) = "`" ++ ident ++ "`"
+    showOp _ = error "Operator in fixity list not supported"
 
 -- | Lookup a style by name.
 lookupStyle :: String -> Style

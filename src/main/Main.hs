@@ -113,7 +113,7 @@ main = do
                    [ show e | EnableExtension e <- knownExtensions ]
 
     footerFixities =
-        makeFooter "Default fixities:" (map showFixity knownFixities)
+        makeFooter "Built-in fixities:" (map showFixity knownFixities)
 
     makeFooter hdr xs =
         PP.empty PP.<$$> PP.text hdr PP.<$$> (PP.indent 2 . PP.fillSep

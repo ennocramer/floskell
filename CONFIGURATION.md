@@ -42,6 +42,16 @@ is as follows:
   }
   ```
 
+* `fixities` (`[]`): A list of additional infix declarations to use
+  while parsing.  Check the output of `floskell --help` for a list of
+  built-in declarations.
+
+  ```json
+  {
+    "fixities": ["infixr 9 ."]
+  }
+  ```
+
 ## Style Definition
 
 * `style` (`base`): The formatting style to use.  The style can be fine-tuned
