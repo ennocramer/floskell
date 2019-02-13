@@ -15,7 +15,6 @@ module Floskell
     , setExtensions
       -- * Formatting functions.
     , reformat
-    , prettyPrint
       -- * Style
     , Style(..)
     , styles
@@ -29,7 +28,6 @@ import qualified Data.ByteString.Lazy.UTF8  as UTF8
 
 import           Data.Function              ( on )
 import           Data.List
-import qualified Data.Map.Strict            as Map
 import           Data.Maybe
 import           Data.Monoid
 
@@ -174,7 +172,13 @@ reformatBlock :: ParseMode
               -> Either String [ByteString]
 reformatBlock mode config offset indent lines =
     case parseModuleWithComments mode code of
-        ParseOk (m, comments) -> (: []) <$> prettyPrint config' m comments
+        ParseOk (m, comments) ->
+            let ast = annotateWithComments (fromMaybe m $
+                                            applyFixities baseFixities m)
+                                           comments
+            in case prettyPrint (pretty ast) config' of
+                Nothing -> Left "Printer failed with mzero call."
+                Just output -> Right [output]
         ParseFailed loc e -> Left $
             Exts.prettyPrint (loc { srcLine = srcLine loc + offset }) ++ ": "
             ++ e
@@ -223,27 +227,9 @@ cppSplitBlocks = map (classify . merge) . groupBy ((==) `on` (cppLine . snd))
                             then CPPDirectives lines
                             else HaskellSource ofs lines
 
--- | Print the module.
-prettyPrint :: Config -> Module SrcSpanInfo -> [Comment] -> Either a ByteString
-prettyPrint config m comments =
-    let ast = annotateWithComments (fromMaybe m $ applyFixities baseFixities m)
-                                   comments
-    in
-        Right (runPrinterConfig config (pretty ast))
-
--- | Pretty print the given printable thing.
-runPrinterConfig :: Config -> Printer () -> ByteString
-runPrinterConfig config m =
-    maybe (error "Printer failed with mzero call.")
-          (Buffer.toLazyByteString . psBuffer)
-          (snd <$> execPrinter m
-                               (PrintState Buffer.empty
-                                           0
-                                           0
-                                           Map.empty
-                                           config
-                                           False
-                                           Anything))
+prettyPrint :: Printer a -> Config -> Maybe ByteString
+prettyPrint printer = fmap (Buffer.toLazyByteString . psBuffer . snd)
+    . execPrinter printer . initialPrintState
 
 -- | Default extensions.
 defaultExtensions :: [Extension]

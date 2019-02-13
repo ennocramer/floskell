@@ -13,6 +13,7 @@ module Floskell.Types
     , psLine
     , psColumn
     , psNewline
+    , initialPrintState
     , Config(..)
     , SrcSpan(..)
     , Comment(..)
@@ -31,7 +32,7 @@ import           Control.Monad.Search
 import           Control.Monad.State.Strict
                  ( MonadState(..), StateT, execStateT, runStateT )
 
-import           Data.Map.Strict                ( Map )
+import qualified Data.Map.Strict                as Map
 
 import           Data.Semigroup                 as Sem
 
@@ -80,7 +81,7 @@ data PrintState =
     PrintState { psBuffer :: !Buffer -- ^ Output buffer
                , psIndentLevel :: !Int -- ^ Current indentation level.
                , psOnside :: !Int -- ^ Extra indentation is necessary with next line break.
-               , psTabStops :: !(Map TabStop Int) -- ^ Tab stops for alignment.
+               , psTabStops :: !(Map.Map TabStop Int) -- ^ Tab stops for alignment.
                , psConfig :: !Config -- ^ Style definition.
                , psEolComment :: !Bool -- ^ An end of line comment has just been outputted.
                , psOutputRestriction :: OutputRestriction
@@ -97,6 +98,10 @@ psNewline = (== 0) . Buffer.column . psBuffer
 
 commentSpan :: Comment -> SrcSpan
 commentSpan (Comment _ ss _) = ss
+
+initialPrintState :: Config -> PrintState
+initialPrintState config =
+    PrintState Buffer.empty 0 0 Map.empty config False Anything
 
 -- | Information for each node in the AST.
 data NodeInfo =
