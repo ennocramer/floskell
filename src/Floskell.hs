@@ -28,7 +28,6 @@ import           Data.ByteString.Lazy       ( ByteString )
 import qualified Data.ByteString.Lazy.Char8 as L8
 import qualified Data.ByteString.Lazy.UTF8  as UTF8
 
-import           Data.Function              ( on )
 import           Data.List
 import           Data.Maybe
 import           Data.Monoid
@@ -42,7 +41,7 @@ import           Floskell.Styles            ( Style(..), styles )
 import           Floskell.Types
 
 import           Language.Haskell.Exts
-                 hiding ( Pretty, Style, parse, prettyPrint, style )
+                 hiding ( Comment, Pretty, Style, parse, prettyPrint, style )
 import qualified Language.Haskell.Exts      as Exts
 
 data CodeBlock = HaskellSource Int [ByteString] | CPPDirectives [ByteString]
@@ -157,57 +156,60 @@ reformatLines :: ParseMode
               -> Int
               -> [ByteString]
               -> Either String [ByteString]
-reformatLines mode config indent = mapM (fmap (L8.intercalate "\n") . fmt)
-    . cppSplitBlocks
+reformatLines mode config indent = format . filterPreprocessorDirectives
   where
     config' = withReducedLineLength indent config
 
-    fmt (CPPDirectives lines) = Right lines
-    fmt (HaskellSource offset lines) =
-        preserveVSpace (preserveIndent (reformatBlock mode config' offset))
-                       lines
+    format (code, comments) =
+        preserveVSpace (preserveIndent (reformatBlock mode config' comments))
+                       code
 
 -- | Format a continuous block of code without CPP directives.
 reformatBlock :: ParseMode
               -> Config
-              -> Int
+              -> [Comment]
               -> Int
               -> [ByteString]
               -> Either String [ByteString]
-reformatBlock mode config offset indent lines =
+reformatBlock mode config cpp indent lines =
     case parseModuleWithComments mode code of
-        ParseOk (m, comments) ->
-            let ast = annotateWithComments m comments
+        ParseOk (m, comments') ->
+            let comments = map makeComment comments'
+                ast = annotateWithComments m (mergeComments comments cpp)
             in
                 case prettyPrint (pretty ast) config' of
                     Nothing -> Left "Printer failed with mzero call."
                     Just output -> Right [ output ]
         ParseFailed loc e -> Left $
-            Exts.prettyPrint (loc { srcLine = srcLine loc + offset }) ++ ": "
-            ++ e
+            Exts.prettyPrint (loc { srcLine = srcLine loc }) ++ ": " ++ e
   where
     code = UTF8.toString $ L8.intercalate "\n" lines
 
     config' = withReducedLineLength indent config
 
--- | Break a Haskell code string into chunks, using CPP as a delimiter.
--- Lines that start with '#if', '#end', or '#else' are their own chunks, and
--- also act as chunk separators. For example, the code
---
--- > #ifdef X
--- > x = X
--- > y = Y
--- > #else
--- > x = Y
--- > y = X
--- > #endif
---
--- will become five blocks, one for each CPP line and one for each pair of declarations.
-cppSplitBlocks :: [ByteString] -> [CodeBlock]
-cppSplitBlocks = map (classify . merge) . groupBy ((==) `on` (cppLine . snd))
-    . zip [ 0 .. ]
+    makeComment (Exts.Comment inline span text) =
+        Comment (if inline then InlineComment else LineComment) span text
+
+    mergeComments xs [] = xs
+    mergeComments [] ys = ys
+    mergeComments xs@(x : xs') ys@(y : ys') =
+        if srcSpanStartLine (commentSpan x) < srcSpanStartLine (commentSpan y)
+        then x : mergeComments xs' ys
+        else y : mergeComments xs ys'
+
+-- | Remove CPP directives from input source, retur
+filterPreprocessorDirectives :: [ByteString] -> ([ByteString], [Comment])
+filterPreprocessorDirectives lines = (code, comments)
   where
-    cppLine :: ByteString -> Bool
+    code = map (\l -> if cppLine l then "" else l) lines
+
+    comments = map makeComment . filter (cppLine . snd) $ zip [ 1 .. ] lines
+
+    makeComment (n, l) =
+        Comment PreprocessorDirective
+                (SrcSpan "" n 1 n (fromIntegral $ L8.length l + 1))
+                (L8.unpack l)
+
     cppLine src =
         any (`L8.isPrefixOf` src)
             [ "#if"
@@ -220,15 +222,6 @@ cppSplitBlocks = map (classify . merge) . groupBy ((==) `on` (cppLine . snd))
             , "#error"
             , "#warning"
             ]
-
-    merge :: [(Int, ByteString)] -> (Int, [ByteString])
-    merge [] = (0, [])
-    merge xs@((line, _) : _) = (line, map snd xs)
-
-    classify :: (Int, [ByteString]) -> CodeBlock
-    classify (ofs, lines) = if cppLine (head lines)
-                            then CPPDirectives lines
-                            else HaskellSource ofs lines
 
 prettyPrint :: Printer a -> Config -> Maybe ByteString
 prettyPrint printer = fmap (Buffer.toLazyByteString . psBuffer . snd)

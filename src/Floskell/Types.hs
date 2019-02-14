@@ -16,8 +16,8 @@ module Floskell.Types
     , initialPrintState
     , Config(..)
     , SrcSpan(..)
+    , CommentType(..)
     , Comment(..)
-    , commentSpan
     , NodeInfo(..)
     , noNodeInfo
     , nodeSpan
@@ -32,18 +32,16 @@ import           Control.Monad.Search
 import           Control.Monad.State.Strict
                  ( MonadState(..), StateT, execStateT, runStateT )
 
-import qualified Data.Map.Strict                as Map
+import qualified Data.Map.Strict              as Map
 
-import           Data.Semigroup                 as Sem
+import           Data.Semigroup               as Sem
 
-import           Floskell.Buffer                ( Buffer )
-import qualified Floskell.Buffer                as Buffer
-import           Floskell.Config                ( Config(..), Location(..) )
+import           Floskell.Buffer              ( Buffer )
+import qualified Floskell.Buffer              as Buffer
+import           Floskell.Config              ( Config(..), Location(..) )
 
-import           Language.Haskell.Exts.Comments ( Comment(..) )
-import           Language.Haskell.Exts.SrcLoc
-                 ( SrcSpan(..), mkSrcSpan, noLoc )
-import           Language.Haskell.Exts.Syntax   ( Annotated(..) )
+import           Language.Haskell.Exts.SrcLoc ( SrcSpan(..), mkSrcSpan, noLoc )
+import           Language.Haskell.Exts.Syntax ( Annotated(..) )
 
 data OutputRestriction = Anything | NoOverflow | NoOverflowOrLinebreak
     deriving ( Eq, Ord, Show )
@@ -96,12 +94,18 @@ psColumn = Buffer.column . psBuffer
 psNewline :: PrintState -> Bool
 psNewline = (== 0) . Buffer.column . psBuffer
 
-commentSpan :: Comment -> SrcSpan
-commentSpan (Comment _ ss _) = ss
-
 initialPrintState :: Config -> PrintState
 initialPrintState config =
     PrintState Buffer.empty 0 0 Map.empty config False Anything
+
+data CommentType = InlineComment | LineComment | PreprocessorDirective
+    deriving ( Show )
+
+data Comment = Comment { commentType :: !CommentType
+                       , commentSpan :: !SrcSpan
+                       , commentText :: !String
+                       }
+    deriving ( Show )
 
 -- | Information for each node in the AST.
 data NodeInfo =

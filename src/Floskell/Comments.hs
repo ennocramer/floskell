@@ -5,6 +5,7 @@ import           Control.Arrow                ( first, second )
 import           Control.Monad.State.Strict
 
 import           Data.Foldable                ( traverse_ )
+import           Data.List                    ( isPrefixOf )
 import qualified Data.Map.Strict              as M
 
 import           Floskell.Types
@@ -37,6 +38,7 @@ onSameLine :: SrcSpan -> SrcSpan -> Bool
 onSameLine ss ss' = srcSpanEndLine ss == srcSpanStartLine ss'
 
 isAfterComment :: Comment -> Bool
+isAfterComment (Comment PreprocessorDirective _ str) = "#endif" `isPrefixOf` str
 isAfterComment (Comment _ _ str) =
     take 1 (dropWhile (== ' ') $ dropWhile (== '-') str) == "^"
 

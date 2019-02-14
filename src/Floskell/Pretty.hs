@@ -144,20 +144,26 @@ copyComments After from to =
 
 -- | Pretty print a comment.
 printComment :: Int -> Comment -> Printer ()
-printComment correction (Comment inline cspan str) = do
+printComment correction Comment{..} = do
     col <- getNextColumn
-    let padding = max 0 $ srcSpanStartColumn cspan + correction - col
-    write $ BS.replicate padding 32
-    if inline
-        then do
+    let padding = max 0 $ srcSpanStartColumn commentSpan + correction - col
+    case commentType of
+        PreprocessorDirective -> do
+            nl <- gets psNewline
+            unless nl newline
+            column 0 $ string commentText
+            modify (\s -> s { psEolComment = True })
+        InlineComment -> do
+            write $ BS.replicate padding 32
             write "{-"
-            string str
+            string commentText
             write "-}"
-            when (1 == srcSpanStartColumn cspan) $
+            when (1 == srcSpanStartColumn commentSpan) $
                 modify (\s -> s { psEolComment = True })
-        else do
+        LineComment -> do
+            write $ BS.replicate padding 32
             write "--"
-            string str
+            string commentText
             modify (\s -> s { psEolComment = True })
 
 -- | Print comments of a node.
