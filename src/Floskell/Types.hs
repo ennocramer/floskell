@@ -57,8 +57,8 @@ instance Sem.Semigroup Penalty where
 
 instance Monoid Penalty where
     mempty = 0
-#if !(MIN_VERSION_base(4,11,0))
 
+#if !(MIN_VERSION_base(4,11,0))
     mappend = (<>)
 #endif
 
