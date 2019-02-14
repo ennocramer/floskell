@@ -79,7 +79,7 @@ test-suite floskell-test
                    , deepseq >=1.4.2.0 && <1.4.5
                    , exceptions >=0.8.3 && <0.11
                    , haskell-src-exts ==1.21.*
-                   , hspec >=2.2.4 && <2.7
+                   , hspec >=2.2.4 && <2.8
                    , text >=1.2.2.2 && <1.2.4
                    , utf8-string >=1.0.1.1 && <1.0.2
 
