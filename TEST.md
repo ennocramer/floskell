@@ -778,3 +778,12 @@ Only comments.
 ``` haskell
 -- some comment
 ```
+
+Make sure no comments are dropped from operators or argument.
+
+``` haskell
+foo = some -- comment 1
+      -- comment 2
+      %~ -- comment 3
+      argument -- comment 4
+```

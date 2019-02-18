@@ -609,25 +609,31 @@ prettyApp fn args = withLayout cfgLayoutApp flex vertical
         pretty fn
         withIndent cfgIndentApp $ linedOnside args
 
-prettyInfixApp :: (Annotated ast, Pretty ast, HSE.Pretty (op NodeInfo))
-               => (op NodeInfo -> ByteString)
-               -> LayoutContext
-               -> (ast NodeInfo, [(op NodeInfo, ast NodeInfo)])
-               -> Printer ()
+prettyInfixApp
+    :: (Annotated ast, Pretty ast, Annotated op, HSE.Pretty (op NodeInfo))
+    => (op NodeInfo -> ByteString)
+    -> LayoutContext
+    -> (ast NodeInfo, [(op NodeInfo, ast NodeInfo)])
+    -> Printer ()
 prettyInfixApp nameFn ctx (lhs, args) =
     withLayout cfgLayoutInfixApp flex vertical
   where
     flex = do
         pretty lhs
         forM_ args $ \(op, arg) -> cut $ do
-            withOperatorFormatting ctx (nameFn op) (prettyHSE op) id
+            withOperatorFormatting ctx (nameFn op) (prettyOp op) id
             pretty arg
 
     vertical = do
         pretty lhs
         forM_ args $ \(op, arg) -> do
-            withOperatorFormattingV ctx (nameFn op) (prettyHSE op) id
+            withOperatorFormattingV ctx (nameFn op) (prettyOp op) id
             pretty arg
+
+    prettyOp op = do
+        printComments Before op
+        prettyHSE op
+        printComments After op
 
 prettyRecord :: (Annotated ast1, Pretty ast1, Annotated ast2, Pretty ast2)
              => (ast2 NodeInfo -> Printer (Maybe Int))
