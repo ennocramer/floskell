@@ -1567,8 +1567,9 @@ instance Pretty Exp where
 #endif
 
     prettyPrint (TupleSection _ boxed mexprs) = case boxed of
-        Boxed -> list Expression "(" ")" "," $ map MayAst mexprs
-        Unboxed -> list Expression "(#" "#)" "," $ map MayAst mexprs
+        Boxed -> list Expression "(" ")" "," $ map (MayAst noNodeInfo) mexprs
+        Unboxed -> list Expression "(#" "#)" "," $
+            map (MayAst noNodeInfo) mexprs
 
     prettyPrint (List _ exprs) = list Expression "[" "]" "," exprs
 
@@ -2189,18 +2190,15 @@ instance Pretty CompactBinds where
     prettyPrint (CompactBinds (IPBinds _ ipbinds)) =
         aligned $ linedOnside ipbinds
 
-newtype MayAst a l = MayAst (Maybe (a l))
+data MayAst a l = MayAst l (Maybe (a l))
 
 instance Functor a => Functor (MayAst a) where
-    fmap _ (MayAst Nothing) = MayAst Nothing
-    fmap f (MayAst (Just x)) = MayAst . Just $ fmap f x
+    fmap f (MayAst l x) = MayAst (f l) (fmap (fmap f) x)
 
 instance Annotated a => Annotated (MayAst a) where
-    ann (MayAst Nothing) = undefined
-    ann (MayAst (Just x)) = ann x
+    ann (MayAst l x) = maybe l ann x
 
-    amap _ (MayAst Nothing) = MayAst Nothing
-    amap f (MayAst (Just x)) = MayAst . Just $ amap f x
+    amap f (MayAst l x) = MayAst (f l) (fmap (amap f) x)
 
 instance (Annotated a, Pretty a) => Pretty (MayAst a) where
-    prettyPrint (MayAst x) = mapM_ pretty x
+    prettyPrint (MayAst _ x) = mapM_ pretty x

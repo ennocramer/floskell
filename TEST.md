@@ -459,6 +459,7 @@ foreign export ccall callback :: Int -> Int
 ### Var, Con, Lit, Tuple, UnboxedSum, List, and ExpTypeSig
 
 ``` haskell
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UnboxedTuples #-}
 {-# LANGUAGE UnboxedSums #-}
 
@@ -477,6 +478,10 @@ foo = ()
 foo = (1, 2)
 foo = (1 -- the one
  , 2)
+
+foo = (1,)
+foo = (,2)
+foo = (,2,)
 
 foo = (# #)
 foo = (# 1, 2 #)
