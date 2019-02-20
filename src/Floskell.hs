@@ -21,7 +21,6 @@ module Floskell
     , styles
       -- * Testing
     , defaultExtensions
-    , knownFixities
     ) where
 
 import           Data.ByteString.Lazy       ( ByteString )
@@ -36,6 +35,7 @@ import qualified Floskell.Buffer            as Buffer
 import           Floskell.Comments
 import           Floskell.Config
 import           Floskell.ConfigFile
+import           Floskell.Fixities          ( builtinFixities )
 import           Floskell.Pretty            ( pretty )
 import           Floskell.Styles            ( Style(..), styles )
 import           Floskell.Types
@@ -146,7 +146,7 @@ reformat config mfilepath input = fmap (L8.intercalate "\n")
                              , baseLanguage  = appLanguage config
                              , extensions    = appExtensions config
                              , fixities      =
-                                   Just $ appFixities config ++ knownFixities
+                                   Just $ appFixities config ++ builtinFixities
                              }
 
     cfg = styleConfig $ appStyle config
@@ -226,9 +226,6 @@ filterPreprocessorDirectives lines = (code, comments)
 prettyPrint :: Printer a -> Config -> Maybe ByteString
 prettyPrint printer = fmap (Buffer.toLazyByteString . psBuffer . snd)
     . execPrinter printer . initialPrintState
-
-knownFixities :: [Fixity]
-knownFixities = baseFixities
 
 -- | Default extensions.
 defaultExtensions :: [Extension]

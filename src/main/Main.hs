@@ -18,9 +18,10 @@ import           Data.Version                    ( showVersion )
 
 import           Floskell
                  ( AppConfig(..), Style(..), defaultAppConfig, findAppConfig
-                 , knownFixities, readAppConfig, reformat, setExtensions
-                 , setFixities, setLanguage, setStyle, styles )
+                 , readAppConfig, reformat, setExtensions, setFixities
+                 , setLanguage, setStyle, styles )
 import           Floskell.ConfigFile             ( showFixity )
+import           Floskell.Fixities               ( packageFixities )
 
 import           Foreign.C.Error                 ( Errno(..), eXDEV )
 
@@ -41,16 +42,17 @@ import           System.Directory
                  ( copyFile, copyPermissions, getTemporaryDirectory, removeFile
                  , renameFile )
 import           System.IO
-                 ( FilePath, hClose, hFlush, openTempFile )
+                 ( FilePath, hClose, hFlush, openTempFile, stdout )
 
 -- | Program options.
-data Options = Options { optStyle       :: Maybe String
-                       , optLanguage    :: Maybe String
-                       , optExtensions  :: [String]
-                       , optFixities    :: [String]
-                       , optConfig      :: Maybe FilePath
-                       , optPrintConfig :: Bool
-                       , optFiles       :: [FilePath]
+data Options = Options { optStyle         :: Maybe String
+                       , optLanguage      :: Maybe String
+                       , optExtensions    :: [String]
+                       , optFixities      :: [String]
+                       , optConfig        :: Maybe FilePath
+                       , optPrintConfig   :: Bool
+                       , optPrintFixities :: Bool
+                       , optFiles         :: [FilePath]
                        }
 
 -- | Main entry point.
@@ -65,17 +67,19 @@ main = do
         Just path -> readAppConfig path
         Nothing -> return defaultAppConfig
     let config = mergeAppConfig baseConfig opts
-    if optPrintConfig opts
-        then BL.putStr $ JSON.encodePretty config
-        else run config (optFiles opts)
+    if optPrintFixities opts
+        then PP.displayIO stdout . PP.renderPretty 1.0 80 $
+            docFixities packageFixities
+        else if optPrintConfig opts
+             then BL.putStr $ JSON.encodePretty config
+             else run config (optFiles opts)
   where
     parser = info (helper <*> versioner <*> options)
                   (fullDesc
                    <> progDesc "Floskell reformats one or more Haskell modules."
                    <> header "floskell - A Haskell Source Code Pretty Printer"
                    <> footerDoc (Just (footerStyles PP.<$$> footerLanguages
-                                       PP.<$$> footerExtensions
-                                       PP.<$$> footerFixities)))
+                                       PP.<$$> footerExtensions)))
 
     versioner = abortOption (InfoMsg $ "floskell " ++ showVersion version)
                             (long "version"
@@ -98,6 +102,8 @@ main = do
                              (long "config" <> short 'c' <> metavar "FILE"
                               <> help "Configuration file"))
         <*> switch (long "print-config" <> help "Print configuration")
+        <*> switch (long "print-fixities"
+                    <> help "Print all built-in fixity declarations")
         <*> many (argument str
                            (metavar "FILES"
                             <> help "Input files (will be replaced)"))
@@ -112,13 +118,17 @@ main = do
         makeFooter "Supported extensions:"
                    [ show e | EnableExtension e <- knownExtensions ]
 
-    footerFixities =
-        makeFooter "Built-in fixities:" (map showFixity knownFixities)
-
     makeFooter hdr xs =
         PP.empty PP.<$$> PP.text hdr PP.<$$> (PP.indent 2 . PP.fillSep
                                               . PP.punctuate PP.comma
                                               . map PP.text $ sort xs)
+
+    docFixities = PP.vcat . PP.punctuate PP.linebreak
+        . map (uncurry docPackageFixities)
+
+    docPackageFixities p fs = PP.text (p ++ ":")
+        PP.<$$> (PP.indent 2 . PP.fillSep . PP.punctuate PP.comma
+                 . map (PP.text . showFixity) $ sort fs)
 
 -- | Reformat files or stdin based on provided configuration.
 run :: AppConfig -> [FilePath] -> IO ()

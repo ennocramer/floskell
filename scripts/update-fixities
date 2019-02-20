@@ -1,0 +1,76 @@
+#!/bin/bash
+
+set -e
+
+PACKAGES="aeson conduit lens pipes servant"
+DESTINATION=${1-src/Floskell/Fixities.hs}
+
+old_pwd=$(pwd)
+tempdir=$(mktemp -d update-fixities-XXXXXX)
+cd $tempdir
+
+stack unpack $PACKAGES
+
+exec >Fixities.hs
+
+echo "-- DO NOT EDIT"
+echo "-- Edit and run $0 to update the list of builtin fixities"
+echo "module Floskell.Fixities ( builtinFixities, packageFixities ) where"
+echo
+echo "import Language.Haskell.Exts.Fixity ( Fixity, baseFixities, infix_, infixl_, infixr_ )"
+echo
+echo "builtinFixities :: [Fixity]"
+echo "builtinFixities = concatMap snd packageFixities"
+echo
+echo "packageFixities :: [(String, [Fixity])]"
+echo "packageFixities ="
+echo "    [ (\"base\", baseFixities)"
+for package in $PACKAGES; do
+    name=$(echo $package | tr -cs 'a-zA-Z0-9\n' _)
+    echo "    , (\"$package\", ${name}Fixities)"
+done
+echo "    ]"
+
+for package in $PACKAGES; do
+    name=$(echo $package | tr -cs 'a-zA-Z0-9\n' _)
+    first_line=true
+
+    echo
+    echo "${name}Fixities :: [Fixity]"
+    echo "${name}Fixities ="
+
+    while read file; do
+        if grep -qe '^[[:space:]]*infix[lr]\? ' $file; then
+            :
+        else
+            continue
+        fi
+
+        if echo $file | grep -qie 'test' -e 'hlint'; then
+            continue
+        fi
+
+        lines=$(grep -e '^[[:space:]]*infix[lr]\? ' $file \
+                    | sed -e 's/^[[:space:]]*//; s/--.*//; s/[[:space:]]*$//; s/\\/\\\\/g')
+
+        echo "    -- ${file#*/}"
+        while read infix prec ops; do
+            ops=\"$(echo $ops | sed 's/[[:space:]]*,[[:space:]]/", "/g; s/\\/\\\\/g')\"
+            if [ -n "$first_line" ]; then
+                echo "    ${infix}_ $prec [ $ops ]"
+                first_line=
+            else
+                echo "    ++ ${infix}_ $prec [ $ops ]"
+            fi
+        done < <(echo "$lines")
+    done < <(find $package-* -name '*.hs')
+done
+
+floskell Fixities.hs
+
+cd $old_pwd
+
+mv $tempdir/Fixities.hs $DESTINATION
+
+rm -rf $tempdir
+
