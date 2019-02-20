@@ -956,3 +956,24 @@ foo =
     %~ -- comment 3
     argument -- comment 4
 ```
+
+## Indentation and Line Prefixes
+
+Preserving indentation and line prefixes so that Floskell can be run
+on individual declarations and quoted haskell code.
+
+``` haskell
+    data Enum =
+          One   -- Foo
+        | Two   -- Bar
+        | Three -- Baz
+```
+
+``` haskell
+>
+>    data Enum =
+>          One   -- Foo
+>        | Two   -- Bar
+>        | Three -- Baz
+>
+```

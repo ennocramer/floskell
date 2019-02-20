@@ -179,7 +179,7 @@ reformatBlock mode config cpp indent lines =
             in
                 case prettyPrint (pretty ast) config' of
                     Nothing -> Left "Printer failed with mzero call."
-                    Just output -> Right [ output ]
+                    Just output -> Right $ L8.lines output
         ParseFailed loc e -> Left $
             Exts.prettyPrint (loc { srcLine = srcLine loc }) ++ ": " ++ e
   where
