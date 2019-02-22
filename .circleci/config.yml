@@ -1,11 +1,13 @@
 version: 2.1
 
-stack_build: &stack_build
+cache-key: &cache-key "{{ arch }}/{{ .Environment.CIRCLE_JOB }}/{{ .Environment.CACHE_GENERATION }}"
+
+stack-build: &stack-build
   steps:
     - checkout
 
     - restore_cache:
-        key: "{{ arch }}-{{ .Environment.CIRCLE_JOB }}"
+        key: *cache-key
 
     - run:
         name: Setup Stack on MacOS
@@ -16,7 +18,9 @@ stack_build: &stack_build
 
     - run:
         name: Setup GHC
-        command: stack --resolver $RESOLVER --no-terminal setup
+        command: |
+          stack --resolver $RESOLVER --no-terminal setup
+          stack --resolver $RESOLVER --no-terminal update
 
     - run:
         name: Show Environment
@@ -26,24 +30,34 @@ stack_build: &stack_build
 
     - run:
         name: Build Dependencies
-        command: stack --resolver $RESOLVER --no-terminal build --test --bench --only-dependencies
-
-    - run:
-        name: Build Project
-        command: stack --resolver $RESOLVER --no-terminal build --test --bench --no-run-benchmarks --haddock --no-haddock-deps
+        command: |
+          stack --resolver $RESOLVER --no-terminal build --test --bench --only-dependencies $EXTRA_ARGS && SUCCESS=1
+          test -n "$IGNORE_FAILURE" -o -n "$SUCCESS" || false
 
     - save_cache:
-        key: "{{ arch }}-{{ .Environment.CIRCLE_JOB }}"
+        key: *cache-key
         paths:
           - /root/.stack
           - .stack-work
 
-cabal_build: &cabal_build
+    - run:
+        name: Build Project
+        command: |
+          stack --resolver $RESOLVER --no-terminal build --test --no-run-tests --bench --no-run-benchmarks --haddock --no-haddock-deps $EXTRA_ARGS && SUCCESS=1
+          test -n "$IGNORE_FAILURE" -o -n "$SUCCESS" || false
+
+    - run:
+        name: Run Tests
+        command: |
+          stack --resolver $RESOLVER --no-terminal build --test $EXTRA_ARGS && SUCCESS=1
+          test -n "$IGNORE_FAILURE" -o -n "$SUCCESS" || false
+
+cabal-build: &cabal-build
   steps:
     - checkout
 
     - restore_cache:
-        key: "{{ arch }}-{{ .Environment.CIRCLE_JOB }}"
+        key: *cache-key
 
     - run:
         name: Setup Stack on MacOS
@@ -56,7 +70,9 @@ cabal_build: &cabal_build
         name: Setup GHC & Cabal
         command: |
           stack --resolver $RESOLVER --no-terminal setup
+          stack --resolver $RESOLVER --no-terminal update
           stack install cabal-install
+          $HOME/.local/bin/cabal new-update
           echo "export PATH=$HOME/.local/bin:$(stack --resolver $RESOLVER --no-terminal path --bin-path)" >> $BASH_ENV
 
     - run:
@@ -64,108 +80,111 @@ cabal_build: &cabal_build
         command: |
           stack --version
           stack --resolver $RESOLVER ghc -- --version
+          cabal --version
 
     - run:
         name: Build Dependencies
         command: |
-          cabal new-update
-          cabal new-build all --enable-tests --enable-benchmarks --only-dependencies
-
-    - run:
-        name: Build Project
-        command: |
-          cabal new-test all --enable-tests --enable-benchmarks
+          cabal new-build all --enable-tests --enable-benchmarks --only-dependencies $EXTRA_ARGS && SUCCESS=1
+          test -n "$IGNORE_FAILURE" -o -n "$SUCCESS" || false
 
     - save_cache:
-        key: "{{ arch }}-{{ .Environment.CIRCLE_JOB }}"
+        key: *cache-key
         paths:
           - /root/.stack
           - .cabal
 
-stack_linux: &stack_linux
-  <<: *stack_build
-  docker:
-    - image: fpco/stack-build:lts
+    - run:
+        name: Build Project
+        command: |
+          cabal new-test all --enable-tests --enable-benchmarks $EXTRA_ARGS && SUCCESS=1
+          test -n "$IGNORE_FAILURE" -o -n "$SUCCESS" || false
 
-cabal_linux: &cabal_linux
-  <<: *cabal_build
+stack-linux: &stack-linux
+  <<: *stack-build
   docker:
-    - image: fpco/stack-build:latest
+    - image: haskell:latest
 
-stack_macos: &stack_macos
-  <<: *stack_build
+cabal-linux: &cabal-linux
+  <<: *cabal-build
+  docker:
+    - image: haskell:latest
+
+stack-macos: &stack-macos
+  <<: *stack-build
   macos:
     xcode: "10.0"
 
-cabal_macos: &cabal_macos
-  <<: *cabal_build
+cabal-macos: &cabal-macos
+  <<: *cabal-build
   macos:
     xcode: "10.0"
 
 jobs:
   stack-lts-7:
-    <<: *stack_linux
+    <<: *stack-linux
     environment:
       RESOLVER: lts-7
 
   stack-lts-9:
-    <<: *stack_linux
+    <<: *stack-linux
     environment:
       RESOLVER: lts-9
 
   stack-lts-11:
-    <<: *stack_linux
+    <<: *stack-linux
     environment:
       RESOLVER: lts-11
 
   stack-lts-12:
-    <<: *stack_linux
+    <<: *stack-linux
     environment:
       RESOLVER: lts-12
 
   stack-lts-13:
-    <<: *stack_linux
+    <<: *stack-linux
     environment:
       RESOLVER: lts-13
 
   cabal-lts-7:
-    <<: *cabal_linux
+    <<: *cabal-linux
     environment:
       RESOLVER: lts-7
 
   cabal-lts-9:
-    <<: *cabal_linux
+    <<: *cabal-linux
     environment:
       RESOLVER: lts-9
 
   cabal-lts-11:
-    <<: *cabal_linux
+    <<: *cabal-linux
     environment:
       RESOLVER: lts-11
 
   cabal-lts-12:
-    <<: *cabal_linux
+    <<: *cabal-linux
     environment:
       RESOLVER: lts-12
 
   cabal-lts-13:
-    <<: *cabal_linux
+    <<: *cabal-linux
     environment:
       RESOLVER: lts-13
 
   stack-nightly:
-    <<: *stack_linux
+    <<: *stack-linux
     environment:
       RESOLVER: nightly
+      IGNORE_FAILURE: 1
 
   stack-lts-13-macos:
-    <<: *stack_macos
+    <<: *stack-macos
     environment:
       RESOLVER: lts-13
 
 workflows:
   version: 2
-  main:
+  build-and-test:
     jobs:
       - stack-lts-7
       - stack-lts-9
