@@ -1,6 +1,6 @@
 version: 2.1
 
-cache-key: &cache-key "{{ arch }}/{{ .Environment.CIRCLE_JOB }}/{{ .Environment.CACHE_GENERATION }}"
+cache-key: &cache-key "{{ arch }}/{{ .Environment.CIRCLE_JOB }}/{{ .Environment.CACHE_GENERATION }}/{{ checksum \"floskell.cabal\" }}"
 
 stack-build: &stack-build
   steps:
@@ -71,9 +71,8 @@ cabal-build: &cabal-build
         command: |
           stack --resolver $RESOLVER --no-terminal setup
           stack --resolver $RESOLVER --no-terminal update
-          stack install cabal-install
-          $HOME/.local/bin/cabal new-update
-          echo "export PATH=$HOME/.local/bin:$(stack --resolver $RESOLVER --no-terminal path --bin-path)" >> $BASH_ENV
+          echo "export PATH=$(stack --resolver $RESOLVER --no-terminal path --bin-path)" >> $BASH_ENV
+          cabal new-update
 
     - run:
         name: Show Environment
@@ -85,19 +84,28 @@ cabal-build: &cabal-build
     - run:
         name: Build Dependencies
         command: |
-          cabal new-build all --enable-tests --enable-benchmarks --only-dependencies $EXTRA_ARGS && SUCCESS=1
+          cabal new-configure --enable-tests --enable-benchmarks $EXTRA_ARGS && SUCCESS=1
+          cabal new-build --only-dependencies $EXTRA_ARGS && SUCCESS=1
           test -n "$IGNORE_FAILURE" -o -n "$SUCCESS" || false
 
     - save_cache:
         key: *cache-key
         paths:
           - /root/.stack
+          - /root/.cabal
           - .cabal
 
     - run:
         name: Build Project
         command: |
-          cabal new-test all --enable-tests --enable-benchmarks $EXTRA_ARGS && SUCCESS=1
+          cabal new-build $EXTRA_ARGS && SUCCESS=1
+          test -n "$IGNORE_FAILURE" -o -n "$SUCCESS" || false
+
+    - run:
+        name: Run Tests
+        command: |
+          grep -qe '^test-suite ' *.cabal || exit 0
+          cabal new-test $EXTRA_ARGS && SUCCESS=1
           test -n "$IGNORE_FAILURE" -o -n "$SUCCESS" || false
 
 stack-linux: &stack-linux
@@ -175,7 +183,7 @@ jobs:
     <<: *stack-linux
     environment:
       RESOLVER: nightly
-      IGNORE_FAILURE: 1
+      IGNORE_FAILURE: true
 
   stack-lts-13-macos:
     <<: *stack-macos
