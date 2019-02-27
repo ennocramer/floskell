@@ -498,10 +498,8 @@ skipBlank :: Annotated ast
           -> ast NodeInfo
           -> ast NodeInfo
           -> Bool
-skipBlank skip a b = skip a b && null (comments After a)
-    && null (comments Before b)
-  where
-    comments loc = filterComments loc
+skipBlank skip a b = skip a b && null (filterComments After a)
+    && null (filterComments Before b)
 
 skipBlankAfterDecl :: Decl a -> Bool
 skipBlankAfterDecl a = case a of
