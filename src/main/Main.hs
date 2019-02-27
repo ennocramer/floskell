@@ -69,7 +69,7 @@ main = do
     let config = mergeAppConfig baseConfig opts
     if optPrintFixities opts
         then PP.displayIO stdout . PP.renderPretty 1.0 80 $
-            docFixities packageFixities
+            docFixities packageFixities <> PP.linebreak
         else if optPrintConfig opts
              then BL.putStr $ JSON.encodePretty config
              else run config (optFiles opts)
