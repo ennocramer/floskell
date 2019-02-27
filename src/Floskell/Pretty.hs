@@ -365,20 +365,28 @@ listAutoWrap _ open close _ [] = do
     write open
     write close
 
-listAutoWrap ctx open close sep (x : xs) =
-    aligned . groupH ctx open close . aligned $ do
-        ws <- getConfig (cfgOpWs ctx sep . cfgOp)
-        let correction = if wsLinebreak After ws
-                         then 0
-                         else BS.length sep + if wsSpace After ws then 1 else 0
-        col <- getNextColumn
-        pretty x
-        forM_ xs $ \x' -> do
-            printComments Before x'
-            cut $ do
-                column (col - fromIntegral correction) $ operator ctx sep
-                prettyPrint x'
-                printComments After x'
+listAutoWrap ctx open close sep xs =
+    aligned . groupH ctx open close $ listAutoWrap' ctx sep xs
+
+listAutoWrap' :: (Annotated ast, Pretty ast)
+              => LayoutContext
+              -> ByteString
+              -> [ast NodeInfo]
+              -> Printer ()
+listAutoWrap' _ _ [] = return ()
+listAutoWrap' ctx sep (x : xs) = aligned $ do
+    ws <- getConfig (cfgOpWs ctx sep . cfgOp)
+    let correction = if wsLinebreak After ws
+                     then 0
+                     else BS.length sep + if wsSpace After ws then 1 else 0
+    col <- getNextColumn
+    pretty x
+    forM_ xs $ \x' -> do
+        printComments Before x'
+        cut $ do
+            column (col - fromIntegral correction) $ operator ctx sep
+            prettyPrint x'
+            printComments After x'
 
 measure :: Printer a -> Printer (Maybe Int)
 measure p = do
@@ -548,7 +556,7 @@ prettySimpleDecl lhs op rhs = withLayout cfgLayoutDeclaration flex vertical
 prettyConDecls :: (Annotated ast, Pretty ast) => [ast NodeInfo] -> Printer ()
 prettyConDecls condecls = withLayout cfgLayoutConDecls flex vertical
   where
-    flex = listH' Declaration "|" condecls
+    flex = listAutoWrap' Declaration "|" condecls
 
     vertical = listV' Declaration "|" condecls
 

@@ -189,8 +189,8 @@ newtype RWS r w s = RWS (ReaderT r (WriterT w (StateT s Identity)))
     deriving ( Functor, Applicative, Monad )
 
 data Enum = One   -- Foo
-    | Two   -- Bar
-    | Three -- Baz
+          | Two   -- Bar
+          | Three -- Baz
 
 data Foo
     deriving ()
@@ -822,8 +822,8 @@ Don't be too eager in assigning comments to the following AST node.
 
 ``` haskell
 data Foo = Foo { fooBar :: Text
-        -- ^A comment, long enough to end up on its own line, or at least I hope so.
-    }
+               -- ^A comment, long enough to end up on its own line, or at least I hope so.
+           }
     deriving ( Eq )
 ```
 
@@ -834,8 +834,8 @@ Keep comments together and aligned.
 -- one
 data Foo = Foo  -- some
                 -- comments
-    | Quux -- more
-           -- comments
+         | Quux -- more
+                -- comments
 -- block
 -- two
 ```
@@ -862,14 +862,14 @@ on individual declarations and quoted haskell code.
 
 ``` haskell
     data Enum = One   -- Foo
-        | Two   -- Bar
-        | Three -- Baz
+              | Two   -- Bar
+              | Three -- Baz
 ```
 
 ``` haskell
 >
 >    data Enum = One   -- Foo
->        | Two   -- Bar
->        | Three -- Baz
+>              | Two   -- Bar
+>              | Three -- Baz
 >
 ```
