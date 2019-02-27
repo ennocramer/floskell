@@ -212,13 +212,16 @@ opName op = case op of
 
 -- | Return the configuration name of an operator
 opName' :: QName a -> ByteString
-opName' (Qual _ _ (Ident _ _)) = "``"
-opName' (Qual _ _ (Symbol _ _)) = ""
-opName' (UnQual _ (Ident _ _)) = "``"
-opName' (UnQual _ (Symbol _ str)) = BS8.pack str
+opName' (Qual _ _ name) = opName'' name
+opName' (UnQual _ name) = opName'' name
 opName' (Special _ (FunCon _)) = "->"
 opName' (Special _ (Cons _)) = ":"
 opName' (Special _ _) = ""
+
+-- | Return the configuration name of an operator
+opName'' :: Name a -> ByteString
+opName'' (Ident _ _) = "``"
+opName'' (Symbol _ str) = BS8.pack str
 
 lineDelta :: Annotated ast => ast NodeInfo -> ast NodeInfo -> Int
 lineDelta prev next = nextLine - prevLine
@@ -1244,22 +1247,27 @@ instance Pretty GadtDecl where
 instance Pretty Match where
     prettyPrint (Match _ name pats rhs mbinds) = do
         onside $ do
-            pretty name
-            unless (null pats) $ do
-                space
-                inter space $ map pretty pats
+            prettyApp name pats
             atTabStop stopRhs
             pretty rhs
         mapM_ pretty mbinds
 
     prettyPrint (InfixMatch _ pat name pats rhs mbinds) = do
         onside $ do
-            pretty pat
-            pretty $ VarOp noNodeInfo name
-            inter space $ map pretty pats
+            withLayout cfgLayoutInfixApp flex vertical
             atTabStop stopRhs
             pretty rhs
         mapM_ pretty mbinds
+      where
+        flex = do
+            pretty pat
+            withOperatorFormatting Pattern (opName'' name) (prettyHSE $ VarOp noNodeInfo name) id
+            inter spaceOrNewline $ map pretty pats
+
+        vertical = do
+            pretty pat
+            withOperatorFormattingV Pattern (opName'' name) (prettyHSE $ VarOp noNodeInfo name) id
+            linedOnside pats
 
 instance Pretty Rhs where
     prettyPrint (UnGuardedRhs _ expr) =
@@ -1324,7 +1332,7 @@ instance Pretty Asst where
 
     prettyPrint (InfixA _ ty qname ty') = do
         pretty ty
-        pretty $ QVarOp noNodeInfo qname
+        withOperatorFormatting Type (opName' qname) (prettyHSE $ QVarOp noNodeInfo qname) id
         pretty ty'
 
     prettyPrint (IParam _ ipname ty) = prettyTypesig Declaration [ ipname ] ty

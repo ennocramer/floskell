@@ -790,6 +790,17 @@ foo = do
   some expression
 ```
 
+## Patterns
+
+Long function pattern matches allow linebreaks.
+
+``` haskell
+doThing
+  (Constructor field1 field2 field3)
+  (Constructor field1 field2 field3)
+  (Constructor field1 field2 field3) = undefined
+```
+
 ## Onside
 
 Indent within onside started on non-empty line should still not stack.
