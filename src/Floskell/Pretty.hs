@@ -554,11 +554,35 @@ prettySimpleDecl lhs op rhs = withLayout cfgLayoutDeclaration flex vertical
         pretty rhs
 
 prettyConDecls :: (Annotated ast, Pretty ast) => [ast NodeInfo] -> Printer ()
-prettyConDecls condecls = withLayout cfgLayoutConDecls flex vertical
+prettyConDecls condecls = do
+    alignedConDecls <- getOption cfgOptionAlignSumTypeDecl
+    if alignedConDecls && length condecls > 1
+        then withLayout cfgLayoutDeclaration flex' vertical'
+        else withLayout cfgLayoutDeclaration flex vertical
   where
-    flex = listAutoWrap' Declaration "|" condecls
+    flex = do
+        operator Declaration "="
+        withLayout cfgLayoutConDecls flexDecls verticalDecls
 
-    vertical = listV' Declaration "|" condecls
+    flex' = do
+        spaceOrNewline
+        withLayout cfgLayoutConDecls flexDecls' verticalDecls'
+
+    vertical = do
+        operatorV Declaration "="
+        withLayout cfgLayoutConDecls flexDecls verticalDecls
+
+    vertical' = do
+        newline
+        withLayout cfgLayoutConDecls flexDecls' verticalDecls'
+
+    flexDecls = listAutoWrap' Declaration "|" condecls
+
+    flexDecls' = list Declaration "=" "" "|" condecls
+
+    verticalDecls = listV' Declaration "|" condecls
+
+    verticalDecls' = listV Declaration "=" "" "|" condecls
 
 prettyForall :: (Annotated ast, Pretty ast) => [ast NodeInfo] -> Printer ()
 prettyForall vars = do
@@ -795,17 +819,8 @@ instance Pretty Decl where
         depend' (pretty dataornew) $ do
             mapM_ pretty mcontext
             pretty declhead
-            unless (null qualcondecls) $
-                withLayout cfgLayoutDeclaration flex vertical
+            unless (null qualcondecls) $ prettyConDecls qualcondecls
         mapM_ pretty derivings
-      where
-        flex = do
-            operator Declaration "="
-            prettyConDecls qualcondecls
-
-        vertical = do
-            operatorV Declaration "="
-            prettyConDecls qualcondecls
 
     prettyPrint (GDataDecl _
                            dataornew
@@ -837,16 +852,8 @@ instance Pretty Decl where
     prettyPrint (DataInsDecl _ dataornew ty qualcondecls derivings) = do
         depend' (pretty dataornew >> write " instance") $ do
             pretty ty
-            withLayout cfgLayoutDeclaration flex vertical
+            prettyConDecls qualcondecls
         mapM_ pretty derivings
-      where
-        flex = do
-            operator Declaration "="
-            prettyConDecls qualcondecls
-
-        vertical = do
-            operatorV Declaration "="
-            prettyConDecls qualcondecls
 
     prettyPrint (GDataInsDecl _ dataornew ty mkind gadtdecls derivings) = do
         depend' (pretty dataornew >> write " instance") $ do
@@ -1150,17 +1157,8 @@ instance Pretty InstDecl where
     prettyPrint (InsData _ dataornew ty qualcondecls derivings) =
         depend' (pretty dataornew) $ do
             pretty ty
-            unless (null qualcondecls) $
-                withLayout cfgLayoutDeclaration flex vertical
+            unless (null qualcondecls) $ prettyConDecls qualcondecls
             mapM_ pretty derivings
-      where
-        flex = do
-            operator Declaration "="
-            prettyConDecls qualcondecls
-
-        vertical = do
-            operatorV Declaration "="
-            prettyConDecls qualcondecls
 
     prettyPrint (InsGData _ dataornew ty mkind gadtdecls derivings) = do
         depend' (pretty dataornew) $ do

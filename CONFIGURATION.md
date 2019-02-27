@@ -199,6 +199,7 @@ is as follows:
 
 * `options`: Defines additional formatting rules for module heads.
 
+  * `align-sum-type-decl` (`false`): Whether to align `=` with `|` in the declaration of sum types.
   * `preserve-vertical-space` (`false`): Whether to preserve additional vertical space between declarations, statements, and a few other places.
   * `sort-import-lists` (`false`): Whether to sort import statements by the name of the imported module.
   * `sort-imports` (`false`): Whether to sort import lists.

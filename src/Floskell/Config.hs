@@ -199,6 +199,7 @@ data OptionConfig = OptionConfig { cfgOptionSortPragmas           :: !Bool
                                  , cfgOptionSplitLanguagePragmas  :: !Bool
                                  , cfgOptionSortImports           :: !Bool
                                  , cfgOptionSortImportLists       :: !Bool
+                                 , cfgOptionAlignSumTypeDecl      :: !Bool
                                  , cfgOptionPreserveVerticalSpace :: !Bool
                                  }
     deriving ( Generic )
@@ -208,6 +209,7 @@ instance Default OptionConfig where
                        , cfgOptionSplitLanguagePragmas  = False
                        , cfgOptionSortImports           = False
                        , cfgOptionSortImportLists       = False
+                       , cfgOptionAlignSumTypeDecl      = False
                        , cfgOptionPreserveVerticalSpace = False
                        }
 

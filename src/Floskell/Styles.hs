@@ -81,6 +81,7 @@ chrisDoneCfg = safeConfig $
                               , cfgOptionSplitLanguagePragmas  = False
                               , cfgOptionSortImports           = False
                               , cfgOptionSortImportLists       = False
+                              , cfgOptionAlignSumTypeDecl      = True
                               , cfgOptionPreserveVerticalSpace = False
                               }
 
@@ -188,6 +189,7 @@ cramerCfg = safeConfig $
                               , cfgOptionSplitLanguagePragmas  = True
                               , cfgOptionSortImports           = True
                               , cfgOptionSortImportLists       = True
+                              , cfgOptionAlignSumTypeDecl      = False
                               , cfgOptionPreserveVerticalSpace = True
                               }
 
@@ -272,6 +274,7 @@ gibianskyCfg = safeConfig $
                               , cfgOptionSplitLanguagePragmas  = False
                               , cfgOptionSortImports           = False
                               , cfgOptionSortImportLists       = False
+                              , cfgOptionAlignSumTypeDecl      = False
                               , cfgOptionPreserveVerticalSpace = False
                               }
 
@@ -355,6 +358,7 @@ johanTibellCfg = safeConfig $
                               , cfgOptionSplitLanguagePragmas  = False
                               , cfgOptionSortImports           = False
                               , cfgOptionSortImportLists       = False
+                              , cfgOptionAlignSumTypeDecl      = True
                               , cfgOptionPreserveVerticalSpace = False
                               }
 

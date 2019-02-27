@@ -46,14 +46,14 @@ import qualified Data.Text as Text
 import Prelude hiding (map)
 
 -- Data declarations
-data Enum =
-    CaseA
+data Enum
+  = CaseA
   | CaseB
   | CaseC
   deriving (Eq,Enum,Show)
 
-data Either a b =
-    Left a
+data Either a b
+  = Left a
   | Right b
   deriving (Eq,Show)
 
@@ -204,8 +204,8 @@ data Void
 
 data Unit = Unit
 
-data Maybe a =
-    Nothing
+data Maybe a
+  = Nothing
   | Just a
 
 data Num a => SomeNum = SomeNum a
@@ -213,8 +213,8 @@ data Num a => SomeNum = SomeNum a
 newtype RWS r w s = RWS (ReaderT r (WriterT w (StateT s Identity)))
   deriving (Functor,Applicative,Monad)
 
-data Enum =
-    One   -- Foo
+data Enum
+  = One   -- Foo
   | Two   -- Bar
   | Three -- Baz
 
@@ -277,8 +277,8 @@ data family List a
 
 data instance List () = NilList Int
 
-data instance List Char =
-    CharNil
+data instance List Char
+  = CharNil
   | CharCons Char (List Char)
   deriving (Eq,Ord,Show)
 
@@ -896,8 +896,8 @@ Keep comments together and aligned.
 ``` haskell
 -- block
 -- one
-data Foo =
-    Foo  -- some
+data Foo
+  = Foo  -- some
          -- comments
   | Quux -- more
          -- comments
@@ -927,16 +927,16 @@ Preserving indentation and line prefixes so that Floskell can be run
 on individual declarations and quoted haskell code.
 
 ``` haskell
-    data Enum =
-        One   -- Foo
+    data Enum
+      = One   -- Foo
       | Two   -- Bar
       | Three -- Baz
 ```
 
 ``` haskell
 >
->    data Enum =
->        One   -- Foo
+>    data Enum
+>      = One   -- Foo
 >      | Two   -- Bar
 >      | Three -- Baz
 >
