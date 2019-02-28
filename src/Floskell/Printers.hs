@@ -147,7 +147,7 @@ string :: String -> Printer ()
 string = write . BL.toStrict . BB.toLazyByteString . BB.stringUtf8
 
 -- | Write an integral.
-int :: Integer -> Printer ()
+int :: Int -> Printer ()
 int = string . show
 
 -- | Write a space.

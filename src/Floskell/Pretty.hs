@@ -275,8 +275,8 @@ listVinternal ctx sep xs = aligned $ do
                      then 0
                      else BS.length sep + if wsSpace After ws then 1 else 0
         extraIndent = if nl then correction else 0
-        itemCol = col + fromIntegral extraIndent
-        sepCol = itemCol - fromIntegral correction
+        itemCol = col + extraIndent
+        sepCol = itemCol - correction
     case xs of
         [] -> newline
         (x : xs') -> column itemCol $ do
@@ -387,7 +387,7 @@ listAutoWrap' ctx sep (x : xs) = aligned $ do
     forM_ xs $ \x' -> do
         printComments Before x'
         cut $ do
-            column (col - fromIntegral correction) $ operator ctx sep
+            column (col - correction) $ operator ctx sep
             prettyPrint x'
             printComments After x'
 
@@ -908,7 +908,7 @@ instance Pretty Decl where
 
     prettyPrint (InfixDecl _ assoc mint ops) = onside $ do
         pretty assoc
-        mayM_ mint $ withPrefix space (int . fromIntegral)
+        mayM_ mint $ withPrefix space int
         space
         inter comma $ map prettyHSE ops
 
@@ -1768,13 +1768,13 @@ instance Pretty Exp where
         prettyPragma "GENERATED" $
             inter space
                   [ string $ show str
-                  , int $ fromIntegral a
+                  , int a
                   , write ":"
-                  , int $ fromIntegral b
+                  , int b
                   , write "-"
-                  , int $ fromIntegral c
+                  , int c
                   , write ":"
-                  , int $ fromIntegral d
+                  , int d
                   ]
         space
         pretty expr
@@ -1843,7 +1843,7 @@ instance Pretty Pat where
     prettyPrint (PNPlusK _ name integer) = do
         pretty name
         operator Pattern "+"
-        int integer
+        int $ fromIntegral integer
 
     prettyPrint p@(PInfixApp _ _ qname _) =
         prettyInfixApp opName Pattern $ flattenInfix flattenPInfixApp p
@@ -2117,11 +2117,11 @@ instance Pretty RuleVar where
         parens $ prettyTypesig Declaration [ name ] ty
 
 instance Pretty Activation where
-    prettyPrint (ActiveFrom _ pass) = brackets . int $ fromIntegral pass
+    prettyPrint (ActiveFrom _ pass) = brackets $ int pass
 
     prettyPrint (ActiveUntil _ pass) = brackets $ do
         write "~"
-        int $ fromIntegral pass
+        int pass
 
 instance Pretty Annotation where
     prettyPrint (Ann _ name expr) = do
