@@ -404,14 +404,14 @@ measureDecl :: Decl NodeInfo -> Printer (Maybe [Int])
 measureDecl (PatBind _ pat _ Nothing) = fmap (: []) <$> measure (pretty pat)
 measureDecl (FunBind _ matches) = sequence <$> traverse measureMatch matches
   where
-    measureMatch (Match _ name pats _ Nothing) = measure $ do
-        pretty name
-        space
-        inter space $ map pretty pats
+    measureMatch (Match _ name pats _ Nothing) = measure $ prettyApp name pats
     measureMatch (InfixMatch _ pat name pats _ Nothing) = measure $ do
         pretty pat
-        pretty $ VarOp noNodeInfo name
-        inter space $ map pretty pats
+        withOperatorFormatting Pattern
+                               (opName'' name)
+                               (prettyHSE $ VarOp noNodeInfo name)
+                               id
+        inter spaceOrNewline $ map pretty pats
     measureMatch _ = return Nothing
 measureDecl _ = return Nothing
 
@@ -1259,12 +1259,18 @@ instance Pretty Match where
       where
         flex = do
             pretty pat
-            withOperatorFormatting Pattern (opName'' name) (prettyHSE $ VarOp noNodeInfo name) id
+            withOperatorFormatting Pattern
+                                   (opName'' name)
+                                   (prettyHSE $ VarOp noNodeInfo name)
+                                   id
             inter spaceOrNewline $ map pretty pats
 
         vertical = do
             pretty pat
-            withOperatorFormattingV Pattern (opName'' name) (prettyHSE $ VarOp noNodeInfo name) id
+            withOperatorFormattingV Pattern
+                                    (opName'' name)
+                                    (prettyHSE $ VarOp noNodeInfo name)
+                                    id
             linedOnside pats
 
 instance Pretty Rhs where
@@ -1330,7 +1336,10 @@ instance Pretty Asst where
 
     prettyPrint (InfixA _ ty qname ty') = do
         pretty ty
-        withOperatorFormatting Type (opName' qname) (prettyHSE $ QVarOp noNodeInfo qname) id
+        withOperatorFormatting Type
+                               (opName' qname)
+                               (prettyHSE $ QVarOp noNodeInfo qname)
+                               id
         pretty ty'
 
     prettyPrint (IParam _ ipname ty) = prettyTypesig Declaration [ ipname ] ty
