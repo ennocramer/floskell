@@ -103,6 +103,11 @@ linePenalty eol col = do
 cut :: Printer a -> Printer a
 cut = winner
 
+closeEolComment :: Printer ()
+closeEolComment = do
+    eol <- gets psEolComment
+    when eol newline
+
 withOutputRestriction :: OutputRestriction -> Printer a -> Printer a
 withOutputRestriction r p = do
     orig <- gets psOutputRestriction
@@ -113,15 +118,13 @@ withOutputRestriction r p = do
 
 oneline :: Printer a -> Printer a
 oneline p = do
-    eol <- gets psEolComment
-    when eol newline
+    closeEolComment
     withOutputRestriction NoOverflowOrLinebreak p
 
 -- | Write out a string, updating the current position information.
 write :: ByteString -> Printer ()
 write x = do
-    eol <- gets psEolComment
-    when eol newline
+    closeEolComment
     write' x
   where
     write' x' = do
@@ -261,18 +264,20 @@ getNextColumn = do
              then psIndentLevel st + psOnside st
              else max (psColumn st) (psIndentLevel st)
 
+withIndentation :: ((Int, Int) -> (Int, Int)) -> Printer a -> Printer a
+withIndentation f p = do
+    prevIndent <- gets psIndentLevel
+    prevOnside <- gets psOnside
+    let (newIndent, newOnside) = f (prevIndent, prevOnside)
+    modify (\s -> s { psIndentLevel = newIndent, psOnside = newOnside })
+    r <- p
+    modify (\s -> s { psIndentLevel = prevIndent, psOnside = prevOnside })
+    return r
+
 -- | Set the (newline-) indent level to the given column for the given
 -- printer.
 column :: Int -> Printer a -> Printer a
-column i p = do
-    level <- gets psIndentLevel
-    onside' <- gets psOnside
-    modify (\s -> s { psIndentLevel = i
-                    , psOnside      = if i > level then 0 else onside'
-                    })
-    m <- p
-    modify (\s -> s { psIndentLevel = level, psOnside = onside' })
-    return m
+column i = withIndentation $ \(l, o) -> (i, if i > l then 0 else o)
 
 -- | Increase indentation level by n spaces for the given printer.
 indent :: Int -> Printer a -> Printer a
@@ -296,15 +301,9 @@ indented p = do
 -- ignore increase when computing further indentations.
 onside :: Printer a -> Printer a
 onside p = do
-    eol <- gets psEolComment
-    when eol newline
+    closeEolComment
     onsideIndent <- getConfig (cfgIndentOnside . cfgIndent)
-    level <- gets psIndentLevel
-    onside' <- gets psOnside
-    modify (\s -> s { psOnside = onsideIndent })
-    m <- p
-    modify (\s -> s { psIndentLevel = level, psOnside = onside' })
-    return m
+    withIndentation (\(l, _) -> (l, onsideIndent)) p
 
 depend :: ByteString -> Printer a -> Printer a
 depend kw = depend' (write kw)
