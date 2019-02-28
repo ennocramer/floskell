@@ -2223,3 +2223,5 @@ instance Annotated a => Annotated (MayAst a) where
 
 instance (Annotated a, Pretty a) => Pretty (MayAst a) where
     prettyPrint (MayAst _ x) = mapM_ pretty x
+
+{-# ANN module ("HLint: ignore Reduce duplication" :: String) #-}
