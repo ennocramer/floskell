@@ -30,6 +30,7 @@ library
   hs-source-dirs:    src/
   ghc-options:       -Wall
   exposed-modules:   Floskell
+                     Floskell.Attoparsec
                      Floskell.Buffer
                      Floskell.Comments
                      Floskell.Config
@@ -41,6 +42,7 @@ library
                      Floskell.Types
   build-depends:     base >=4.9 && <4.13
                    , aeson >=0.11.3.0 && <1.4.3
+                   , attoparsec >=0.13.1.0 && <0.13.3
                    , bytestring >=0.10.8.1 && <0.10.9
                    , containers >=0.5.7.1 && <0.6.1
                    , data-default >=0.7.1.1 && <0.7.2

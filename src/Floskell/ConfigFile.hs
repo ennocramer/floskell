@@ -22,24 +22,29 @@ module Floskell.ConfigFile
     , setFixities
     ) where
 
-import           Control.Applicative   ( (<|>) )
+import           Control.Applicative        ( (<|>) )
 
-import           Data.Aeson            ( (.:?), (.=), FromJSON(..), ToJSON(..) )
-import qualified Data.Aeson            as JSON
-import qualified Data.Aeson.Types      as JSON ( typeMismatch )
-import qualified Data.ByteString       as BS
-import           Data.Char             ( isLetter, isSpace )
-import qualified Data.HashMap.Lazy     as HashMap
-import           Data.List             ( inits )
-import qualified Data.Text             as T
+import           Data.Aeson
+                 ( (.:?), (.=), FromJSON(..), ToJSON(..) )
+import qualified Data.Aeson                 as JSON
+import qualified Data.Aeson.Parser          as JSON ( json' )
+import qualified Data.Aeson.Types           as JSON ( typeMismatch )
+import qualified Data.Attoparsec.ByteString as AP
+import qualified Data.ByteString            as BS
+import           Data.Char                  ( isLetter, isSpace )
+import qualified Data.HashMap.Lazy          as HashMap
+import           Data.List                  ( inits )
+import qualified Data.Text                  as T
 
-import           Floskell.Styles       ( Style(..), styles )
+import           Floskell.Attoparsec        ( parseOnly )
+import           Floskell.Styles            ( Style(..), styles )
 
-import           GHC.Generics          ( Generic )
+import           GHC.Generics               ( Generic )
 
-import           Language.Haskell.Exts ( Extension(..), Fixity(..), Language(..)
-                                       , classifyExtension, classifyLanguage )
-import qualified Language.Haskell.Exts as HSE
+import           Language.Haskell.Exts
+                 ( Extension(..), Fixity(..), Language(..), classifyExtension
+                 , classifyLanguage )
+import qualified Language.Haskell.Exts      as HSE
 
 import           System.Directory
                  ( XdgDirectory(..), doesFileExist, findFileWith
@@ -185,7 +190,7 @@ findAppConfigIn src = do
 readAppConfig :: FilePath -> IO AppConfig
 readAppConfig file = do
     text <- BS.readFile file
-    either (error . (++) (file ++ ": ")) return $ JSON.eitherDecodeStrict text
+    either (error . (++) (file ++ ": ")) return $ eitherDecodeStrict text
 
 setStyle :: AppConfig -> Maybe String -> AppConfig
 setStyle cfg mbStyle =
@@ -202,3 +207,15 @@ setExtensions cfg exts =
 setFixities :: AppConfig -> [String] -> AppConfig
 setFixities cfg fixities =
     cfg { appFixities = appFixities cfg ++ map lookupFixity fixities }
+
+eitherDecodeStrict :: FromJSON a => BS.ByteString -> Either String a
+eitherDecodeStrict i = case parseOnly jsonEOF' i of
+    Right x -> case JSON.fromJSON x of
+        JSON.Error e -> Left e
+        JSON.Success x' -> Right x'
+    Left e -> Left e
+  where
+    jsonEOF' = JSON.json' <* skipSpace <* AP.endOfInput
+
+    skipSpace =
+        AP.skipWhile $ \w -> w == 0x20 || w == 0x0a || w == 0x0d || w == 0x09
