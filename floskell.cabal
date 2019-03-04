@@ -21,6 +21,7 @@ extra-source-files:  README.md
                      CHANGELOG.md
                      BENCHMARK.md
                      TEST.md
+                     stack.yaml
 
 source-repository head
     type:           git
