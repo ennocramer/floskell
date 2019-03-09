@@ -1177,11 +1177,17 @@ instance Pretty Deriving where
     prettyPrint (Deriving _ mderivstrategy instrules) =
         withIndentBy cfgIndentDeriving $ do
             write "deriving "
-            mayM_ mderivstrategy $ withPostfix space pretty
+            prettyStratBefore
             case instrules of
                 [ i@IRule{} ] -> pretty i
                 [ IParen _ i ] -> listAutoWrap Other "(" ")" "," [ i ]
                 _ -> listAutoWrap Other "(" ")" "," instrules
+            prettyStratAfter
+      where
+        (prettyStratBefore, prettyStratAfter) = case mderivstrategy of
+            Just x@DerivVia{} -> (return (), space *> pretty x)
+            Just x -> (pretty x <* space, return ())
+            _ -> (return (), return ())
 #else
     prettyPrint (Deriving _ instrules) = withIndentBy cfgIndentDeriving $ do
         write "deriving "

@@ -273,6 +273,13 @@ data instance List Int :: * where
     IntNil :: List Int
     IntCons :: { val :: Int } -> List Int
     deriving ( Eq, Ord, Show )
+
+newtype Penalty = Penalty Int
+    deriving ( Eq, Ord )
+    deriving stock ( Read, Show )
+    deriving newtype ( Num )
+    deriving anyclass ( FromJSON, ToJSON )
+    deriving ( Semigroup, Monoid ) via M.Sum Int
 ```
 
 ### ClassDecl and InstDecl
