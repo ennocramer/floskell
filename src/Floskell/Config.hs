@@ -17,6 +17,7 @@ module Floskell.Config
     , LayoutConfig(..)
     , OpConfig(..)
     , GroupConfig(..)
+    , SortImportsRule(..)
     , OptionConfig(..)
     , Config(..)
     , defaultConfig
@@ -43,6 +44,7 @@ import qualified Data.Text          as T
 import qualified Data.Text.Encoding as T ( decodeUtf8, encodeUtf8 )
 
 import           GHC.Generics
+import           Control.Applicative
 
 data Indent = Align | IndentBy !Int | AlignOrIndentBy !Int
     deriving ( Eq, Ord, Show, Generic )
@@ -195,9 +197,12 @@ instance Default GroupConfig where
                                 , cfgMapOverrides = Map.empty
                                 }
 
+
+data SortImportsRule = NoImportSort | SortImportsByPrefix | SortImportsByGroups ![[String]]
+
 data OptionConfig = OptionConfig { cfgOptionSortPragmas           :: !Bool
                                  , cfgOptionSplitLanguagePragmas  :: !Bool
-                                 , cfgOptionSortImports           :: !Bool
+                                 , cfgOptionSortImports           :: !SortImportsRule
                                  , cfgOptionSortImportLists       :: !Bool
                                  , cfgOptionAlignSumTypeDecl      :: !Bool
                                  , cfgOptionPreserveVerticalSpace :: !Bool
@@ -207,7 +212,7 @@ data OptionConfig = OptionConfig { cfgOptionSortPragmas           :: !Bool
 instance Default OptionConfig where
     def = OptionConfig { cfgOptionSortPragmas           = False
                        , cfgOptionSplitLanguagePragmas  = False
-                       , cfgOptionSortImports           = False
+                       , cfgOptionSortImports           = NoImportSort
                        , cfgOptionSortImportLists       = False
                        , cfgOptionAlignSumTypeDecl      = False
                        , cfgOptionPreserveVerticalSpace = False
@@ -446,6 +451,18 @@ instance ToJSON GroupConfig where
 
 instance FromJSON GroupConfig where
     parseJSON = genericParseJSON (recordOptions 0)
+
+instance ToJSON SortImportsRule where
+    toJSON NoImportSort = toJSON False
+    toJSON SortImportsByPrefix = toJSON True
+    toJSON (SortImportsByGroups xs) = toJSON xs
+
+instance FromJSON SortImportsRule where
+    parseJSON v = yesno <|> grps
+        where
+            yesno = (\s -> if s then SortImportsByPrefix else NoImportSort) <$> parseJSON v
+
+            grps = SortImportsByGroups <$> parseJSON v
 
 instance ToJSON OptionConfig where
     toJSON = genericToJSON (recordOptions 9)

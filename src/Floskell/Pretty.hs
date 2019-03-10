@@ -16,7 +16,7 @@ import qualified Data.ByteString              as BS
 import qualified Data.ByteString.Char8        as BS8
 import qualified Data.ByteString.Lazy         as BL
 
-import           Data.List                    ( groupBy, sortBy, sortOn )
+import           Data.List                    ( groupBy, sortBy, sortOn, partition )
 import           Data.Maybe                   ( catMaybes, fromMaybe )
 
 import qualified Floskell.Buffer              as Buffer
@@ -472,9 +472,26 @@ prettyPragmas ps = do
     sameType AnnModulePragma{} AnnModulePragma{} = True
     sameType _ _ = False
 
+
+
+prefixMatches :: String -> String -> Bool
+prefixMatches [] ('.':_) = True
+prefixMatches [] [] = True
+prefixMatches (x:xs) (y:ys) = x == y && prefixMatches xs ys
+prefixMatches _ _ = False
+
+
+groupByRules :: [[String]] -> [ImportDecl NodeInfo] -> [[ImportDecl NodeInfo]]
+groupByRules (thisGrp:moreGrps) imports =
+    let (this, more) = partition (\i -> any (\r -> prefixMatches r (moduleName $ importModule i)) thisGrp) imports
+     in this : groupByRules moreGrps more
+groupByRules [] x = [x]
+
+
+
 prettyImports :: [ImportDecl NodeInfo] -> Printer ()
 prettyImports is = do
-    sortP <- getOption cfgOptionSortImports
+    sortP <- getConfig (cfgOptionSortImports . cfgOptions)
     alignModuleP <- getConfig (cfgAlignImportModule . cfgAlign)
     alignSpecP <- getConfig (cfgAlignImportSpec . cfgAlign)
     let maxNameLength = maximum $ map (length . moduleName . importModule) is
@@ -484,11 +501,13 @@ prettyImports is = do
                     else Nothing
     withTabStops [ (stopImportModule, alignModule)
                  , (stopImportSpec, alignSpec)
-                 ] $ if sortP
-                     then inter blankline . map lined . groupBy samePrefix $
-                         sortOn (moduleName . importModule) is
-                     else lined is
+                 ] $ case sortP :: SortImportsRule of
+                    SortImportsByPrefix -> inter blankline . map lined $ groupBy samePrefix sorted
+                    SortImportsByGroups rs -> linedGroups . filter (not . null) $ groupByRules rs sorted
+                    NoImportSort -> lined is
   where
+    linedGroups = inter blankline . map (inter newline . map pretty)
+    sorted = sortOn (moduleName . importModule) is
     samePrefix left right = prefix left == prefix right
 
     prefix = takeWhile (/= '.') . moduleName . importModule
