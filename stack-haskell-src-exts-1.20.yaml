@@ -1,0 +1,5 @@
+resolver: lts-12.25
+packages:
+- '.'
+extra-deps:
+- monad-dijkstra-0.1.1.2

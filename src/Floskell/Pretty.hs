@@ -1185,7 +1185,9 @@ instance Pretty Deriving where
             prettyStratAfter
       where
         (prettyStratBefore, prettyStratAfter) = case mderivstrategy of
+#if MIN_VERSION_haskell_src_exts(1,21,0)
             Just x@DerivVia{} -> (return (), space *> pretty x)
+#endif
             Just x -> (pretty x <* space, return ())
             _ -> (return (), return ())
 #else
