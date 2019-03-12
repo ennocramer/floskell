@@ -482,11 +482,15 @@ prefixMatches _ _ = False
 
 
 groupByRules :: [[String]] -> [ImportDecl NodeInfo] -> [[ImportDecl NodeInfo]]
-groupByRules (thisGrp:moreGrps) imports =
-    let (this, more) = partition (\i -> any (\r -> prefixMatches r (moduleName $ importModule i)) thisGrp) imports
-     in this : groupByRules moreGrps more
-groupByRules [] x = [x]
-
+groupByRules g = (\(x, y) -> x ++ [y]) . go g
+    where
+        go :: [[String]] -> [ImportDecl  NodeInfo] -> ([[ImportDecl NodeInfo]], [ImportDecl NodeInfo])
+        go ([]:more) is = let (d, c) = go more is in (c : d, [])
+        go (thisGrp:moreGrps) is =
+            let (this, more) = partition (\i -> any (\r -> prefixMatches r (moduleName $ importModule i)) thisGrp) is
+                (result, rest) = go moreGrps more
+             in (this : result, rest)
+        go [] x = ([], x)
 
 
 prettyImports :: [ImportDecl NodeInfo] -> Printer ()
