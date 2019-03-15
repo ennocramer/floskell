@@ -112,10 +112,11 @@ toSpec style path inp ref =
                             Left e -> error e
                             Right b -> b `shouldBeReadable` code'
                     it (name n "formatting is idempotent") $
-                        case reformatSnippet style code
-                        >>= reformatSnippet style of
+                        case reformatSnippet style code of
                             Left e -> error e
-                            Right b -> b `shouldBeReadable` code'
+                            Right b -> case reformatSnippet style b of
+                                Left e -> error e
+                                Right b' -> b' `shouldBeReadable` b
         (n, _, _) -> error $ name n "structure mismatch in reference file"
   where
     name n desc = "Snippet " ++ show n ++ " - " ++ desc
