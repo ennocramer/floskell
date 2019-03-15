@@ -79,7 +79,7 @@ chrisDoneCfg = safeConfig $
 
     cfgOptions = OptionConfig { cfgOptionSortPragmas           = False
                               , cfgOptionSplitLanguagePragmas  = False
-                              , cfgOptionSortImports           = False
+                              , cfgOptionSortImports           = NoImportSort
                               , cfgOptionSortImportLists       = False
                               , cfgOptionAlignSumTypeDecl      = True
                               , cfgOptionPreserveVerticalSpace = False
@@ -187,7 +187,7 @@ cramerCfg = safeConfig $
 
     cfgOptions = OptionConfig { cfgOptionSortPragmas           = True
                               , cfgOptionSplitLanguagePragmas  = True
-                              , cfgOptionSortImports           = True
+                              , cfgOptionSortImports           = SortImportsByPrefix
                               , cfgOptionSortImportLists       = True
                               , cfgOptionAlignSumTypeDecl      = False
                               , cfgOptionPreserveVerticalSpace = True
@@ -272,7 +272,7 @@ gibianskyCfg = safeConfig $
 
     cfgOptions = OptionConfig { cfgOptionSortPragmas           = False
                               , cfgOptionSplitLanguagePragmas  = False
-                              , cfgOptionSortImports           = False
+                              , cfgOptionSortImports           = NoImportSort
                               , cfgOptionSortImportLists       = False
                               , cfgOptionAlignSumTypeDecl      = False
                               , cfgOptionPreserveVerticalSpace = False
@@ -356,7 +356,7 @@ johanTibellCfg = safeConfig $
 
     cfgOptions = OptionConfig { cfgOptionSortPragmas           = False
                               , cfgOptionSplitLanguagePragmas  = False
-                              , cfgOptionSortImports           = False
+                              , cfgOptionSortImports           = NoImportSort
                               , cfgOptionSortImportLists       = False
                               , cfgOptionAlignSumTypeDecl      = True
                               , cfgOptionPreserveVerticalSpace = False
