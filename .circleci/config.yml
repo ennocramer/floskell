@@ -154,6 +154,18 @@ jobs:
     environment:
       RESOLVER: lts-13
 
+  stack-haskell-src-exts-1-20:
+    <<: *stack-linux
+    environment:
+      RESOLVER: lts-12
+      STACK_YAML: stack-haskell-src-exts-1.20.yaml
+
+  stack-haskell-src-exts-1-19:
+    <<: *stack-linux
+    environment:
+      RESOLVER: lts-10
+      STACK_YAML: stack-haskell-src-exts-1.19.yaml
+
   cabal-lts-7:
     <<: *cabal-linux
     environment:
@@ -204,5 +216,7 @@ workflows:
       - cabal-lts-11
       - cabal-lts-12
       - cabal-lts-13
+      - stack-haskell-src-exts-1-19
+      - stack-haskell-src-exts-1-20
       - stack-nightly
       # - stack-lts-13-macos

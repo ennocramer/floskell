@@ -48,6 +48,12 @@ matrix:
   - name: "Stack LTS-13 (GHC-8.6.3)"
     env: BUILD=stack RESOLVER=lts-13
 
+  - name: "Stack haskell-src-exts-1.20"
+    env: BUILD=stack STACK_YAML=stack-haskell-src-exts-1.20.yaml RESOLVER=lts-12
+
+  - name: "Stack haskell-src-exts-1.19"
+    env: BUILD=stack STACK_YAML=stack-haskell-src-exts-1.19.yaml RESOLVER=lts-10
+
   - name: "Stack Nightly"
     env: BUILD=stack RESOLVER=nightly
 
