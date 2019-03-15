@@ -1,9 +1,11 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | Test the pretty printer.
 module Main where
 
+import           Control.Applicative          ( (<|>) )
 import           Control.Monad                ( forM_, guard )
 
 import           Data.ByteString.Lazy         ( ByteString )
@@ -74,29 +76,46 @@ loadSnippets filename = do
     doc <- loadMarkdone filename
     return $ extractSnippets haskell doc
 
--- | Some styles are broken and will fail the idempotency test.
-expectedFailures :: [(T.Text, [Int])]
-expectedFailures = []
+disabled :: T.Text -> [Int] -> Maybe String
+disabled style path = lookup (Just style, path) disabledTests
+    <|> lookup (Nothing :: Maybe T.Text, path) disabledTests
+  where
+    disabledTests = []
+#if MIN_VERSION_haskell_src_exts(1,21,0)
+#else
+        ++ [ ((Nothing, [ 2, 3, 4, 1 ]), "requires haskell-src-exts >=1.21.0")
+           ]
+#if MIN_VERSION_haskell_src_exts(1,20,0)
+#else
+        ++ [ ((Nothing, [ 2, 3, 6, 1 ]), "requires haskell-src-exts >=1.20.0")
+           , ((Nothing, [ 2, 3, 11, 1 ]), "requires haskell-src-exts >=1.20.0")
+           , ((Nothing, [ 2, 3, 12, 1 ]), "requires haskell-src-exts >=1.20.0")
+           , ((Nothing, [ 2, 4, 1, 1 ]), "requires haskell-src-exts >=1.20.0")
+           , ((Nothing, [ 2, 4, 9, 1 ]), "requires haskell-src-exts >=1.20.0")
+           ]
+#endif
+#endif
 
 -- | Convert the Markdone document to Spec benchmarks.
 toSpec :: Style -> [Int] -> [TestTree] -> [TestTree] -> Spec
 toSpec style path inp ref =
     forM_ (zip3 [ 1 :: Int .. ] inp (ref ++ repeat TestMismatchMarker)) $ \case
         (n, TestSection title children, TestSection _ children') ->
-            describe title $ toSpec style (path ++ [ n ]) children children'
-        (n, TestSnippet code, TestSnippet code') -> do
-            let path' = (styleName style, path ++ [ n ])
-            it (name n "formats as expected") $
-                case reformatSnippet style code of
-                    Left e -> error e
-                    Right b -> b `shouldBeReadable` code'
-            it (name n "formatting is idempotent") $
-                if path' `elem` expectedFailures
-                then pending
-                else case reformatSnippet style
-                                          code >>= reformatSnippet style of
-                    Left e -> error e
-                    Right b -> b `shouldBeReadable` code'
+            describe (title ++ show (path ++ [ n ])) $
+            toSpec style (path ++ [ n ]) children children'
+        (n, TestSnippet code, TestSnippet code') ->
+            case disabled (styleName style) (path ++ [ n ]) of
+                Just msg -> it "Disabled" $ pendingWith msg
+                Nothing -> do
+                    it (name n "formats as expected") $
+                        case reformatSnippet style code of
+                            Left e -> error e
+                            Right b -> b `shouldBeReadable` code'
+                    it (name n "formatting is idempotent") $
+                        case reformatSnippet style code
+                        >>= reformatSnippet style of
+                            Left e -> error e
+                            Right b -> b `shouldBeReadable` code'
         (n, _, _) -> error $ name n "structure mismatch in reference file"
   where
     name n desc = "Snippet " ++ show n ++ " - " ++ desc
