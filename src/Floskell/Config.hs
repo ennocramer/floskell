@@ -143,7 +143,7 @@ instance Default IndentConfig where
                        , cfgIndentDo = IndentBy 4
                        , cfgIndentExportSpecList = IndentBy 4
                        , cfgIndentIf = IndentBy 4
-                       , cfgIndentImportSpecList = IndentBy 4
+                       , cfgIndentImportSpecList = AlignOrIndentBy 4
                        , cfgIndentLet = IndentBy 4
                        , cfgIndentLetBinds = IndentBy 4
                        , cfgIndentLetIn = IndentBy 4

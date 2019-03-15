@@ -114,7 +114,7 @@
       "declaration": "flex",
       "export-spec-list": "try-oneline",
       "if": "try-oneline",
-      "import-spec-list": "try-oneline",
+      "import-spec-list": "flex",
       "infix-app": "flex",
       "let": "try-oneline",
       "list-comp": "try-oneline",

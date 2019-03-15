@@ -35,7 +35,7 @@ chrisDoneCfg = safeConfig $
                      , cfgIndentMultiIf = IndentBy 2
                      , cfgIndentWhereBinds = Align
                      , cfgIndentExportSpecList = IndentBy 2
-                     , cfgIndentImportSpecList = IndentBy 7
+                     , cfgIndentImportSpecList = AlignOrIndentBy 7
                      }
 
     cfgLayout = LayoutConfig { cfgLayoutApp = TryOneline
@@ -43,7 +43,7 @@ chrisDoneCfg = safeConfig $
                              , cfgLayoutDeclaration = TryOneline
                              , cfgLayoutExportSpecList = TryOneline
                              , cfgLayoutIf = Vertical
-                             , cfgLayoutImportSpecList = TryOneline
+                             , cfgLayoutImportSpecList = Flex
                              , cfgLayoutInfixApp = TryOneline
                              , cfgLayoutLet = Vertical
                              , cfgLayoutListComp = Flex
@@ -128,7 +128,7 @@ cramerCfg = safeConfig $
                              , cfgLayoutDeclaration = Flex
                              , cfgLayoutExportSpecList = TryOneline
                              , cfgLayoutIf = TryOneline
-                             , cfgLayoutImportSpecList = TryOneline
+                             , cfgLayoutImportSpecList = Flex
                              , cfgLayoutInfixApp = Flex
                              , cfgLayoutLet = TryOneline
                              , cfgLayoutListComp = TryOneline
@@ -229,7 +229,7 @@ gibianskyCfg = safeConfig $
                      , cfgIndentMultiIf = IndentBy 2
                      , cfgIndentWhereBinds = IndentBy 2
                      , cfgIndentExportSpecList = IndentBy 4
-                     , cfgIndentImportSpecList = IndentBy 4
+                     , cfgIndentImportSpecList = Align
                      }
 
     cfgLayout = LayoutConfig { cfgLayoutApp = TryOneline
@@ -298,7 +298,7 @@ johanTibellCfg = safeConfig $
                      , cfgIndentMultiIf = IndentBy 2
                      , cfgIndentWhereBinds = IndentBy 2
                      , cfgIndentExportSpecList = IndentBy 2
-                     , cfgIndentImportSpecList = IndentBy 7
+                     , cfgIndentImportSpecList = AlignOrIndentBy 7
                      }
 
     cfgLayout = LayoutConfig { cfgLayoutApp = TryOneline
@@ -306,7 +306,7 @@ johanTibellCfg = safeConfig $
                              , cfgLayoutDeclaration = TryOneline
                              , cfgLayoutExportSpecList = TryOneline
                              , cfgLayoutIf = Vertical
-                             , cfgLayoutImportSpecList = TryOneline
+                             , cfgLayoutImportSpecList = Flex
                              , cfgLayoutInfixApp = TryOneline
                              , cfgLayoutLet = Vertical
                              , cfgLayoutListComp = Flex

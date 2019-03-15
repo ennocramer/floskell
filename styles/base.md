@@ -37,8 +37,8 @@ module Style.Haskell.Example (
                              , hello ) where
 
 -- Module imports
-import qualified Control.Monad.Trans.State ( State, evalState, execState, get
-                                           , modify, put, runState )
+import qualified Control.Monad.Trans.State
+    ( State, evalState, execState, get, modify, put, runState )
 import qualified Data.Map as Map
 import qualified Data.Text as Text
 import Prelude hiding ( map )
