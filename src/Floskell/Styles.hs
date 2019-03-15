@@ -185,13 +185,14 @@ cramerCfg = safeConfig $
           )
         ]
 
-    cfgOptions = OptionConfig { cfgOptionSortPragmas           = True
-                              , cfgOptionSplitLanguagePragmas  = True
-                              , cfgOptionSortImports           = SortImportsByPrefix
-                              , cfgOptionSortImportLists       = True
-                              , cfgOptionAlignSumTypeDecl      = False
-                              , cfgOptionPreserveVerticalSpace = True
-                              }
+    cfgOptions =
+        OptionConfig { cfgOptionSortPragmas           = True
+                     , cfgOptionSplitLanguagePragmas  = True
+                     , cfgOptionSortImports           = SortImportsByPrefix
+                     , cfgOptionSortImportLists       = True
+                     , cfgOptionAlignSumTypeDecl      = False
+                     , cfgOptionPreserveVerticalSpace = True
+                     }
 
 gibianskyCfg :: Config
 gibianskyCfg = safeConfig $

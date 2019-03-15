@@ -30,21 +30,22 @@ module Floskell.Config
     , wsLinebreak
     ) where
 
+import           Control.Applicative
+
 import           Data.Aeson
                  ( FromJSON(..), ToJSON(..), genericParseJSON, genericToJSON )
-import qualified Data.Aeson         as JSON
-import           Data.Aeson.Types   as JSON
+import qualified Data.Aeson          as JSON
+import           Data.Aeson.Types    as JSON
                  ( Options(..), camelTo2, typeMismatch )
-import           Data.ByteString    ( ByteString )
-import           Data.Default       ( Default(..) )
-import qualified Data.HashMap.Lazy  as HashMap
-import           Data.Map.Strict    ( Map )
-import qualified Data.Map.Strict    as Map
-import qualified Data.Text          as T
-import qualified Data.Text.Encoding as T ( decodeUtf8, encodeUtf8 )
+import           Data.ByteString     ( ByteString )
+import           Data.Default        ( Default(..) )
+import qualified Data.HashMap.Lazy   as HashMap
+import           Data.Map.Strict     ( Map )
+import qualified Data.Map.Strict     as Map
+import qualified Data.Text           as T
+import qualified Data.Text.Encoding  as T ( decodeUtf8, encodeUtf8 )
 
 import           GHC.Generics
-import           Control.Applicative
 
 data Indent = Align | IndentBy !Int | AlignOrIndentBy !Int
     deriving ( Eq, Ord, Show, Generic )
@@ -197,16 +198,17 @@ instance Default GroupConfig where
                                 , cfgMapOverrides = Map.empty
                                 }
 
+data SortImportsRule =
+    NoImportSort | SortImportsByPrefix | SortImportsByGroups ![[String]]
 
-data SortImportsRule = NoImportSort | SortImportsByPrefix | SortImportsByGroups ![[String]]
-
-data OptionConfig = OptionConfig { cfgOptionSortPragmas           :: !Bool
-                                 , cfgOptionSplitLanguagePragmas  :: !Bool
-                                 , cfgOptionSortImports           :: !SortImportsRule
-                                 , cfgOptionSortImportLists       :: !Bool
-                                 , cfgOptionAlignSumTypeDecl      :: !Bool
-                                 , cfgOptionPreserveVerticalSpace :: !Bool
-                                 }
+data OptionConfig =
+    OptionConfig { cfgOptionSortPragmas           :: !Bool
+                 , cfgOptionSplitLanguagePragmas  :: !Bool
+                 , cfgOptionSortImports           :: !SortImportsRule
+                 , cfgOptionSortImportLists       :: !Bool
+                 , cfgOptionAlignSumTypeDecl      :: !Bool
+                 , cfgOptionPreserveVerticalSpace :: !Bool
+                 }
     deriving ( Generic )
 
 instance Default OptionConfig where
@@ -459,10 +461,11 @@ instance ToJSON SortImportsRule where
 
 instance FromJSON SortImportsRule where
     parseJSON v = yesno <|> grps
-        where
-            yesno = (\s -> if s then SortImportsByPrefix else NoImportSort) <$> parseJSON v
+      where
+        yesno = (\s -> if s then SortImportsByPrefix else NoImportSort)
+            <$> parseJSON v
 
-            grps = SortImportsByGroups <$> parseJSON v
+        grps = SortImportsByGroups <$> parseJSON v
 
 instance ToJSON OptionConfig where
     toJSON = genericToJSON (recordOptions 9)
