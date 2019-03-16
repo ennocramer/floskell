@@ -78,7 +78,7 @@ getConfig :: (Config -> b) -> Printer b
 getConfig f = f <$> gets psConfig
 
 -- | Query pretty printer options
-getOption :: (OptionConfig -> Bool) -> Printer Bool
+getOption :: (OptionConfig -> a) -> Printer a
 getOption f = getConfig (f . cfgOptions)
 
 -- | Line penalty calculation
