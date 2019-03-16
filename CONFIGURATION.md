@@ -205,3 +205,20 @@ is as follows:
   * `sort-imports` (`false`): Whether to sort import lists.
   * `sort-pragmas` (`false`): Whether to sort module pragmas (`LANGUAGE`, `OPTION`, and `ANN`)
   * `split-language-pragmas` (`false`): Whether to split `LANGUAGE` pragmas.
+
+### Sorting imports configuration
+
+There are 3 main import sorting modes:
+
+  * don't sort: `sort-imports: false`
+  * sort and group according to first component in module path: Data.Maybe goes with
+    Data.Either, Control.Monad goes with Control.Applicative: `sort-imports: true`
+  * sort and group according to user configuration: `sort-imports` takes a list of groups
+    of prefixes: `[["Data", "Control.Monad"], ["Control"], [], "Test"]`.
+    For this configuration imports are arranged in 4 groups:
+    * `Control.Monad` followed by anything under `Control.Monad.*` hierarchy, `Data` and
+       anything under `Data.*`
+    * `Control` (if you have it) and anything under `Control.*`
+    * Anything not captured into previous or subsequent groups. If `[]` is not used
+      unmatched imports will be appended at the end
+    * `Test` and anything under `Test.*`
