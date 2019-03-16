@@ -259,6 +259,10 @@ linedFn fn xs = do
 lined :: (Annotated ast, Pretty ast) => [ast NodeInfo] -> Printer ()
 lined = linedFn pretty
 
+-- | similar to lined, but won't try to preserve any existing formatting
+newlined :: (Annotated ast, Pretty ast) =>[ast NodeInfo] -> Printer ()
+newlined = inter newline . map pretty
+
 linedOnside :: (Annotated ast, Pretty ast) => [ast NodeInfo] -> Printer ()
 linedOnside = linedFn prettyOnside
 
@@ -461,7 +465,8 @@ prettyPragmas ps = do
     sortP <- getOption cfgOptionSortPragmas
     let ps' = if splitP then concatMap splitPragma ps else ps
     let ps'' = if sortP then sortBy compareAST ps' else ps'
-    inter blankline . map lined $ groupBy sameType ps''
+    let lined' = if sortP then newlined else lined
+    inter blankline . map lined' $ groupBy sameType ps''
   where
     splitPragma (LanguagePragma anno langs) =
         map (LanguagePragma anno . (: [])) langs
@@ -506,11 +511,11 @@ prettyImports is = do
     withTabStops [ (stopImportModule, alignModule)
                  , (stopImportSpec, alignSpec)
                  ] $ case sortP :: SortImportsRule of
-                    SortImportsByPrefix -> inter blankline . map lined $ groupBy samePrefix sorted
+                    SortImportsByPrefix -> linedGroups $ groupBy samePrefix sorted
                     SortImportsByGroups rs -> linedGroups . filter (not . null) $ groupByRules rs sorted
                     NoImportSort -> lined is
   where
-    linedGroups = inter blankline . map (inter newline . map pretty)
+    linedGroups = inter blankline . map newlined
     sorted = sortOn (moduleName . importModule) is
     samePrefix left right = prefix left == prefix right
 
