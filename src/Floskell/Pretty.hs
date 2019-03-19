@@ -500,7 +500,7 @@ groupByRules g = (\(x, y) -> x ++ [ y ]) . go g
 
 prettyImports :: [ImportDecl NodeInfo] -> Printer ()
 prettyImports is = do
-    sortP <- getConfig (cfgOptionSortImports . cfgOptions)
+    sortP <- getOption cfgOptionSortImports
     alignModuleP <- getConfig (cfgAlignImportModule . cfgAlign)
     alignSpecP <- getConfig (cfgAlignImportSpec . cfgAlign)
     let maxNameLength = maximum $ map (length . moduleName . importModule) is
