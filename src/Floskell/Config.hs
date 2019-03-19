@@ -17,6 +17,8 @@ module Floskell.Config
     , LayoutConfig(..)
     , OpConfig(..)
     , GroupConfig(..)
+    , ImportsGroupOrder(..)
+    , ImportsGroup(..)
     , SortImportsRule(..)
     , OptionConfig(..)
     , Config(..)
@@ -30,20 +32,18 @@ module Floskell.Config
     , wsLinebreak
     ) where
 
-import           Control.Applicative
-
 import           Data.Aeson
                  ( FromJSON(..), ToJSON(..), genericParseJSON, genericToJSON )
-import qualified Data.Aeson          as JSON
-import           Data.Aeson.Types    as JSON
+import qualified Data.Aeson         as JSON
+import           Data.Aeson.Types   as JSON
                  ( Options(..), camelTo2, typeMismatch )
-import           Data.ByteString     ( ByteString )
-import           Data.Default        ( Default(..) )
-import qualified Data.HashMap.Lazy   as HashMap
-import           Data.Map.Strict     ( Map )
-import qualified Data.Map.Strict     as Map
-import qualified Data.Text           as T
-import qualified Data.Text.Encoding  as T ( decodeUtf8, encodeUtf8 )
+import           Data.ByteString    ( ByteString )
+import           Data.Default       ( Default(..) )
+import qualified Data.HashMap.Lazy  as HashMap
+import           Data.Map.Strict    ( Map )
+import qualified Data.Map.Strict    as Map
+import qualified Data.Text          as T
+import qualified Data.Text.Encoding as T ( decodeUtf8, encodeUtf8 )
 
 import           GHC.Generics
 
@@ -198,8 +198,17 @@ instance Default GroupConfig where
                                 , cfgMapOverrides = Map.empty
                                 }
 
+data ImportsGroupOrder =
+    ImportsGroupKeep | ImportsGroupSorted | ImportsGroupGrouped
+    deriving ( Generic )
+
+data ImportsGroup = ImportsGroup { importsPrefixes :: ![String]
+                                 , importsOrder    :: !ImportsGroupOrder
+                                 }
+    deriving ( Generic )
+
 data SortImportsRule =
-    NoImportSort | SortImportsByPrefix | SortImportsByGroups ![[String]]
+    NoImportSort | SortImportsByPrefix | SortImportsByGroups ![ImportsGroup]
 
 data OptionConfig =
     OptionConfig { cfgOptionSortPragmas           :: !Bool
@@ -454,18 +463,29 @@ instance ToJSON GroupConfig where
 instance FromJSON GroupConfig where
     parseJSON = genericParseJSON (recordOptions 0)
 
+instance ToJSON ImportsGroupOrder where
+    toJSON = genericToJSON (enumOptions 12)
+
+instance FromJSON ImportsGroupOrder where
+    parseJSON = genericParseJSON (enumOptions 12)
+
+instance ToJSON ImportsGroup where
+    toJSON = genericToJSON (recordOptions 7)
+
+instance FromJSON ImportsGroup where
+    parseJSON x@JSON.Array{} =
+        ImportsGroup <$> parseJSON x <*> pure ImportsGroupKeep
+    parseJSON x = genericParseJSON (recordOptions 7) x
+
 instance ToJSON SortImportsRule where
     toJSON NoImportSort = toJSON False
     toJSON SortImportsByPrefix = toJSON True
     toJSON (SortImportsByGroups xs) = toJSON xs
 
 instance FromJSON SortImportsRule where
-    parseJSON v = yesno <|> grps
-      where
-        yesno = (\s -> if s then SortImportsByPrefix else NoImportSort)
-            <$> parseJSON v
-
-        grps = SortImportsByGroups <$> parseJSON v
+    parseJSON (JSON.Bool False) = return NoImportSort
+    parseJSON (JSON.Bool True) = return SortImportsByPrefix
+    parseJSON v = SortImportsByGroups <$> parseJSON v
 
 instance ToJSON OptionConfig where
     toJSON = genericToJSON (recordOptions 9)

@@ -202,23 +202,78 @@ is as follows:
   * `align-sum-type-decl` (`false`): Whether to align `=` with `|` in the declaration of sum types.
   * `preserve-vertical-space` (`false`): Whether to preserve additional vertical space between declarations, statements, and a few other places.
   * `sort-import-lists` (`false`): Whether to sort import statements by the name of the imported module.
-  * `sort-imports` (`false`): Whether to sort import lists.
+  * `sort-imports` (`false`): How to sort import lists (see below).
   * `sort-pragmas` (`false`): Whether to sort module pragmas (`LANGUAGE`, `OPTION`, and `ANN`)
   * `split-language-pragmas` (`false`): Whether to split `LANGUAGE` pragmas.
 
-### Sorting imports configuration
+#### Sorting Imports
 
-There are 3 main import sorting modes:
+There are three import sorting modes:
 
-  * don't sort: `sort-imports: false`
-  * sort and group according to first component in module path: Data.Maybe goes with
-    Data.Either, Control.Monad goes with Control.Applicative: `sort-imports: true`
-  * sort and group according to user configuration: `sort-imports` takes a list of groups
-    of prefixes: `[["Data", "Control.Monad"], ["Control"], [], "Test"]`.
-    For this configuration imports are arranged in 4 groups:
-    * `Control.Monad` followed by anything under `Control.Monad.*` hierarchy, `Data` and
-       anything under `Data.*`
-    * `Control` (if you have it) and anything under `Control.*`
-    * Anything not captured into previous or subsequent groups. If `[]` is not used
-      unmatched imports will be appended at the end
-    * `Test` and anything under `Test.*`
+  * No sorting (`sort-imports: false`).  This mode will retain the
+    order of imports and any blank lines between imports.
+
+  * Sort imports and group by the first component of the module path
+    (`sort-imports: true`): Data.Maybe goes with Data.Either,
+    Control.Monad goes with Control.Applicative.
+
+    This mode is equivalent to:
+
+    ``` json
+    "sort-imports": [
+      {
+        "prefixes": [""],
+        "order": "grouped"
+      }
+    ]
+    ```
+
+  * Configurable grouping and sorting (`sort-imports:
+    [...]`). `sort-imports` is a list of group declarations, where
+    each group defines a set of module prefixes and an order.
+
+    Each import is assigned to a group based on the longest matching
+    prefix. Imports without a match are assigned to an implicit final
+    group with order `keep`. You can manually collect all left-over
+    imports by specifying a group with an empty prefix.
+
+    The order can be one of `keep`, `sorted`, or `grouped`.  `keep`
+    retains the manual order of imports of the input file, `sorted`
+    will sort imports within the group, and `grouped` will sort and
+    then group imports within the group based on the first component
+    after the common prefix of the group's prefixes.
+
+    For example:
+
+    ``` json
+    "sort-imports": [
+      {
+        "prefixes": [ "" ],
+        "order": "grouped"
+      },
+      {
+        "prefixes": [ "Floskell" ],
+        "order": "sorted"
+      },
+      {
+        "prefixes": [ "Test" ],
+        "order": "grouped"
+      },
+      {
+        "prefixes": [ "Prelude" ],
+        "order": "sorted"
+      }
+    ]
+    ```
+
+    This configuration will first place all 'generic' imports, sorted
+    and grouped on the top-level module name component. E.g. all of
+    "Control", then "Data", etc.
+
+    After that, there is a sorted section of 'local' imports
+    (everything within "Floskell"), without any subdivision.
+
+    Following are all imports from "Test", again sorted and grouped
+    based on the first component after "Test".
+
+    Lastly, any imports of "Prelude".

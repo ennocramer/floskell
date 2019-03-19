@@ -37,6 +37,7 @@ library
                      Floskell.Config
                      Floskell.ConfigFile
                      Floskell.Fixities
+                     Floskell.Imports
                      Floskell.Pretty
                      Floskell.Printers
                      Floskell.Styles
