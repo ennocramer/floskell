@@ -597,25 +597,27 @@ prettyConDecls condecls = do
         operator Declaration "="
         withLayout cfgLayoutConDecls flexDecls verticalDecls
 
-    flex' = do
-        spaceOrNewline
-        withLayout cfgLayoutConDecls flexDecls' verticalDecls'
+    flex' = withLayout cfgLayoutConDecls flexDecls' verticalDecls'
 
     vertical = do
         operatorV Declaration "="
         withLayout cfgLayoutConDecls flexDecls verticalDecls
 
-    vertical' = do
-        newline
-        withLayout cfgLayoutConDecls flexDecls' verticalDecls'
+    vertical' = withLayout cfgLayoutConDecls flexDecls' verticalDecls'
 
     flexDecls = listAutoWrap' Declaration "|" condecls
 
-    flexDecls' = list Declaration "=" "" "|" condecls
+    flexDecls' = horizontalDecls' <|> verticalDecls'
+
+    horizontalDecls' = do
+        operatorH Declaration "="
+        listH' Declaration "|" condecls
 
     verticalDecls = listV' Declaration "|" condecls
 
-    verticalDecls' = listV Declaration "=" "" "|" condecls
+    verticalDecls' = do
+        withOperatorFormattingV Declaration "|" (write "=") id
+        listV' Declaration "|" condecls
 
 prettyForall :: (Annotated ast, Pretty ast) => [ast NodeInfo] -> Printer ()
 prettyForall vars = do
