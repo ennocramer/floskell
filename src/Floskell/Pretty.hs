@@ -813,7 +813,7 @@ instance Pretty ImportSpecList where
         atTabStop stopImportSpec
         withLayout cfgLayoutImportSpecList (flex specs') (vertical specs')
       where
-        flex imports = withIndent cfgIndentImportSpecList $ do
+        flex imports = withIndentFlex cfgIndentImportSpecList $ do
             when hiding $ write "hiding "
             listAutoWrap Other "(" ")" "," imports
 

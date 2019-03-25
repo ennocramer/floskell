@@ -21,6 +21,7 @@ module Floskell.Printers
     , withPrefix
     , withPostfix
     , withIndent
+    , withIndentFlex
     , withIndentFlat
     , withIndentBy
     , withLayout
@@ -221,6 +222,22 @@ withIndent fn p = do
 
     indentby i = indent i $ do
         newline
+        p
+
+withIndentFlex :: (IndentConfig -> Indent) -> Printer a -> Printer a
+withIndentFlex fn p = do
+    cfg <- getConfig (fn . cfgIndent)
+    case cfg of
+        Align -> align
+        IndentBy i -> indentby i
+        AlignOrIndentBy i -> align <|> indentby i
+  where
+    align = do
+        space
+        aligned p
+
+    indentby i = indent i $ do
+        spaceOrNewline
         p
 
 withIndentFlat :: (IndentConfig -> Indent)
