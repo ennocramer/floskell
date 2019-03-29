@@ -264,28 +264,30 @@ lined = linedFn pretty
 linedOnside :: (Annotated ast, Pretty ast) => [ast NodeInfo] -> Printer ()
 linedOnside = linedFn prettyOnside
 
+listVOpLen :: LayoutContext -> ByteString -> Printer Int
+listVOpLen ctx sep = do
+    ws <- getConfig (cfgOpWs ctx sep . cfgOp)
+    return $ if wsLinebreak After ws
+             then 0
+             else BS.length sep + if wsSpace After ws then 1 else 0
+
 listVinternal :: (Annotated ast, Pretty ast)
               => LayoutContext
               -> ByteString
               -> [ast NodeInfo]
               -> Printer ()
-listVinternal ctx sep xs = aligned $ do
-    ws <- getConfig (cfgOpWs ctx sep . cfgOp)
-    nl <- gets psNewline
-    col <- getNextColumn
-    let correction = if wsLinebreak After ws || length xs < 2
-                     then 0
-                     else BS.length sep + if wsSpace After ws then 1 else 0
-        extraIndent = if nl then correction else 0
-        itemCol = col + extraIndent
-        sepCol = itemCol - correction
-    case xs of
-        [] -> newline
-        (x : xs') -> column itemCol $ do
-            cut $ do
-                printComments' Before x
-                cut . onside $ prettyPrint x
-                printComments After x
+listVinternal ctx sep xs = case xs of
+    [] -> newline
+    (x : xs') -> do
+        nl <- gets psNewline
+        col <- getNextColumn
+        delta <- listVOpLen ctx sep
+        let itemCol = if nl && length xs > 1 then col + delta else col
+            sepCol = itemCol - delta
+        column itemCol $ do
+            printComments' Before x
+            cut . onside $ prettyPrint x
+            printComments After x
             forM_ xs' $ \x' -> do
                 printComments Before x'
                 column sepCol $ operatorV ctx sep
