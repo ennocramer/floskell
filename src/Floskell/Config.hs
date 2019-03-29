@@ -129,6 +129,7 @@ data IndentConfig =
                  , cfgIndentLetBinds :: !Indent
                  , cfgIndentLetIn :: !Indent
                  , cfgIndentMultiIf :: !Indent
+                 , cfgIndentTypesig :: !Indent
                  , cfgIndentWhereBinds :: !Indent
                  }
     deriving ( Generic )
@@ -148,6 +149,7 @@ instance Default IndentConfig where
                        , cfgIndentLetBinds = IndentBy 4
                        , cfgIndentLetIn = IndentBy 4
                        , cfgIndentMultiIf = IndentBy 4
+                       , cfgIndentTypesig = IndentBy 4
                        , cfgIndentWhereBinds = IndentBy 2
                        }
 

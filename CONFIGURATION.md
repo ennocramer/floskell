@@ -117,6 +117,7 @@ is as follows:
   * `let-binds` (`indent-by 4`): Let bindings
   * `let-in` (`indent-by 4`): Expression in let
   * `multi-if` (`indent-by 4`): Guards and multi-way if
+  * `typesig` (`indent-by 4`): Type signatures
   * `where-binds` (`indent-by 2`): Bindings in where block after functions
 
 ### Tabstop Alignment

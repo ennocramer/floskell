@@ -611,7 +611,17 @@ prettyTypesig ctx names ty = withLayout cfgLayoutTypesig flex vertical
     vertical = do
         inter comma $ map pretty names
         atTabStop stopRecordField
-        alignOnOperator ctx "::" $ pretty' ty
+        withIndentConfig cfgIndentTypesig align indentby
+
+    align = alignOnOperator ctx "::" $ pretty' ty
+
+    indentby i = indentedBy i $ do
+        operatorV ctx "::"
+        nl <- gets psNewline
+        when nl $ do
+            delta <- listVOpLen ctx "->"
+            write $ BS.replicate delta 32
+        pretty' ty
 
     pretty' (TyForall _ mtyvarbinds mcontext ty') = do
         forM_ mtyvarbinds $ \tyvarbinds -> do
