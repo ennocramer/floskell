@@ -160,7 +160,10 @@ is as follows:
     the given punctuation, or
 
   * `<punct> in <context>`: Defines the whitespace configuration for
-    the given punctuation within the given context.
+    the given punctuation within the given context,
+
+  where context is one of `declaration`, `type`, `pattern`,
+  `expression`, or `other`.
 
   The value is an object with the following fields:
 
