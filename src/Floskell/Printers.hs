@@ -20,6 +20,7 @@ module Floskell.Printers
     , mayM_
     , withPrefix
     , withPostfix
+    , withIndentConfig
     , withIndent
     , withIndentFlex
     , withIndentFlat
@@ -31,6 +32,7 @@ module Floskell.Printers
     , column
     , aligned
     , indented
+    , indentedBy
     , onside
     , depend
     , depend'
@@ -208,35 +210,36 @@ withPrefix pre f x = pre *> f x
 withPostfix :: Applicative f => f a -> (x -> f b) -> x -> f b
 withPostfix post f x = f x <* post
 
-withIndent :: (IndentConfig -> Indent) -> Printer a -> Printer a
-withIndent fn p = do
+withIndentConfig :: (IndentConfig -> Indent)
+                 -> Printer a
+                 -> (Int -> Printer a)
+                 -> Printer a
+withIndentConfig fn align indentby = do
     cfg <- getConfig (fn . cfgIndent)
     case cfg of
         Align -> align
         IndentBy i -> indentby i
         AlignOrIndentBy i -> align <|> indentby i
+
+withIndent :: (IndentConfig -> Indent) -> Printer a -> Printer a
+withIndent fn p = withIndentConfig fn align indentby
   where
     align = do
         space
         aligned p
 
-    indentby i = indent i $ do
+    indentby i = indentedBy i $ do
         newline
         p
 
 withIndentFlex :: (IndentConfig -> Indent) -> Printer a -> Printer a
-withIndentFlex fn p = do
-    cfg <- getConfig (fn . cfgIndent)
-    case cfg of
-        Align -> align
-        IndentBy i -> indentby i
-        AlignOrIndentBy i -> align <|> indentby i
+withIndentFlex fn p = withIndentConfig fn align indentby
   where
     align = do
         space
         aligned p
 
-    indentby i = indent i $ do
+    indentby i = indentedBy i $ do
         spaceOrNewline
         p
 
@@ -244,12 +247,7 @@ withIndentFlat :: (IndentConfig -> Indent)
                -> ByteString
                -> Printer a
                -> Printer a
-withIndentFlat fn kw p = do
-    cfg <- getConfig (fn . cfgIndent)
-    case cfg of
-        Align -> align
-        IndentBy i -> indentby i
-        AlignOrIndentBy i -> align <|> indentby i
+withIndentFlat fn kw p = withIndentConfig fn align indentby
   where
     align = aligned $ do
         write kw
@@ -257,7 +255,7 @@ withIndentFlat fn kw p = do
 
     indentby i = do
         write kw
-        indent i p
+        indentedBy i p
 
 withIndentBy :: (IndentConfig -> Int) -> Printer a -> Printer a
 withIndentBy fn = withIndent (IndentBy . fn)
@@ -296,12 +294,6 @@ withIndentation f p = do
 column :: Int -> Printer a -> Printer a
 column i = withIndentation $ \(l, o) -> (i, if i > l then 0 else o)
 
--- | Increase indentation level by n spaces for the given printer.
-indent :: Int -> Printer a -> Printer a
-indent i p = do
-    level <- gets psIndentLevel
-    column (level + i) p
-
 aligned :: Printer a -> Printer a
 aligned p = do
     col <- getNextColumn
@@ -312,7 +304,13 @@ aligned p = do
 indented :: Printer a -> Printer a
 indented p = do
     i <- getConfig (cfgIndentOnside . cfgIndent)
-    indent i p
+    indentedBy i p
+
+-- | Increase indentation level by n spaces for the given printer.
+indentedBy :: Int -> Printer a -> Printer a
+indentedBy i p = do
+    level <- gets psIndentLevel
+    column (level + i) p
 
 -- | Increase indentation level b n spaces for the given printer, but
 -- ignore increase when computing further indentations.
