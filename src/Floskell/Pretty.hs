@@ -1495,6 +1495,11 @@ instance Pretty TypeEqn where
         operator Type "="
         pretty ty'
 
+flexibleOneline :: Printer a -> Printer a
+flexibleOneline p = do
+    allowOneline <- getOption cfgOptionFlexibleOneline
+    if allowOneline then ignoreOneline p else p
+
 instance Pretty Exp where
     prettyPrint (Var _ qname) = pretty qname
 
@@ -1532,8 +1537,9 @@ instance Pretty Exp where
         write "\\"
         maybeSpace
         inter space $ map pretty pats
-        operator Expression "->"
-        pretty expr
+        flexibleOneline $ do
+            operator Expression "->"
+            pretty expr
       where
         maybeSpace = case pats of
             PIrrPat{} : _ -> space
@@ -1586,15 +1592,15 @@ instance Pretty Exp where
         write " of"
         if null alts
             then write " { }"
-            else withIndent cfgIndentCase $
-                withComputedTabStop stopRhs cfgAlignCase measureAlt alts $
+            else flexibleOneline . withIndent cfgIndentCase
+                . withComputedTabStop stopRhs cfgAlignCase measureAlt alts $
                 lined alts
 
-    prettyPrint (Do _ stmts) = do
+    prettyPrint (Do _ stmts) = flexibleOneline $ do
         write "do"
         withIndent cfgIndentDo $ linedOnside stmts
 
-    prettyPrint (MDo _ stmts) = do
+    prettyPrint (MDo _ stmts) = flexibleOneline $ do
         write "mdo"
         withIndent cfgIndentDo $ linedOnside stmts
 
@@ -1826,7 +1832,7 @@ instance Pretty Exp where
         operator Expression ">>-"
         pretty expr'
 
-    prettyPrint (LCase _ alts) = do
+    prettyPrint (LCase _ alts) = flexibleOneline $ do
         write "\\case"
         if null alts
             then write " { }"

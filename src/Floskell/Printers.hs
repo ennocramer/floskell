@@ -5,6 +5,7 @@ module Floskell.Printers
     , getOption
     , cut
     , oneline
+    , ignoreOneline
       -- * Basic printing
     , write
     , string
@@ -114,7 +115,7 @@ closeEolComment = do
 withOutputRestriction :: OutputRestriction -> Printer a -> Printer a
 withOutputRestriction r p = do
     orig <- gets psOutputRestriction
-    modify $ \s -> s { psOutputRestriction = max orig r }
+    modify $ \s -> s { psOutputRestriction = r }
     result <- p
     modify $ \s -> s { psOutputRestriction = orig }
     return result
@@ -123,6 +124,9 @@ oneline :: Printer a -> Printer a
 oneline p = do
     closeEolComment
     withOutputRestriction NoOverflowOrLinebreak p
+
+ignoreOneline :: Printer a -> Printer a
+ignoreOneline = withOutputRestriction Anything
 
 -- | Write out a string, updating the current position information.
 write :: ByteString -> Printer ()

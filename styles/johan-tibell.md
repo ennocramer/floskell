@@ -98,10 +98,9 @@ facs :: [Int]
 facs = [1, 1] ++ zipWith (+) (tailfacs)
 
 hello :: MonadIO m => m ()
-hello =
-    do
-        name <- liftIO getLine
-        liftIO . putStrLn $ greetings name
+hello = do
+    name <- liftIO getLine
+    liftIO . putStrLn $ greetings name
   where
     greetings n = "Hello " ++ n ++ "!"
 
@@ -120,10 +119,9 @@ ifExpr b =
         else True
 
 caseExpr :: [a] -> Maybe a
-caseExpr xs =
-    case xs of
-        [] -> Nothing
-        (x:_) -> Just x
+caseExpr xs = case xs of
+    [] -> Nothing
+    (x:_) -> Just x
 
 guarded :: Int -> Int
 guarded x
@@ -491,9 +489,8 @@ irrefutable ~x = x
 
 a // b = undefined
 
-main =
-    do
-        greet "World"
+main = do
+    greet "World"
   where
     greet who = putStrLn $ "Hello, " ++ who ++ "!"
 ```
@@ -762,25 +759,22 @@ foo =
           -- it's not
           Some $ head x
 
-foo =
-    case x of
-        True -> False
-        False -> True
+foo = case x of
+    True -> False
+    False -> True
 
-foo =
-    case xs of
-        [] ->
-            -- it's empty
-            None
-        x:_ ->
-            -- it's not
-            Some x
+foo = case xs of
+    [] ->
+        -- it's empty
+        None
+    x:_ ->
+        -- it's not
+        Some x
 
-foo =
-    case xs of
-        _
-          | null xs -> None
-        _ -> Some $ head x
+foo = case xs of
+    _
+      | null xs -> None
+    _ -> Some $ head x
 ```
 
 ### Do and MDo
@@ -788,25 +782,21 @@ foo =
 ``` haskell
 {-# LANGUAGE RecursiveDo #-}
 
-foo =
-    do
-        return ()
+foo = do
+    return ()
 
-foo =
-    do
-        return ()
+foo = do
+    return ()
 
-foo =
-    do
-        this <- that
-        let this' = tail this
-        if this -- condition
-            then that
-            else those
+foo = do
+    this <- that
+    let this' = tail this
+    if this -- condition
+        then that
+        else those
 
-foo =
-    mdo
-        return ()
+foo = mdo
+    return ()
 ```
 
 ### Lambda, LCase
@@ -820,10 +810,9 @@ foo = \ ~x -> x
 
 foo = \ !x -> x
 
-foo d =
-    \case
-        Nothing -> d
-        Some x -> x
+foo d = \case
+    Nothing -> d
+    Some x -> x
 ```
 
 ### BracketExp, SpliceExp, QuasiQuote, VarQuote, and TypQuote
@@ -858,10 +847,9 @@ foo = mkSomething 'id 'Nothing ''Maybe
 Before comments and onside indent do not mix well.
 
 ``` haskell
-foo =
-    do
-        -- comment
-        some expression
+foo = do
+    -- comment
+    some expression
 ```
 
 ## Patterns
@@ -891,10 +879,9 @@ foo =
 Before comments at the start of onside do not trigger onside.
 
 ``` haskell
-foo =
-    do
-        -- comment
-        some expression
+foo = do
+    -- comment
+    some expression
 ```
 
 Matche arms have individual onside.
@@ -932,11 +919,10 @@ foo =
 If-then-else must always indent in do blocks.
 
 ``` haskell
-foo =
-    do
-        if condition -- comment
-            then this
-            else that
+foo = do
+    if condition -- comment
+        then this
+        else that
 ```
 
 ## Comments

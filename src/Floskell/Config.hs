@@ -218,6 +218,7 @@ data OptionConfig =
                  , cfgOptionSortImports           :: !SortImportsRule
                  , cfgOptionSortImportLists       :: !Bool
                  , cfgOptionAlignSumTypeDecl      :: !Bool
+                 , cfgOptionFlexibleOneline       :: !Bool
                  , cfgOptionPreserveVerticalSpace :: !Bool
                  }
     deriving ( Generic )
@@ -228,6 +229,7 @@ instance Default OptionConfig where
                        , cfgOptionSortImports           = NoImportSort
                        , cfgOptionSortImportLists       = False
                        , cfgOptionAlignSumTypeDecl      = False
+                       , cfgOptionFlexibleOneline       = False
                        , cfgOptionPreserveVerticalSpace = False
                        }
 

@@ -208,6 +208,7 @@ is as follows:
   * `sort-import-lists` (`false`): Whether to sort import statements by the name of the imported module.
   * `sort-imports` (`false`): How to sort import lists (see below).
   * `sort-pragmas` (`false`): Whether to sort module pragmas (`LANGUAGE`, `OPTION`, and `ANN`)
+  * `flexible-oneline` (`false`): Allow `do`, `mdo`, `case ... of`, `\case`, and `\... ->` in `try-oneline` layout.
   * `split-language-pragmas` (`false`): Whether to split `LANGUAGE` pragmas.
 
 #### Sorting Imports
