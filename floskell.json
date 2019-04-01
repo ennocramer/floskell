@@ -10,6 +10,7 @@
     "PatternGuards",
     "RecordWildCards"
   ],
+  "fixities": [],
   "formatting": {
     "align": {
       "case": false,
@@ -105,6 +106,7 @@
       "let-in": "indent-by 4",
       "multi-if": "indent-by 4",
       "onside": 4,
+      "typesig": "align",
       "where": 2,
       "where-binds": "indent-by 2"
     },
@@ -174,6 +176,8 @@
       }
     },
     "options": {
+      "align-sum-type-decl": false,
+      "flexible-oneline": false,
       "preserve-vertical-space": true,
       "sort-import-lists": true,
       "sort-imports": true,
