@@ -15,7 +15,6 @@ import           Data.ByteString              ( ByteString )
 import qualified Data.ByteString              as BS
 import qualified Data.ByteString.Char8        as BS8
 import qualified Data.ByteString.Lazy         as BL
-
 import           Data.List                    ( groupBy, sortBy, sortOn )
 import           Data.Maybe                   ( catMaybes, fromMaybe )
 
@@ -86,27 +85,26 @@ flattenInfix fn = go . amap (\info -> info { nodeInfoLeadingComments  = []
                 (lhs', ops ++ (op, lhs'') : ops')
         Nothing -> (x, [])
 
--- | Syntax shortcut for Pretty Printers.
-type PrettyPrinter f = f NodeInfo -> Printer ()
-
 -- | Pretty printing prettyHSE using haskell-src-exts pretty printer
-prettyHSE :: HSE.Pretty (ast NodeInfo) => PrettyPrinter ast
+prettyHSE :: HSE.Pretty (ast NodeInfo) => ast NodeInfo -> Printer ()
 prettyHSE ast = string $ HSE.prettyPrint ast
 
 -- | Type class for pretty-printable types.
 class Pretty ast where
-    prettyPrint :: PrettyPrinter ast
-    default prettyPrint :: HSE.Pretty (ast NodeInfo) => PrettyPrinter ast
+    prettyPrint :: ast NodeInfo -> Printer ()
+    default prettyPrint :: HSE.Pretty (ast NodeInfo)
+                        => ast NodeInfo
+                        -> Printer ()
     prettyPrint = prettyHSE
 
 -- | Pretty print a syntax tree with annotated comments
-pretty :: (Annotated ast, Pretty ast) => PrettyPrinter ast
+pretty :: (Annotated ast, Pretty ast) => ast NodeInfo -> Printer ()
 pretty ast = do
     printComments Before ast
     prettyPrint ast
     printComments After ast
 
-prettyOnside :: (Annotated ast, Pretty ast) => PrettyPrinter ast
+prettyOnside :: (Annotated ast, Pretty ast) => ast NodeInfo -> Printer ()
 prettyOnside ast = do
     eol <- gets psEolComment
     when eol newline
