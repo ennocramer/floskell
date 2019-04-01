@@ -60,7 +60,7 @@ chrisDoneCfg = safeConfig $
     opWsOverrides =
         [ (ConfigMapKey (Just ",") Nothing, Whitespace WsNone WsBefore False)
         , ( ConfigMapKey (Just "record") Nothing
-          , Whitespace WsAfter WsAfter False
+          , Whitespace WsAfter WsNone False
           )
         , ( ConfigMapKey (Just ".") (Just Type)
           , Whitespace WsAfter WsAfter False
@@ -258,7 +258,7 @@ gibianskyCfg = safeConfig $
     opWsOverrides =
         [ (ConfigMapKey (Just ",") Nothing, Whitespace WsAfter WsBefore False)
         , ( ConfigMapKey (Just "record") Nothing
-          , Whitespace WsAfter WsAfter False
+          , Whitespace WsAfter WsNone False
           )
         , ( ConfigMapKey (Just ".") (Just Type)
           , Whitespace WsAfter WsAfter False

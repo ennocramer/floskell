@@ -348,7 +348,8 @@ listV' :: (Annotated ast, Pretty ast)
        -> ByteString
        -> [ast NodeInfo]
        -> Printer ()
-listV' = listVinternal
+listV' ctx sep xs =
+    if length xs > 1 then listVinternal ctx sep xs else mapM_ pretty xs
 
 list' :: (Annotated ast, Pretty ast)
       => LayoutContext
