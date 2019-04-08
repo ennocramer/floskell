@@ -1560,11 +1560,15 @@ instance Pretty Exp where
             write "in "
             prettyOnside expr
 
-        vertical = withIndentFlat cfgIndentLet "let" $ do
-            withIndent cfgIndentLetBinds $ pretty (CompactBinds binds)
-            newline
-            write "in"
-            withIndent cfgIndentLetIn $ pretty expr
+        vertical = withIndentAfter cfgIndentLet
+                                   (do
+                                        write "let"
+                                        withIndent cfgIndentLetBinds $
+                                            pretty (CompactBinds binds))
+                                   (do
+                                        newline
+                                        write "in"
+                                        withIndent cfgIndentLetIn $ pretty expr)
 
     prettyPrint (If _ expr expr' expr'') = withLayout cfgLayoutIf flex vertical
       where
@@ -1578,14 +1582,17 @@ instance Pretty Exp where
             write "else "
             prettyOnside expr''
 
-        vertical = withIndentFlat cfgIndentIf "if " $ do
-            prettyOnside expr
-            newline
-            write "then "
-            prettyOnside expr'
-            newline
-            write "else "
-            prettyOnside expr''
+        vertical = withIndentAfter cfgIndentIf
+                                   (do
+                                        write "if "
+                                        prettyOnside expr)
+                                   (do
+                                        newline
+                                        write "then "
+                                        prettyOnside expr'
+                                        newline
+                                        write "else "
+                                        prettyOnside expr'')
 
     prettyPrint (MultiIf _ guardedrhss) = do
         write "if"

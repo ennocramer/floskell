@@ -24,7 +24,7 @@ module Floskell.Printers
     , withIndentConfig
     , withIndent
     , withIndentFlex
-    , withIndentFlat
+    , withIndentAfter
     , withIndentBy
     , withLayout
     , inter
@@ -59,10 +59,8 @@ module Floskell.Printers
     ) where
 
 import           Control.Applicative        ( (<|>) )
-
 import           Control.Monad              ( guard, unless, when )
 import           Control.Monad.Search       ( cost, winner )
-
 import           Control.Monad.State.Strict ( get, gets, modify )
 
 import           Data.ByteString            ( ByteString )
@@ -247,18 +245,18 @@ withIndentFlex fn p = withIndentConfig fn align indentby
         spaceOrNewline
         p
 
-withIndentFlat :: (IndentConfig -> Indent)
-               -> ByteString
-               -> Printer a
-               -> Printer a
-withIndentFlat fn kw p = withIndentConfig fn align indentby
+withIndentAfter :: (IndentConfig -> Indent)
+                -> Printer ()
+                -> Printer a
+                -> Printer a
+withIndentAfter fn before p = withIndentConfig fn align indentby
   where
     align = aligned $ do
-        write kw
+        withIndentation id before
         p
 
     indentby i = do
-        write kw
+        withIndentation id before
         indentedBy i p
 
 withIndentBy :: (IndentConfig -> Int) -> Printer a -> Printer a
