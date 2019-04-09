@@ -213,24 +213,26 @@ data SortImportsRule =
     NoImportSort | SortImportsByPrefix | SortImportsByGroups ![ImportsGroup]
 
 data OptionConfig =
-    OptionConfig { cfgOptionSortPragmas           :: !Bool
-                 , cfgOptionSplitLanguagePragmas  :: !Bool
-                 , cfgOptionSortImports           :: !SortImportsRule
-                 , cfgOptionSortImportLists       :: !Bool
-                 , cfgOptionAlignSumTypeDecl      :: !Bool
-                 , cfgOptionFlexibleOneline       :: !Bool
-                 , cfgOptionPreserveVerticalSpace :: !Bool
+    OptionConfig { cfgOptionSortPragmas             :: !Bool
+                 , cfgOptionSplitLanguagePragmas    :: !Bool
+                 , cfgOptionSortImports             :: !SortImportsRule
+                 , cfgOptionSortImportLists         :: !Bool
+                 , cfgOptionAlignSumTypeDecl        :: !Bool
+                 , cfgOptionFlexibleOneline         :: !Bool
+                 , cfgOptionPreserveVerticalSpace   :: !Bool
+                 , cfgOptionWhereBindingsBlankLines :: !Bool
                  }
     deriving ( Generic )
 
 instance Default OptionConfig where
-    def = OptionConfig { cfgOptionSortPragmas           = False
-                       , cfgOptionSplitLanguagePragmas  = False
-                       , cfgOptionSortImports           = NoImportSort
-                       , cfgOptionSortImportLists       = False
-                       , cfgOptionAlignSumTypeDecl      = False
-                       , cfgOptionFlexibleOneline       = False
-                       , cfgOptionPreserveVerticalSpace = False
+    def = OptionConfig { cfgOptionSortPragmas             = False
+                       , cfgOptionSplitLanguagePragmas    = False
+                       , cfgOptionSortImports             = NoImportSort
+                       , cfgOptionSortImportLists         = False
+                       , cfgOptionAlignSumTypeDecl        = False
+                       , cfgOptionFlexibleOneline         = False
+                       , cfgOptionPreserveVerticalSpace   = False
+                       , cfgOptionWhereBindingsBlankLines = True
                        }
 
 data Config = Config { cfgPenalty :: !PenaltyConfig

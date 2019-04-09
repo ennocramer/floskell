@@ -78,13 +78,14 @@ chrisDoneCfg = safeConfig $
 
     groupWsOverrides = []
 
-    cfgOptions = OptionConfig { cfgOptionSortPragmas           = False
-                              , cfgOptionSplitLanguagePragmas  = False
-                              , cfgOptionSortImports           = NoImportSort
-                              , cfgOptionSortImportLists       = False
-                              , cfgOptionAlignSumTypeDecl      = True
-                              , cfgOptionFlexibleOneline       = False
-                              , cfgOptionPreserveVerticalSpace = False
+    cfgOptions = OptionConfig { cfgOptionSortPragmas             = False
+                              , cfgOptionSplitLanguagePragmas    = False
+                              , cfgOptionSortImports             = NoImportSort
+                              , cfgOptionSortImportLists         = False
+                              , cfgOptionAlignSumTypeDecl        = True
+                              , cfgOptionFlexibleOneline         = False
+                              , cfgOptionPreserveVerticalSpace   = False
+                              , cfgOptionWhereBindingsBlankLines = True
                               }
 
 cramerCfg :: Config
@@ -189,13 +190,14 @@ cramerCfg = safeConfig $
         ]
 
     cfgOptions =
-        OptionConfig { cfgOptionSortPragmas           = True
-                     , cfgOptionSplitLanguagePragmas  = True
-                     , cfgOptionSortImports           = SortImportsByPrefix
-                     , cfgOptionSortImportLists       = True
-                     , cfgOptionAlignSumTypeDecl      = False
-                     , cfgOptionFlexibleOneline       = False
-                     , cfgOptionPreserveVerticalSpace = True
+        OptionConfig { cfgOptionSortPragmas             = True
+                     , cfgOptionSplitLanguagePragmas    = True
+                     , cfgOptionSortImports             = SortImportsByPrefix
+                     , cfgOptionSortImportLists         = True
+                     , cfgOptionAlignSumTypeDecl        = False
+                     , cfgOptionFlexibleOneline         = False
+                     , cfgOptionPreserveVerticalSpace   = True
+                     , cfgOptionWhereBindingsBlankLines = True
                      }
 
 gibianskyCfg :: Config
@@ -276,13 +278,14 @@ gibianskyCfg = safeConfig $
     groupWsOverrides =
         [ (ConfigMapKey (Just "{") Nothing, Whitespace WsBoth WsAfter False) ]
 
-    cfgOptions = OptionConfig { cfgOptionSortPragmas           = False
-                              , cfgOptionSplitLanguagePragmas  = False
-                              , cfgOptionSortImports           = NoImportSort
-                              , cfgOptionSortImportLists       = False
-                              , cfgOptionAlignSumTypeDecl      = False
-                              , cfgOptionFlexibleOneline       = False
-                              , cfgOptionPreserveVerticalSpace = False
+    cfgOptions = OptionConfig { cfgOptionSortPragmas             = False
+                              , cfgOptionSplitLanguagePragmas    = False
+                              , cfgOptionSortImports             = NoImportSort
+                              , cfgOptionSortImportLists         = False
+                              , cfgOptionAlignSumTypeDecl        = False
+                              , cfgOptionFlexibleOneline         = False
+                              , cfgOptionPreserveVerticalSpace   = False
+                              , cfgOptionWhereBindingsBlankLines = True
                               }
 
 johanTibellCfg :: Config
@@ -362,13 +365,14 @@ johanTibellCfg = safeConfig $
           )
         ]
 
-    cfgOptions = OptionConfig { cfgOptionSortPragmas           = False
-                              , cfgOptionSplitLanguagePragmas  = False
-                              , cfgOptionSortImports           = NoImportSort
-                              , cfgOptionSortImportLists       = False
-                              , cfgOptionAlignSumTypeDecl      = True
-                              , cfgOptionFlexibleOneline       = True
-                              , cfgOptionPreserveVerticalSpace = False
+    cfgOptions = OptionConfig { cfgOptionSortPragmas             = False
+                              , cfgOptionSplitLanguagePragmas    = False
+                              , cfgOptionSortImports             = NoImportSort
+                              , cfgOptionSortImportLists         = False
+                              , cfgOptionAlignSumTypeDecl        = True
+                              , cfgOptionFlexibleOneline         = True
+                              , cfgOptionPreserveVerticalSpace   = False
+                              , cfgOptionWhereBindingsBlankLines = True
                               }
 
 -- | Base style definition.
