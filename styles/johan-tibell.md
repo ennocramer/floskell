@@ -130,10 +130,7 @@ guarded x
   | otherwise = guarded (x - 2) + guarded (x - 1)
 
 someLongFunctionNameWithALotOfParameters
-    :: (MonadIO m, MonadRandom m)
-    => String
-    -> (String -> String)
-    -> m ()
+    :: (MonadIO m, MonadRandom m) => String -> (String -> String) -> m ()
 someLongFunctionNameWithALotOfParameters = undefined
 ```
 

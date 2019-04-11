@@ -50,7 +50,7 @@ chrisDoneCfg = safeConfig $
                              , cfgLayoutLet = Vertical
                              , cfgLayoutListComp = Flex
                              , cfgLayoutRecord = Vertical
-                             , cfgLayoutTypesig = TryOneline
+                             , cfgLayoutType = TryOneline
                              }
 
     cfgOp =
@@ -138,7 +138,7 @@ cramerCfg = safeConfig $
                              , cfgLayoutLet = TryOneline
                              , cfgLayoutListComp = TryOneline
                              , cfgLayoutRecord = TryOneline
-                             , cfgLayoutTypesig = TryOneline
+                             , cfgLayoutType = TryOneline
                              }
 
     cfgOp =
@@ -250,7 +250,7 @@ gibianskyCfg = safeConfig $
                              , cfgLayoutLet = Vertical
                              , cfgLayoutListComp = TryOneline
                              , cfgLayoutRecord = TryOneline
-                             , cfgLayoutTypesig = TryOneline
+                             , cfgLayoutType = TryOneline
                              }
 
     cfgOp =
@@ -322,7 +322,7 @@ johanTibellCfg = safeConfig $
                              , cfgLayoutLet = Vertical
                              , cfgLayoutListComp = Flex
                              , cfgLayoutRecord = Vertical
-                             , cfgLayoutTypesig = TryOneline
+                             , cfgLayoutType = TryOneline
                              }
 
     cfgOp =

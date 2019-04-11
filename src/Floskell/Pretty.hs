@@ -94,9 +94,8 @@ prettyHSE ast = string $ HSE.prettyPrint ast
 -- | Type class for pretty-printable types.
 class Pretty ast where
     prettyPrint :: ast NodeInfo -> Printer ()
-    default prettyPrint :: HSE.Pretty (ast NodeInfo)
-                        => ast NodeInfo
-                        -> Printer ()
+    default prettyPrint
+        :: HSE.Pretty (ast NodeInfo) => ast NodeInfo -> Printer ()
     prettyPrint = prettyHSE
 
 -- | Pretty print a syntax tree with annotated comments
@@ -119,10 +118,8 @@ prettyOnside ast = do
         else onside $ pretty ast
 
 -- | Compare two AST nodes ignoring the annotation
-compareAST :: (Functor ast, Ord (ast ()))
-           => ast NodeInfo
-           -> ast NodeInfo
-           -> Ordering
+compareAST
+    :: (Functor ast, Ord (ast ())) => ast NodeInfo -> ast NodeInfo -> Ordering
 compareAST a b = void a `compare` void b
 
 -- | Return leading comments.
@@ -177,11 +174,8 @@ printComments = printCommentsInternal True
 printComments' :: Annotated ast => Location -> ast NodeInfo -> Printer ()
 printComments' = printCommentsInternal False
 
-printCommentsInternal :: Annotated ast
-                      => Bool
-                      -> Location
-                      -> ast NodeInfo
-                      -> Printer ()
+printCommentsInternal
+    :: Annotated ast => Bool -> Location -> ast NodeInfo -> Printer ()
 printCommentsInternal nlBefore loc ast = unless (null comments) $ do
     let firstComment = head comments
     -- Preceeding comments must have a newline before them, but not break onside indent.
@@ -605,46 +599,20 @@ prettyTypesig :: (Annotated ast, Pretty ast)
               -> [ast NodeInfo]
               -> Type NodeInfo
               -> Printer ()
-prettyTypesig ctx names ty = withLayout cfgLayoutTypesig flex vertical
+prettyTypesig ctx names ty = do
+    inter comma $ map pretty names
+    atTabStop stopRecordField
+    withIndentConfig cfgIndentTypesig align indentby
   where
-    flex = do
-        inter comma $ map pretty names
-        atTabStop stopRecordField
-        operator ctx "::"
-        pretty ty
-
-    vertical = do
-        inter comma $ map pretty names
-        atTabStop stopRecordField
-        withIndentConfig cfgIndentTypesig align indentby
-
-    align = alignOnOperator ctx "::" $ pretty' ty
+    align = alignOnOperator ctx "::" $ pretty ty
 
     indentby i = indentedBy i $ do
-        operatorV ctx "::"
+        operator ctx "::"
         nl <- gets psNewline
         when nl $ do
             delta <- listVOpLen ctx "->"
             write $ BS.replicate delta 32
-        pretty' ty
-
-    pretty' (TyForall _ mtyvarbinds mcontext ty') = do
-        forM_ mtyvarbinds $ \tyvarbinds -> do
-            write "forall "
-            inter space $ map pretty tyvarbinds
-            withOperatorFormattingV Type "." (write "." >> space) id
-        forM_ mcontext $ \context -> do
-            case context of
-                (CxSingle _ asst) -> pretty asst
-                (CxTuple _ assts) -> list Type "(" ")" "," assts
-                (CxEmpty _) -> write "()"
-            operatorV Type "=>"
-        pretty' ty'
-    pretty' (TyFun _ ty' ty'') = do
-        pretty ty'
-        operatorV Type "->"
-        pretty' ty''
-    pretty' ty' = pretty ty'
+        pretty ty
 
 prettyApp :: (Annotated ast1, Annotated ast2, Pretty ast1, Pretty ast2)
           => ast1 NodeInfo
@@ -1382,86 +1350,124 @@ instance Pretty Asst where
         mapM_ pretty mname
 
 instance Pretty Type where
-    prettyPrint (TyForall _ mtyvarbinds mcontext ty) = do
-        mapM_ prettyForall mtyvarbinds
-        mapM_ pretty mcontext
-        pretty ty
-
-    prettyPrint (TyFun _ ty ty') = do
-        pretty ty
-        operator Type "->"
-        pretty ty'
-
-    prettyPrint (TyTuple _ boxed tys) = case boxed of
-        Unboxed -> list Type "(#" "#)" "," tys
-        Boxed -> list Type "(" ")" "," tys
-
-#if MIN_VERSION_haskell_src_exts(1,20,0)
-    prettyPrint (TyUnboxedSum _ tys) = list Type "(#" "#)" "|" tys
-#endif
-
-    prettyPrint (TyList _ ty) = group Type "[" "]" $ pretty ty
-
-    prettyPrint (TyParArray _ ty) = group Type "[:" ":]" $ pretty ty
-
-    prettyPrint (TyApp _ ty ty') = do
-        pretty ty
-        space
-        pretty ty'
-
-    prettyPrint (TyVar _ name) = pretty name
-
-    prettyPrint (TyCon _ qname) = pretty qname
-
-    prettyPrint (TyParen _ ty) = parens $ pretty ty
-
-#if MIN_VERSION_haskell_src_exts(1,20,0)
-    prettyPrint (TyInfix _ ty op ty') = do
-        pretty ty
-        withOperatorFormatting Type opname (prettyHSE op) id
-        pretty ty'
+    prettyPrint t = do
+        layout <- gets psTypeLayout
+        case layout of
+            TypeFree -> withLayout cfgLayoutType flex vertical
+            TypeFlex -> prettyF t
+            TypeVertical -> prettyV t
       where
-        opname = opName' $ case op of
-            PromotedName _ qname -> qname
-            UnpromotedName _ qname -> qname
-#else
-    prettyPrint (TyInfix _ ty qname ty') = do
-        pretty ty
-        withOperatorFormatting Type (opName' qname) (prettyHSE qname) id
-        pretty ty'
+        flex = withTypeLayout TypeFlex $ prettyF t
+
+        vertical = withTypeLayout TypeVertical $ prettyV t
+
+        withTypeLayout :: TypeLayout -> Printer () -> Printer ()
+        withTypeLayout l p = do
+            layout <- gets psTypeLayout
+            modify $ \s -> s { psTypeLayout = l }
+            p
+            modify $ \s -> s { psTypeLayout = layout }
+
+        prettyF (TyForall _ mtyvarbinds mcontext ty) = do
+            mapM_ prettyForall mtyvarbinds
+            mapM_ pretty mcontext
+            pretty ty
+
+        prettyF (TyFun _ ty ty') = do
+            pretty ty
+            operator Type "->"
+            pretty ty'
+
+        prettyF (TyTuple _ boxed tys) = case boxed of
+            Unboxed -> list Type "(#" "#)" "," tys
+            Boxed -> list Type "(" ")" "," tys
+
+#if MIN_VERSION_haskell_src_exts(1,20,0)
+        prettyF (TyUnboxedSum _ tys) = list Type "(#" "#)" "|" tys
 #endif
 
-    prettyPrint (TyKind _ ty kind) = do
-        pretty ty
-        operator Type "::"
-        pretty kind
+        prettyF (TyList _ ty) = group Type "[" "]" $ pretty ty
 
-    prettyPrint t@(TyPromoted _ _promoted) = prettyHSE t
+        prettyF (TyParArray _ ty) = group Type "[:" ":]" $ pretty ty
 
-    prettyPrint (TyEquals _ ty ty') = do
-        pretty ty
-        operator Type "~"
-        pretty ty'
+        prettyF (TyApp _ ty ty') = do
+            pretty ty
+            space
+            pretty ty'
 
-    prettyPrint (TySplice _ splice) = pretty splice
+        prettyF (TyVar _ name) = pretty name
 
-    prettyPrint (TyBang _ bangtype unpackedness ty) = do
-        pretty unpackedness
-        pretty bangtype
-        pretty ty
+        prettyF (TyCon _ qname) = pretty qname
 
-    prettyPrint t@(TyWildCard _ _mname) = prettyHSE t
+        prettyF (TyParen _ ty) = parens . withTypeLayout TypeFree $ pretty ty
 
-    prettyPrint (TyQuasiQuote _ str str') = do
-        write "["
-        string str
-        write "|"
-        string str'
-        write "|]"
+#if MIN_VERSION_haskell_src_exts(1,20,0)
+        prettyF (TyInfix _ ty op ty') = do
+            pretty ty
+            withOperatorFormatting Type opname (prettyHSE op) id
+            pretty ty'
+          where
+            opname = opName' $ case op of
+                PromotedName _ qname -> qname
+                UnpromotedName _ qname -> qname
+#else
+        prettyF (TyInfix _ ty qname ty') = do
+            pretty ty
+            withOperatorFormatting Type (opName' qname) (prettyHSE qname) id
+            pretty ty'
+#endif
+
+        prettyF (TyKind _ ty kind) = do
+            pretty ty
+            operator Type "::"
+            pretty kind
+
+        prettyF ty@(TyPromoted _ _promoted) = prettyHSE ty
+
+        prettyF (TyEquals _ ty ty') = do
+            pretty ty
+            operator Type "~"
+            pretty ty'
+
+        prettyF (TySplice _ splice) = pretty splice
+
+        prettyF (TyBang _ bangtype unpackedness ty) = do
+            pretty unpackedness
+            pretty bangtype
+            pretty ty
+
+        prettyF ty@(TyWildCard _ _mname) = prettyHSE ty
+
+        prettyF (TyQuasiQuote _ str str') = do
+            write "["
+            string str
+            write "|"
+            string str'
+            write "|]"
 
 #if MIN_VERSION_haskell_src_exts(1,21,0)
-    prettyPrint (TyStar _) = write "*"
+        prettyF (TyStar _) = write "*"
 #endif
+
+        prettyV (TyForall _ mtyvarbinds mcontext ty) = do
+            forM_ mtyvarbinds $ \tyvarbinds -> do
+                write "forall "
+                inter space $ map pretty tyvarbinds
+                withOperatorFormattingV Type "." (write "." >> space) id
+            forM_ mcontext $ \context -> do
+                case context of
+                    (CxSingle _ asst) -> pretty asst
+                    (CxTuple _ assts) -> list Type "(" ")" "," assts
+                    (CxEmpty _) -> write "()"
+                operatorV Type "=>"
+            prettyV ty
+
+        prettyV (TyFun _ ty ty') = do
+            pretty ty
+            operatorV Type "->"
+            prettyV ty'
+
+        prettyV ty = prettyF ty
 
 #if !MIN_VERSION_haskell_src_exts(1,21,0)
 instance Pretty Kind where

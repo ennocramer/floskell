@@ -4,6 +4,7 @@
 -- | All types.
 module Floskell.Types
     ( OutputRestriction(..)
+    , TypeLayout(..)
     , Penalty(..)
     , TabStop(..)
     , Printer(..)
@@ -26,14 +27,12 @@ module Floskell.Types
 
 import           Control.Applicative
 import           Control.Monad
-
 import           Control.Monad.Search
                  ( MonadSearch, Search, runSearchBest )
 import           Control.Monad.State.Strict
                  ( MonadState(..), StateT, execStateT, runStateT )
 
 import qualified Data.Map.Strict              as Map
-
 import           Data.Semigroup               as Sem
 
 import           Floskell.Buffer              ( Buffer )
@@ -44,6 +43,9 @@ import           Language.Haskell.Exts.SrcLoc ( SrcSpan(..), mkSrcSpan, noLoc )
 import           Language.Haskell.Exts.Syntax ( Annotated(..) )
 
 data OutputRestriction = Anything | NoOverflow | NoOverflowOrLinebreak
+    deriving ( Eq, Ord, Show )
+
+data TypeLayout = TypeFree | TypeFlex | TypeVertical
     deriving ( Eq, Ord, Show )
 
 newtype Penalty = Penalty Int
@@ -82,7 +84,8 @@ data PrintState =
                , psTabStops :: !(Map.Map TabStop Int) -- ^ Tab stops for alignment.
                , psConfig :: !Config -- ^ Style definition.
                , psEolComment :: !Bool -- ^ An end of line comment has just been outputted.
-               , psOutputRestriction :: OutputRestriction
+               , psOutputRestriction :: !OutputRestriction
+               , psTypeLayout :: !TypeLayout
                }
 
 psLine :: PrintState -> Int
@@ -96,7 +99,7 @@ psNewline = (== 0) . Buffer.column . psBuffer
 
 initialPrintState :: Config -> PrintState
 initialPrintState config =
-    PrintState Buffer.empty 0 0 Map.empty config False Anything
+    PrintState Buffer.empty 0 0 Map.empty config False Anything TypeFree
 
 data CommentType = InlineComment | LineComment | PreprocessorDirective
     deriving ( Show )

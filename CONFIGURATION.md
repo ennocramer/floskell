@@ -89,7 +89,7 @@ is as follows:
   * `let` (`flex`): Let-in
   * `list-comp` (`flex`): List comprehensions
   * `record` (`flex`): Record declaration, construction, and update
-  * `typesig` (`flex`): Type signatures
+  * `type` (`flex`): Types in signatures
 
 ### Indentation Rules
 

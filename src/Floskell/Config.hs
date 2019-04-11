@@ -167,7 +167,7 @@ data LayoutConfig =
                  , cfgLayoutLet :: !Layout
                  , cfgLayoutListComp :: !Layout
                  , cfgLayoutRecord :: !Layout
-                 , cfgLayoutTypesig :: !Layout
+                 , cfgLayoutType :: !Layout
                  }
     deriving ( Generic )
 
@@ -182,7 +182,7 @@ instance Default LayoutConfig where
                        , cfgLayoutLet = Flex
                        , cfgLayoutListComp = Flex
                        , cfgLayoutRecord = Flex
-                       , cfgLayoutTypesig = Flex
+                       , cfgLayoutType = Flex
                        }
 
 newtype OpConfig = OpConfig { unOpConfig :: ConfigMap Whitespace }

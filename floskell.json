@@ -121,7 +121,7 @@
       "let": "try-oneline",
       "list-comp": "try-oneline",
       "record": "try-oneline",
-      "typesig": "try-oneline"
+      "type": "try-oneline"
     },
     "op": {
       "$": {

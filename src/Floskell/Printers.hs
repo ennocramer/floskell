@@ -212,10 +212,8 @@ withPrefix pre f x = pre *> f x
 withPostfix :: Applicative f => f a -> (x -> f b) -> x -> f b
 withPostfix post f x = f x <* post
 
-withIndentConfig :: (IndentConfig -> Indent)
-                 -> Printer a
-                 -> (Int -> Printer a)
-                 -> Printer a
+withIndentConfig
+    :: (IndentConfig -> Indent) -> Printer a -> (Int -> Printer a) -> Printer a
 withIndentConfig fn align indentby = do
     cfg <- getConfig (fn . cfgIndent)
     case cfg of
@@ -245,10 +243,8 @@ withIndentFlex fn p = withIndentConfig fn align indentby
         spaceOrNewline
         p
 
-withIndentAfter :: (IndentConfig -> Indent)
-                -> Printer ()
-                -> Printer a
-                -> Printer a
+withIndentAfter
+    :: (IndentConfig -> Indent) -> Printer () -> Printer a -> Printer a
 withIndentAfter fn before p = withIndentConfig fn align indentby
   where
     align = aligned $ do

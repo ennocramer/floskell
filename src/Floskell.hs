@@ -26,7 +26,6 @@ module Floskell
 import           Data.ByteString.Lazy       ( ByteString )
 import qualified Data.ByteString.Lazy.Char8 as L8
 import qualified Data.ByteString.Lazy.UTF8  as UTF8
-
 import           Data.List
 import           Data.Maybe
 import           Data.Monoid
@@ -125,10 +124,8 @@ withReducedLineLength offset config = config { cfgPenalty = penalty }
                                   }
 
 -- | Format the given source.
-reformat :: AppConfig
-         -> Maybe FilePath
-         -> ByteString
-         -> Either String ByteString
+reformat
+    :: AppConfig -> Maybe FilePath -> ByteString -> Either String ByteString
 reformat config mfilepath input = fmap (L8.intercalate "\n")
     . preserveVSpace (preservePrefix (reformatLines mode cfg)) $
     L8.split '\n' input
@@ -151,11 +148,8 @@ reformat config mfilepath input = fmap (L8.intercalate "\n")
 
     cfg = styleConfig $ appStyle config
 
-reformatLines :: ParseMode
-              -> Config
-              -> Int
-              -> [ByteString]
-              -> Either String [ByteString]
+reformatLines
+    :: ParseMode -> Config -> Int -> [ByteString] -> Either String [ByteString]
 reformatLines mode config indent = format . filterPreprocessorDirectives
   where
     config' = withReducedLineLength indent config

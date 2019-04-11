@@ -48,10 +48,8 @@ isAlignedWith (Comment _ before _) (Comment _ after _) =
     && srcSpanStartColumn before == srcSpanStartColumn after
 
 -- | Annotate the AST with comments.
-annotateWithComments :: Traversable ast
-                     => ast SrcSpanInfo
-                     -> [Comment]
-                     -> ast NodeInfo
+annotateWithComments
+    :: Traversable ast => ast SrcSpanInfo -> [Comment] -> ast NodeInfo
 annotateWithComments src comments =
     evalState (do
                    traverse_ assignComment comments
@@ -62,8 +60,8 @@ annotateWithComments src comments =
     nodeinfos = foldr (\ssi -> M.insert ssi ([], [])) M.empty src
 
     -- Assign a single comment to the right AST node
-    assignComment :: Comment
-                  -> State (M.Map SrcSpanInfo ([Comment], [Comment])) ()
+    assignComment
+        :: Comment -> State (M.Map SrcSpanInfo ([Comment], [Comment])) ()
     assignComment comment@(Comment _ cspan _) = case surrounding comment of
         (Nothing, Nothing) -> error "No target nodes for comment"
         (Just before, Nothing) -> insertComment After before

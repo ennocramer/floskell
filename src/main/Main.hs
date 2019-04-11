@@ -12,7 +12,6 @@ import qualified Data.ByteString.Lazy            as BL
 import           Data.List                       ( sort )
 import           Data.Maybe                      ( isJust )
 import           Data.Monoid                     ( (<>) )
-
 import qualified Data.Text                       as T
 import           Data.Version                    ( showVersion )
 
@@ -156,10 +155,8 @@ reformatFile config file = do
     renameFile fp file `catch` exdev
 
 -- | Reformat a ByteString according to Style, Language, and Extensions.
-reformatByteString :: AppConfig
-                   -> Maybe FilePath
-                   -> BL.ByteString
-                   -> BL.ByteString
+reformatByteString
+    :: AppConfig -> Maybe FilePath -> BL.ByteString -> BL.ByteString
 reformatByteString config mpath text =
     either error id $ reformat config mpath text
 
