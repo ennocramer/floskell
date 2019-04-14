@@ -20,6 +20,7 @@ module Floskell.Config
     , ImportsGroupOrder(..)
     , ImportsGroup(..)
     , SortImportsRule(..)
+    , DeclarationConstruct(..)
     , OptionConfig(..)
     , Config(..)
     , defaultConfig
@@ -42,6 +43,8 @@ import           Data.Default       ( Default(..) )
 import qualified Data.HashMap.Lazy  as HashMap
 import           Data.Map.Strict    ( Map )
 import qualified Data.Map.Strict    as Map
+import           Data.Set           ( Set )
+import qualified Data.Set           as Set
 import qualified Data.Text          as T
 import qualified Data.Text.Encoding as T ( decodeUtf8, encodeUtf8 )
 
@@ -212,27 +215,30 @@ data ImportsGroup = ImportsGroup { importsPrefixes :: ![String]
 data SortImportsRule =
     NoImportSort | SortImportsByPrefix | SortImportsByGroups ![ImportsGroup]
 
+data DeclarationConstruct = DeclModule | DeclClass | DeclInstance | DeclWhere
+    deriving ( Eq, Ord, Generic )
+
 data OptionConfig =
-    OptionConfig { cfgOptionSortPragmas             :: !Bool
-                 , cfgOptionSplitLanguagePragmas    :: !Bool
-                 , cfgOptionSortImports             :: !SortImportsRule
-                 , cfgOptionSortImportLists         :: !Bool
-                 , cfgOptionAlignSumTypeDecl        :: !Bool
-                 , cfgOptionFlexibleOneline         :: !Bool
-                 , cfgOptionPreserveVerticalSpace   :: !Bool
-                 , cfgOptionWhereBindingsBlankLines :: !Bool
+    OptionConfig { cfgOptionSortPragmas           :: !Bool
+                 , cfgOptionSplitLanguagePragmas  :: !Bool
+                 , cfgOptionSortImports           :: !SortImportsRule
+                 , cfgOptionSortImportLists       :: !Bool
+                 , cfgOptionAlignSumTypeDecl      :: !Bool
+                 , cfgOptionFlexibleOneline       :: !Bool
+                 , cfgOptionPreserveVerticalSpace :: !Bool
+                 , cfgOptionDeclNoBlankLines      :: !(Set DeclarationConstruct)
                  }
     deriving ( Generic )
 
 instance Default OptionConfig where
-    def = OptionConfig { cfgOptionSortPragmas             = False
-                       , cfgOptionSplitLanguagePragmas    = False
-                       , cfgOptionSortImports             = NoImportSort
-                       , cfgOptionSortImportLists         = False
-                       , cfgOptionAlignSumTypeDecl        = False
-                       , cfgOptionFlexibleOneline         = False
-                       , cfgOptionPreserveVerticalSpace   = False
-                       , cfgOptionWhereBindingsBlankLines = True
+    def = OptionConfig { cfgOptionSortPragmas           = False
+                       , cfgOptionSplitLanguagePragmas  = False
+                       , cfgOptionSortImports           = NoImportSort
+                       , cfgOptionSortImportLists       = False
+                       , cfgOptionAlignSumTypeDecl      = False
+                       , cfgOptionFlexibleOneline       = False
+                       , cfgOptionPreserveVerticalSpace = False
+                       , cfgOptionDeclNoBlankLines      = Set.empty
                        }
 
 data Config = Config { cfgPenalty :: !PenaltyConfig
@@ -492,6 +498,12 @@ instance FromJSON SortImportsRule where
     parseJSON (JSON.Bool False) = return NoImportSort
     parseJSON (JSON.Bool True) = return SortImportsByPrefix
     parseJSON v = SortImportsByGroups <$> parseJSON v
+
+instance ToJSON DeclarationConstruct where
+    toJSON = genericToJSON (enumOptions 4)
+
+instance FromJSON DeclarationConstruct where
+    parseJSON = genericParseJSON (enumOptions 4)
 
 instance ToJSON OptionConfig where
     toJSON = genericToJSON (recordOptions 9)
