@@ -4,6 +4,7 @@
 module Floskell.Styles ( Style(..), styles ) where
 
 import qualified Data.Map        as Map
+import qualified Data.Set        as Set
 import           Data.Text       ( Text )
 
 import           Floskell.Config
@@ -85,6 +86,7 @@ chrisDoneCfg = safeConfig $
                               , cfgOptionAlignSumTypeDecl      = True
                               , cfgOptionFlexibleOneline       = False
                               , cfgOptionPreserveVerticalSpace = False
+                              , cfgOptionDeclNoBlankLines      = Set.empty
                               }
 
 cramerCfg :: Config
@@ -196,6 +198,7 @@ cramerCfg = safeConfig $
                      , cfgOptionAlignSumTypeDecl      = False
                      , cfgOptionFlexibleOneline       = False
                      , cfgOptionPreserveVerticalSpace = True
+                     , cfgOptionDeclNoBlankLines      = Set.empty
                      }
 
 gibianskyCfg :: Config
@@ -283,6 +286,7 @@ gibianskyCfg = safeConfig $
                               , cfgOptionAlignSumTypeDecl      = False
                               , cfgOptionFlexibleOneline       = False
                               , cfgOptionPreserveVerticalSpace = False
+                              , cfgOptionDeclNoBlankLines      = Set.empty
                               }
 
 johanTibellCfg :: Config
@@ -369,6 +373,7 @@ johanTibellCfg = safeConfig $
                               , cfgOptionAlignSumTypeDecl      = True
                               , cfgOptionFlexibleOneline       = True
                               , cfgOptionPreserveVerticalSpace = False
+                              , cfgOptionDeclNoBlankLines      = Set.empty
                               }
 
 -- | Base style definition.

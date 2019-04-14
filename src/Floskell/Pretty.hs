@@ -11,12 +11,14 @@ import           Control.Monad
                  ( forM_, guard, replicateM_, unless, void, when )
 import           Control.Monad.State.Strict   ( get, gets, modify )
 
+import           Data.Bool                    ( bool )
 import           Data.ByteString              ( ByteString )
 import qualified Data.ByteString              as BS
 import qualified Data.ByteString.Char8        as BS8
 import qualified Data.ByteString.Lazy         as BL
 import           Data.List                    ( groupBy, sortBy, sortOn )
 import           Data.Maybe                   ( catMaybes, fromMaybe )
+import qualified Data.Set                     as Set
 
 import qualified Floskell.Buffer              as Buffer
 import           Floskell.Config
@@ -534,9 +536,13 @@ skipBlankInstDecl = skipBlank $ \a _ -> case a of
 
 prettyDecls :: (Annotated ast, Pretty ast)
             => (ast NodeInfo -> ast NodeInfo -> Bool)
+            -> DeclarationConstruct
             -> [ast NodeInfo]
             -> Printer ()
-prettyDecls fn = inter blankline . map lined . runs fn
+prettyDecls fn dc = inter sep . map lined . runs fn
+  where
+    sep = bool blankline newline . Set.member dc
+        =<< getOption cfgOptionDeclNoBlankLines
 
 prettySimpleDecl :: (Annotated ast1, Pretty ast1, Annotated ast2, Pretty ast2)
                  => ast1 NodeInfo
@@ -734,7 +740,7 @@ instance Pretty Module where
         catMaybes [ ifNotEmpty prettyPragmas pragmas
                   , pretty <$> mhead
                   , ifNotEmpty prettyImports imports
-                  , ifNotEmpty (prettyDecls skipBlankDecl) decls
+                  , ifNotEmpty (prettyDecls skipBlankDecl DeclModule) decls
                   ]
       where
         ifNotEmpty f xs = if null xs then Nothing else Just (f xs)
@@ -892,7 +898,7 @@ instance Pretty Decl where
                                                             cfgAlignClass
                                                             measureClassDecl
                                                             decls $
-                prettyDecls skipBlankClassDecl decls
+                prettyDecls skipBlankClassDecl DeclClass decls
 
     prettyPrint (InstDecl _ moverlap instrule minstdecls) = do
         depend "instance" $ do
@@ -902,7 +908,7 @@ instance Pretty Decl where
             write " where"
             withIndent cfgIndentClass $
                 withComputedTabStop stopRhs cfgAlignClass measureInstDecl decls $
-                prettyDecls skipBlankInstDecl decls
+                prettyDecls skipBlankInstDecl DeclInstance decls
 
 #if MIN_VERSION_haskell_src_exts(1,20,0)
     prettyPrint (DerivDecl _ mderivstrategy moverlap instrule) =
@@ -1103,7 +1109,7 @@ instance Pretty Binds where
         write "where"
         withIndent cfgIndentWhereBinds $
             withComputedTabStop stopRhs cfgAlignWhere measureDecl decls $
-            prettyDecls skipBlankDecl decls
+            prettyDecls skipBlankDecl DeclWhere decls
 
     prettyPrint (IPBinds _ ipbinds) = withIndentBy cfgIndentWhere $ do
         write "where"
