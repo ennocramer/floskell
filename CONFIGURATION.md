@@ -205,9 +205,10 @@ is as follows:
 
   * `align-sum-type-decl` (`false`): Whether to align `=` with `|` in the declaration of sum types.
   * `preserve-vertical-space` (`false`): Whether to preserve additional vertical space between declarations, statements, and a few other places.
+  * `decl-no-blank-lines` (`[]`): Where to (not) insert blank lines between declarations (`module`, `class`, `instance`, `where`).
   * `sort-import-lists` (`false`): Whether to sort import statements by the name of the imported module.
   * `sort-imports` (`false`): How to sort import lists (see below).
-  * `sort-pragmas` (`false`): Whether to sort module pragmas (`LANGUAGE`, `OPTION`, and `ANN`)
+  * `sort-pragmas` (`false`): Whether to sort module pragmas (`LANGUAGE`, `OPTION`, and `ANN`).
   * `flexible-oneline` (`false`): Allow `do`, `mdo`, `case ... of`, `\case`, and `\... ->` in `try-oneline` layout.
   * `split-language-pragmas` (`false`): Whether to split `LANGUAGE` pragmas.
 
