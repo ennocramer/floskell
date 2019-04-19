@@ -168,6 +168,58 @@ tuple = ( 1, 2 )
 tuple = (1,2)
 ```
 
+### Preprocessor Directives (CPP)
+
+Floskell, in general, supports Haskell source with conditional
+compilation directives using the `CPP` language extensions.  However,
+due to the way this support is implemented, some care must be taken to
+not confuse the Haskell source parser.
+
+Floskell treats conditional compilation directives as if they were
+simply comments.  As a consequence, the input must still be valid
+Haskell when all preprocessor lines are removed.  This is relevant
+when using `#if`/`#else`/`#endif` sequences, as Floskell will see both
+the if- and else-block in sequence.  For example, the following cannot
+be processed with Floskell, as the first declaration of `prettyPrint`
+ends with an incomplete `do` block:
+
+```haskell
+#if MIN_VERSION_haskell_src_exts(1,21,0)
+    prettyPrint (GadtDecl _ name _ _ mfielddecls ty) = do
+#else
+    prettyPrint (GadtDecl _ name mfielddecls ty) = do
+#endif
+        pretty name
+        operator Declaration "::"
+        mayM_ mfielddecls $ \decls -> do
+            prettyRecordFields len Declaration decls
+            operator Type "->"
+        pretty ty
+```
+
+Instead, some of the contents of the `do` block have to be duplicated,
+so that the contents of the `#if` are valid Haskell on their own.
+
+```haskell
+#if MIN_VERSION_haskell_src_exts(1,21,0)
+    prettyPrint (GadtDecl _ name _ _ mfielddecls ty) = do
+        pretty name
+        operator Declaration "::"
+        mayM_ mfielddecls $ \decls -> do
+            prettyRecordFields len Declaration decls
+            operator Type "->"
+        pretty ty
+#else
+    prettyPrint (GadtDecl _ name mfielddecls ty) = do
+        pretty name
+        operator Declaration "::"
+        mayM_ mfielddecls $ \decls -> do
+            prettyRecordFields len Declaration decls
+            operator Type "->"
+        pretty ty
+#endif
+```
+
 
 ## Customization
 
