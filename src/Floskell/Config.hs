@@ -101,6 +101,7 @@ data AlignConfig =
                 , cfgAlignImportModule :: !Bool
                 , cfgAlignImportSpec   :: !Bool
                 , cfgAlignLetBinds     :: !Bool
+                , cfgAlignMatches      :: !Bool
                 , cfgAlignRecordFields :: !Bool
                 , cfgAlignWhere        :: !Bool
                 }
@@ -113,6 +114,7 @@ instance Default AlignConfig where
                       , cfgAlignImportModule = False
                       , cfgAlignImportSpec   = False
                       , cfgAlignLetBinds     = False
+                      , cfgAlignMatches      = False
                       , cfgAlignRecordFields = False
                       , cfgAlignWhere        = False
                       }

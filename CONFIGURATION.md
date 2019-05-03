@@ -139,6 +139,7 @@ is as follows:
   * `import-module` (`false`): Names of imported modules
   * `import-spec` (`false`): Module import lists
   * `let-binds` (`false`): Let bindings
+  * `matches` (`false`): Function match clauses
   * `record-fields` (`false`): Record field assignments and type signatures
   * `where` (`false`): Declarations in where bindings for functions
 

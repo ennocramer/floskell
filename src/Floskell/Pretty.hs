@@ -399,19 +399,26 @@ measure p = do
         Just (_, s'') -> Just . (\x -> x - psIndentLevel s) . fromIntegral
             . BL.length . Buffer.toLazyByteString $ psBuffer s''
 
-measureDecl :: Decl NodeInfo -> Printer (Maybe [Int])
-measureDecl (PatBind _ pat _ Nothing) = fmap (: []) <$> measure (pretty pat)
-measureDecl (FunBind _ matches) = sequence <$> traverse measureMatch matches
+measure' :: Printer a -> Printer (Maybe [Int])
+measure' p = fmap (: []) <$> measure p
+
+measureMatch :: Match NodeInfo -> Printer (Maybe [Int])
+measureMatch (Match _ name pats _ Nothing) = measure' (prettyApp name pats)
+measureMatch (InfixMatch _ pat name pats _ Nothing) = measure' go
   where
-    measureMatch (Match _ name pats _ Nothing) = measure $ prettyApp name pats
-    measureMatch (InfixMatch _ pat name pats _ Nothing) = measure $ do
+    go = do
         pretty pat
         withOperatorFormatting Pattern
                                (opName'' name)
                                (prettyHSE $ VarOp noNodeInfo name)
                                id
         inter spaceOrNewline $ map pretty pats
-    measureMatch _ = return Nothing
+measureMatch _ = return Nothing
+
+measureDecl :: Decl NodeInfo -> Printer (Maybe [Int])
+measureDecl (PatBind _ pat _ Nothing) = measure' (pretty pat)
+measureDecl (FunBind _ matches) =
+    fmap concat . sequence <$> traverse measureMatch matches
 measureDecl _ = return Nothing
 
 measureClassDecl :: ClassDecl NodeInfo -> Printer (Maybe [Int])
@@ -423,7 +430,7 @@ measureInstDecl (InsDecl _ decl) = measureDecl decl
 measureInstDecl _ = return Nothing
 
 measureAlt :: Alt NodeInfo -> Printer (Maybe [Int])
-measureAlt (Alt _ pat _ Nothing) = fmap (: []) <$> measure (pretty pat)
+measureAlt (Alt _ pat _ Nothing) = measure' (pretty pat)
 measureAlt _ = return Nothing
 
 withComputedTabStop :: TabStop
@@ -942,7 +949,9 @@ instance Pretty Decl where
             pretty ty
 #endif
 
-    prettyPrint (FunBind _ matches) = linedOnside matches
+    prettyPrint (FunBind _ matches) =
+        withComputedTabStop stopRhs cfgAlignMatches measureMatch matches $
+        linedOnside matches
 
     prettyPrint (PatBind _ pat rhs mbinds) = do
         onside $ do

@@ -105,6 +105,7 @@ cramerCfg = safeConfig $
                            , cfgAlignImportModule = True
                            , cfgAlignImportSpec   = True
                            , cfgAlignLetBinds     = False
+                           , cfgAlignMatches      = False
                            , cfgAlignRecordFields = True
                            , cfgAlignWhere        = False
                            }
@@ -217,6 +218,7 @@ gibianskyCfg = safeConfig $
                            , cfgAlignImportModule = True
                            , cfgAlignImportSpec   = False
                            , cfgAlignLetBinds     = False
+                           , cfgAlignMatches      = False
                            , cfgAlignRecordFields = False
                            , cfgAlignWhere        = False
                            }
