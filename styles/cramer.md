@@ -869,6 +869,20 @@ foo = do
         else that
 ```
 
+Lists must not suppress onside.
+
+``` haskell
+foo = case x of
+    [ y -- comment
+        , z
+        ] -> bar
+
+foo = do
+    [ x -- comment
+        , y
+        ]
+```
+
 ## Comments
 
 Don't be too eager in assigning comments to the following AST node.

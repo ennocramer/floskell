@@ -295,9 +295,7 @@ column i = withIndentation $ \(l, o) -> (i, if i > l then 0 else o)
 aligned :: Printer a -> Printer a
 aligned p = do
     col <- getNextColumn
-    column col $ do
-        modify $ \s -> s { psOnside = 0 }
-        p
+    column col p
 
 indented :: Printer a -> Printer a
 indented p = do

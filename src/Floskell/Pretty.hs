@@ -282,11 +282,13 @@ listVinternal ctx sep xs = case xs of
             printComments' Before x
             cut . onside $ prettyPrint x
             printComments After x
-            forM_ xs' $ \x' -> do
-                printComments Before x'
-                column sepCol $ operatorV ctx sep
-                cut . onside $ prettyPrint x'
-                printComments After x'
+        -- `column sepCol` must not be within `column itemCol`, or the
+        -- former can suppress onside for the latter.
+        forM_ xs' $ \x' -> do
+            column itemCol $ printComments Before x'
+            column sepCol $ operatorV ctx sep
+            column itemCol $ cut . onside $ prettyPrint x'
+            column itemCol $ printComments After x'
 
 listH :: (Annotated ast, Pretty ast)
       => LayoutContext
@@ -635,7 +637,7 @@ prettyApp fn args = withLayout cfgLayoutApp flex vertical
 
     vertical = do
         pretty fn
-        withIndent cfgIndentApp $ linedOnside args
+        withIndent cfgIndentApp $ lined args
 
 prettyInfixApp
     :: (Annotated ast, Pretty ast, Annotated op, HSE.Pretty (op NodeInfo))
