@@ -870,6 +870,18 @@ data Foo = Foo  -- some
 -- two
 ```
 
+... even when haskell-src-exts has weird column span info.
+
+``` haskell
+module Main where
+
+-- comment
+instance Foo Bar where
+    foo = undefined
+
+bar = undefined
+```
+
 Only comments.
 
 ``` haskell

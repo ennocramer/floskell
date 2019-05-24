@@ -146,7 +146,7 @@ copyComments After from to =
 printComment :: Int -> Comment -> Printer ()
 printComment correction Comment{..} = do
     col <- getNextColumn
-    let padding = max 0 $ srcSpanStartColumn commentSpan + correction - col
+    let padding = max 0 $ srcSpanStartColumn commentSpan + correction - col - 1
     case commentType of
         PreprocessorDirective -> do
             nl <- gets psNewline
@@ -186,7 +186,10 @@ printCommentsInternal nlBefore loc ast = unless (null comments) $ do
     when (loc == After && not nl && notSameLine firstComment) newline
 
     col <- getNextColumn
-    forM_ comments $ printComment (col - srcSpanEndColumn ssi)
+    let correction = case loc of
+            Before -> col - srcSpanStartColumn ssi + 1
+            After -> col - srcSpanEndColumn ssi + 1
+    forM_ comments $ printComment correction
 
     -- Write newline before restoring onside indent.
     eol <- gets psEolComment
