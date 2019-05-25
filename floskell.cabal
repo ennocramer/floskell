@@ -1,5 +1,5 @@
 name:                floskell
-version:             0.10.0
+version:             0.10.1
 synopsis:            A flexible Haskell source code pretty printer
 description:         A flexible Haskell source code pretty printer.
                      .

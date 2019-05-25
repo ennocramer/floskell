@@ -1,3 +1,8 @@
+# Floskell 0.10.1 (2019-05-25)
+
+* Fix for broken off-side rule with multi-line lists
+* Fix for increasing comment indentation before instance declarations
+
 # Floskell 0.10.0 (2019-05-03)
 
 * Updated to haskell-src-exts-1.21.0, with support for `DerivingVia` and `TypeInType`
