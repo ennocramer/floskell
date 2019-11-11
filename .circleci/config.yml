@@ -149,10 +149,16 @@ jobs:
     environment:
       RESOLVER: lts-12
 
-  stack-lts-13:
+  stack-lts-14:
     <<: *stack-linux
     environment:
-      RESOLVER: lts-13
+      RESOLVER: lts-14
+
+  stack-haskell-src-exts-1-21:
+    <<: *stack-linux
+    environment:
+      RESOLVER: lts-14
+      STACK_YAML: stack-haskell-src-exts-1.21.yaml
 
   stack-haskell-src-exts-1-20:
     <<: *stack-linux
@@ -186,10 +192,10 @@ jobs:
     environment:
       RESOLVER: lts-12
 
-  cabal-lts-13:
+  cabal-lts-14:
     <<: *cabal-linux
     environment:
-      RESOLVER: lts-13
+      RESOLVER: lts-14
 
   stack-nightly:
     <<: *stack-linux
@@ -197,10 +203,10 @@ jobs:
       RESOLVER: nightly
       IGNORE_FAILURE: true
 
-  stack-lts-13-macos:
+  stack-lts-14-macos:
     <<: *stack-macos
     environment:
-      RESOLVER: lts-13
+      RESOLVER: lts-14
 
 workflows:
   version: 2
@@ -210,13 +216,14 @@ workflows:
       - stack-lts-9
       - stack-lts-11
       - stack-lts-12
-      - stack-lts-13
+      - stack-lts-14
       - cabal-lts-7
       - cabal-lts-9
       - cabal-lts-11
       - cabal-lts-12
-      - cabal-lts-13
+      - cabal-lts-14
       - stack-haskell-src-exts-1-19
       - stack-haskell-src-exts-1-20
+      - stack-haskell-src-exts-1-21
       - stack-nightly
-      # - stack-lts-13-macos
+      # - stack-lts-14-macos

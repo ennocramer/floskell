@@ -1331,6 +1331,12 @@ instance Pretty FunDep where
         operator Declaration "->"
         inter space $ map pretty names'
 
+#if MIN_VERSION_haskell_src_exts(1,22,0)
+instance Pretty Asst where
+    prettyPrint (TypeA _ ty) = pretty ty
+    prettyPrint (IParam _ ipname ty) = prettyTypesig Declaration [ ipname ] ty
+    prettyPrint (ParenA _ asst) = parens $ pretty asst
+#else
 instance Pretty Asst where
     prettyPrint (ClassA _ qname types) = do
         pretty qname
@@ -1362,6 +1368,7 @@ instance Pretty Asst where
     prettyPrint (WildCardA _ mname) = do
         write "_"
         mapM_ pretty mname
+#endif
 
 instance Pretty Type where
     prettyPrint t = do
@@ -2129,6 +2136,10 @@ instance Pretty Op where
 instance Pretty Bracket where
     prettyPrint (ExpBracket _ expr) = group Expression "[|" "|]" $ pretty expr
 
+#if MIN_VERSION_haskell_src_exts(1,22,0)
+    prettyPrint (TExpBracket _ expr) = group Expression "[||" "||]" $ pretty expr
+#endif
+
     prettyPrint (PatBracket _ pat) = group Expression "[p|" "|]" $ pretty pat
 
     prettyPrint (TypeBracket _ ty) = group Expression "[t|" "|]" $ pretty ty
@@ -2142,6 +2153,15 @@ instance Pretty Splice where
         string str
 
     prettyPrint (ParenSplice _ expr) = group Expression "$(" ")" $ pretty expr
+
+#if MIN_VERSION_haskell_src_exts(1,22,0)
+    prettyPrint (TIdSplice _ str) = do
+        write "$$"
+        string str
+
+    prettyPrint (TParenSplice _ expr) = group Expression "$$(" ")" $ pretty expr
+
+#endif
 
 instance Pretty ModulePragma where
     prettyPrint (LanguagePragma _ names) =

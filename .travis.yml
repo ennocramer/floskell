@@ -29,6 +29,10 @@ matrix:
     env: BUILD=cabal
     addons: {apt: {packages: [cabal-install-2.2,ghc-8.6.3], sources: [hvr-ghc]}}
 
+  - name: "Cabal GHC-8.8.1"
+    env: BUILD=cabal
+    addons: {apt: {packages: [cabal-install-2.2,ghc-8.8.1], sources: [hvr-ghc]}}
+
   - name: "Cabal GHC-HEAD"
     env: BUILD=cabal CABALARGS=--allow-newer
     addons: {apt: {packages: [cabal-install-head,ghc-head], sources: [hvr-ghc]}}
@@ -45,8 +49,11 @@ matrix:
   - name: "Stack LTS-12 (GHC-8.4.4)"
     env: BUILD=stack RESOLVER=lts-12
 
-  - name: "Stack LTS-13 (GHC-8.6.3)"
-    env: BUILD=stack RESOLVER=lts-13
+  - name: "Stack LTS-14 (GHC-8.6.5)"
+    env: BUILD=stack RESOLVER=lts-14
+
+  - name: "Stack haskell-src-exts-1.21"
+    env: BUILD=stack STACK_YAML=stack-haskell-src-exts-1.21.yaml RESOLVER=lts-14
 
   - name: "Stack haskell-src-exts-1.20"
     env: BUILD=stack STACK_YAML=stack-haskell-src-exts-1.20.yaml RESOLVER=lts-12
@@ -57,8 +64,8 @@ matrix:
   - name: "Stack Nightly"
     env: BUILD=stack RESOLVER=nightly
 
-  - name: "Stack LTS-13 (GHC-8.6.3) [OSX]"
-    env: BUILD=stack RESOLVER=lts-13
+  - name: "Stack LTS-14 (GHC-8.6.5) [OSX]"
+    env: BUILD=stack RESOLVER=lts-14
     os: osx
 
   allow_failures:
