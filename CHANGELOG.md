@@ -1,6 +1,6 @@
 # Floskell 0.10.2 (2019-11-11)
 
-* Updated to haskell-src-exts-1.21.0, with support for Template
+* Updated to haskell-src-exts-1.22.0, with support for Template
   Haskell typed splices and quotations
 * Compatible with GHC-8.8.1
 
