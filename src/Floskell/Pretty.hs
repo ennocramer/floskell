@@ -1653,6 +1653,10 @@ instance Pretty Exp where
         ++ replicate after (write "|")
 #endif
 
+#if MIN_VERSION_haskell_src_exts(1,23,0)
+    prettyPrint (ArrOp _ expr) = group Expression "(|" "|)" $ pretty expr
+#endif
+
     prettyPrint (TupleSection _ boxed mexprs) = case boxed of
         Boxed -> list Expression "(" ")" "," $ map (MayAst noNodeInfo) mexprs
         Unboxed -> list Expression "(#" "#)" "," $
