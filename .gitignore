@@ -14,5 +14,6 @@ tags
 src/main/Main
 src/main/TestGenerate
 .stack-work
+stack.yaml.lock
 .cabal-sandbox/
 cabal.sandbox.config

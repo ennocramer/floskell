@@ -28,7 +28,6 @@ import qualified Data.ByteString.Lazy.Char8 as L8
 import qualified Data.ByteString.Lazy.UTF8  as UTF8
 import           Data.List
 import           Data.Maybe
-import           Data.Monoid
 
 import qualified Floskell.Buffer            as Buffer
 import           Floskell.Comments
