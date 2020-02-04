@@ -29,7 +29,7 @@ import qualified Data.ByteString.Lazy.Char8 as L8
 import qualified Data.ByteString.Lazy.UTF8  as UTF8
 import           Data.List
 import           Data.Maybe
-#if __GLASGOW_HASKELL__ <= 801
+#if __GLASGOW_HASKELL__ <= 802
 import           Data.Monoid
 #endif
 
