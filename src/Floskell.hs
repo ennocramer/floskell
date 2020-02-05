@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP #-}
 
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 
@@ -28,7 +29,9 @@ import qualified Data.ByteString.Lazy.Char8 as L8
 import qualified Data.ByteString.Lazy.UTF8  as UTF8
 import           Data.List
 import           Data.Maybe
+#if __GLASGOW_HASKELL__ <= 802
 import           Data.Monoid
+#endif
 
 import qualified Floskell.Buffer            as Buffer
 import           Floskell.Comments
