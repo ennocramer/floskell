@@ -1,3 +1,9 @@
+# Floskell 0.10.3 (2020-05-17)
+
+* Updated to haskell-src-exts-1.23.0, with support for Block Arguments
+  and Arrow Brackets
+* Compatible with GHC-8.10.1
+
 # Floskell 0.10.2 (2019-11-11)
 
 * Updated to haskell-src-exts-1.22.0, with support for Template
