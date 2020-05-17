@@ -234,7 +234,7 @@ for a detailed description of the contents of the configuration file.
 The `--print-config` command line option can be used to create an
 initial configuration file.
 
-    $ floskell --style cramer --print-config > ~/.floskell
+    $ floskell --style cramer --print-config > ~/.floskell.json
 
 This command will create a configuration file with all fields and the
 entire definition of the selected style in the `formatting` block.
@@ -242,7 +242,7 @@ entire definition of the selected style in the `formatting` block.
 ### Configuration File Location
 
 * If a style is given on the command line, but no explicit
-  configuration file, the style will be used as-is and not
+  configuration file, the style will be used as-is and no
   configuration file will be loaded.
 
 * If both a style and an explicit configuration file are given on the
