@@ -143,8 +143,8 @@ copyComments After from to =
          to
 
 -- | Pretty print a comment.
-printComment :: Int -> Comment -> Printer ()
-printComment correction Comment{..} = do
+printComment :: Int -> (Comment, SrcSpan) -> Printer ()
+printComment correction (Comment{..}, nextSpan) = do
     col <- getNextColumn
     let padding = max 0 $ srcSpanStartColumn commentSpan + correction - col - 1
     case commentType of
@@ -158,7 +158,7 @@ printComment correction Comment{..} = do
             write "{-"
             string commentText
             write "-}"
-            when (1 == srcSpanStartColumn commentSpan) $
+            when (srcSpanEndLine commentSpan /= srcSpanStartLine nextSpan) $
                 modify (\s -> s { psEolComment = True })
         LineComment -> do
             write $ BS.replicate padding 32
@@ -189,7 +189,7 @@ printCommentsInternal nlBefore loc ast = unless (null comments) $ do
     let correction = case loc of
             Before -> col - srcSpanStartColumn ssi + 1
             After -> col - srcSpanEndColumn ssi + 1
-    forM_ comments $ printComment correction
+    forM_ (zip comments (tail (map commentSpan comments ++ [ssi]))) $ printComment correction
 
     -- Write newline before restoring onside indent.
     eol <- gets psEolComment
@@ -715,6 +715,11 @@ prettyPragma' name mp = do
     mayM_ mp $ withPrefix space aligned
     write " #-}"
 
+prettyBinds :: Binds NodeInfo -> Printer ()
+prettyBinds binds = withIndentBy cfgIndentWhere $ do
+    write "where"
+    withIndent cfgIndentWhereBinds $ pretty binds
+
 instance Pretty Module where
     prettyPrint (Module _ mhead pragmas imports decls) = inter blankline $
         catMaybes [ ifNotEmpty prettyPragmas pragmas
@@ -963,12 +968,12 @@ instance Pretty Decl where
             pretty pat
             atTabStop stopRhs
             pretty rhs
-        mapM_ pretty mbinds
+        mapM_ prettyBinds mbinds
 
     prettyPrint (PatSyn _ pat pat' patternsyndirection) = do
         depend "pattern" $ prettySimpleDecl pat sep pat'
         case patternsyndirection of
-            ExplicitBidirectional _ decls -> pretty (BDecls noNodeInfo decls)
+            ExplicitBidirectional _ decls -> prettyBinds (BDecls noNodeInfo decls)
             _ -> return ()
       where
         sep = case patternsyndirection of
@@ -1087,15 +1092,11 @@ instance Pretty InstHead where
     prettyPrint (IHApp _ insthead ty) = depend' (pretty insthead) $ pretty ty
 
 instance Pretty Binds where
-    prettyPrint (BDecls _ decls) = withIndentBy cfgIndentWhere $ do
-        write "where"
-        withIndent cfgIndentWhereBinds $
-            withComputedTabStop stopRhs cfgAlignWhere measureDecl decls $
-            prettyDecls skipBlankDecl DeclWhere decls
+    prettyPrint (BDecls _ decls) =
+        withComputedTabStop stopRhs cfgAlignWhere measureDecl decls $
+        prettyDecls skipBlankDecl DeclWhere decls
 
-    prettyPrint (IPBinds _ ipbinds) = withIndentBy cfgIndentWhere $ do
-        write "where"
-        withIndent cfgIndentWhereBinds $ linedOnside ipbinds
+    prettyPrint (IPBinds _ ipbinds) = linedOnside ipbinds
 
 instance Pretty IPBind where
     prettyPrint (IPBind _ ipname expr) = prettySimpleDecl ipname "=" expr
@@ -1256,14 +1257,14 @@ instance Pretty Match where
             prettyApp name pats
             atTabStop stopRhs
             pretty rhs
-        mapM_ pretty mbinds
+        mapM_ prettyBinds mbinds
 
     prettyPrint (InfixMatch _ pat name pats rhs mbinds) = do
         onside $ do
             withLayout cfgLayoutInfixApp flex vertical
             atTabStop stopRhs
             pretty rhs
-        mapM_ pretty mbinds
+        mapM_ prettyBinds mbinds
       where
         flex = do
             pretty pat
@@ -1893,7 +1894,7 @@ instance Pretty Alt where
             pretty pat
             atTabStop stopRhs
             pretty $ GuardedAlts rhs
-        mapM_ pretty mbinds
+        mapM_ prettyBinds mbinds
 
 instance Pretty XAttr where
     prettyPrint (XAttr _ xname expr) = do

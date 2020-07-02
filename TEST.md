@@ -836,6 +836,16 @@ foo = some -- comment 1
       argument -- comment 4
 ```
 
+Comments after `where` stay there.
+
+``` haskell
+consM :: Monad m => m a -> Stream m a -> Stream m a
+consM m (Stream step state) = Stream step1 Nothing
+  where
+    {-# INLINE_LATE step1 #-}
+    step1 _ _   = undefined
+```
+
 ## Indentation and Line Prefixes
 
 Preserving indentation and line prefixes so that Floskell can be run
