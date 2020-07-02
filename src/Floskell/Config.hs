@@ -265,9 +265,12 @@ instance Default Config where
 
 defaultConfig :: Config
 defaultConfig =
-    def { cfgOp = OpConfig ((unOpConfig def) { cfgMapOverrides =
-                                                   Map.fromList opWsOverrides
-                                             })
+    def { cfgOp    = OpConfig ((unOpConfig def) { cfgMapOverrides =
+                                                      Map.fromList opWsOverrides
+                                                })
+        , cfgGroup = GroupConfig ((unGroupConfig def) { cfgMapOverrides =
+                                                            Map.fromList groupWsOverrides
+                                                      })
         }
   where
     opWsOverrides =
@@ -278,6 +281,10 @@ defaultConfig =
         , ( ConfigMapKey (Just ".") (Just Type)
           , Whitespace WsAfter WsAfter False
           )
+        ]
+
+    groupWsOverrides =
+        [ (ConfigMapKey (Just "[") (Just Type), Whitespace WsBoth WsNone False)
         ]
 
 safeConfig :: Config -> Config

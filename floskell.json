@@ -66,6 +66,11 @@
         "linebreaks": "after",
         "spaces": "both"
       },
+      "[ in type": {
+        "force-linebreak": false,
+        "linebreaks": "none",
+        "spaces": "none"
+      },
       "[d|": {
         "force-linebreak": false,
         "linebreaks": "none",

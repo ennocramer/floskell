@@ -189,6 +189,9 @@ cramerCfg = safeConfig $
         , ( ConfigMapKey (Just "[") (Just Pattern)
           , Whitespace WsBoth WsAfter False
           )
+        , ( ConfigMapKey (Just "[") (Just Type)
+          , Whitespace WsNone WsNone False
+          )
         ]
 
     cfgOptions =

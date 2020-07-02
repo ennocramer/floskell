@@ -849,6 +849,20 @@ foo = do
     some expression
 ```
 
+## Types
+
+Long types allow linebreaks.
+
+``` haskell
+newtype MyMonadT a b m =
+    MyMonad
+    { runMyMonad
+          :: StateT
+              ([(a, a -> b)])
+              (ReaderT a (ExceptT [IM.IntMap b]) (WriterT [IS.IntSet x] m))
+    }
+```
+
 ## Patterns
 
 Long function pattern matches allow linebreaks.

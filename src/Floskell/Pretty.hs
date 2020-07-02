@@ -1412,10 +1412,12 @@ instance Pretty Type where
 
         prettyF (TyParArray _ ty) = group Type "[:" ":]" $ pretty ty
 
-        prettyF (TyApp _ ty ty') = do
-            pretty ty
-            space
-            pretty ty'
+        prettyF ty@TyApp{} = case flattenApp flatten ty of
+            ctor : args -> prettyApp ctor args
+            [] -> error "impossible"
+          where
+            flatten (TyApp _ a b) = Just (a, b)
+            flatten _ = Nothing
 
         prettyF (TyVar _ name) = pretty name
 

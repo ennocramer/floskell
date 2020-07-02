@@ -1,3 +1,8 @@
+# Floskell 0.10.4 (unreleased)
+
+* Fix formatting of type applications
+* Fix for comments hopping over 'where' keyword
+
 # Floskell 0.10.3 (2020-05-17)
 
 * Updated to haskell-src-exts-1.23.0, with support for Block Arguments
