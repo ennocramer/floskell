@@ -154,6 +154,11 @@ jobs:
     environment:
       RESOLVER: lts-14
 
+  stack-lts-16:
+    <<: *stack-linux
+    environment:
+      RESOLVER: lts-16
+
   stack-haskell-src-exts-1-21:
     <<: *stack-linux
     environment:
@@ -197,6 +202,11 @@ jobs:
     environment:
       RESOLVER: lts-14
 
+  cabal-lts-16:
+    <<: *cabal-linux
+    environment:
+      RESOLVER: lts-16
+
   stack-nightly:
     <<: *stack-linux
     environment:
@@ -217,11 +227,13 @@ workflows:
       - stack-lts-11
       - stack-lts-12
       - stack-lts-14
+      - stack-lts-16
       - cabal-lts-7
       - cabal-lts-9
       - cabal-lts-11
       - cabal-lts-12
       - cabal-lts-14
+      - cabal-lts-16
       - stack-haskell-src-exts-1-19
       - stack-haskell-src-exts-1-20
       - stack-haskell-src-exts-1-21

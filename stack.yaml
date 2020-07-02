@@ -1,6 +1,6 @@
-resolver: lts-14.22
+resolver: lts-16.3
 packages:
 - '.'
 extra-deps:
-- haskell-src-exts-1.23.0
-- monad-dijkstra-0.1.1.2
+- haskell-src-exts-1.23.1
+- monad-dijkstra-0.1.1.3
