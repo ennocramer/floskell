@@ -292,20 +292,22 @@ safeConfig cfg = cfg { cfgGroup = group, cfgOp = op }
   where
     group = GroupConfig $
         updateOverrides (unGroupConfig $ cfgGroup cfg)
-                        [ ("(#", Expression), ("(#", Pattern) ]
+                        [ ("(#", Expression, WsBoth), ("(#", Pattern, WsBoth) ]
 
     op = OpConfig $
-        updateOverrides (unOpConfig $ cfgOp cfg) [ (".", Expression) ]
+        updateOverrides (unOpConfig $ cfgOp cfg)
+                        [ (".", Expression, WsBoth), ("@", Pattern, WsNone) ]
 
     updateOverrides config overrides =
         config { cfgMapOverrides =
                      foldl (updateWs config) (cfgMapOverrides config) overrides
                }
 
-    updateWs config m (key, ctx) =
-        Map.insert (ConfigMapKey (Just key) (Just ctx))
-                   (cfgMapFind ctx key config) { wsSpaces = WsBoth }
-                   m
+    updateWs config m (key, ctx, ws) =
+        Map.insertWith (flip const)
+                       (ConfigMapKey (Just key) (Just ctx))
+                       (cfgMapFind ctx key config) { wsSpaces = ws }
+                       m
 
 cfgMapFind :: LayoutContext -> ByteString -> ConfigMap a -> a
 cfgMapFind ctx key ConfigMap{..} =

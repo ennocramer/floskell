@@ -2,6 +2,7 @@
 
 * Fix formatting of type applications
 * Fix for comments hopping over 'where' keyword
+* Add safety whitespace override for @ in patterns
 
 # Floskell 0.10.3 (2020-05-17)
 
