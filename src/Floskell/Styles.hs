@@ -18,7 +18,7 @@ data Style =
           }
 
 chrisDoneCfg :: Config
-chrisDoneCfg = safeConfig $
+chrisDoneCfg =
     defaultConfig { cfgIndent, cfgLayout, cfgOp, cfgGroup, cfgOptions }
   where
     cfgIndent =
@@ -90,7 +90,7 @@ chrisDoneCfg = safeConfig $
                               }
 
 cramerCfg :: Config
-cramerCfg = safeConfig $
+cramerCfg =
     defaultConfig { cfgAlign
                   , cfgIndent
                   , cfgLayout
@@ -206,7 +206,7 @@ cramerCfg = safeConfig $
                      }
 
 gibianskyCfg :: Config
-gibianskyCfg = safeConfig $
+gibianskyCfg =
     defaultConfig { cfgAlign
                   , cfgIndent
                   , cfgLayout
@@ -295,7 +295,7 @@ gibianskyCfg = safeConfig $
                               }
 
 johanTibellCfg :: Config
-johanTibellCfg = safeConfig $
+johanTibellCfg =
     defaultConfig { cfgIndent, cfgLayout, cfgOp, cfgGroup, cfgOptions }
   where
     cfgIndent =
@@ -386,7 +386,7 @@ base :: Style
 base = Style { styleName        = "base"
              , styleAuthor      = "Enno Cramer"
              , styleDescription = "Configurable formatting style"
-             , styleConfig      = safeConfig defaultConfig
+             , styleConfig      = defaultConfig
              }
 
 chrisDone :: Style

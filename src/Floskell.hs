@@ -149,7 +149,7 @@ reformat config mfilepath input = fmap (L8.intercalate "\n")
                                    Just $ appFixities config ++ builtinFixities
                              }
 
-    cfg = styleConfig $ appStyle config
+    cfg = safeConfig . styleConfig $ appStyle config
 
 reformatLines
     :: ParseMode -> Config -> Int -> [ByteString] -> Either String [ByteString]
