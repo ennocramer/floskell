@@ -31,7 +31,7 @@ stack-build: &stack-build
     - run:
         name: Build Dependencies
         command: |
-          stack --resolver $RESOLVER --no-terminal build --test --bench --only-dependencies $EXTRA_ARGS && SUCCESS=1
+          stack --resolver $RESOLVER --no-terminal build -j1 --test --bench --only-dependencies $EXTRA_ARGS && SUCCESS=1
           test -n "$IGNORE_FAILURE" -o -n "$SUCCESS" || false
 
     - save_cache:
@@ -85,7 +85,7 @@ cabal-build: &cabal-build
         name: Build Dependencies
         command: |
           cabal new-configure --enable-tests --enable-benchmarks $EXTRA_ARGS && SUCCESS=1
-          cabal new-build --only-dependencies $EXTRA_ARGS && SUCCESS=1
+          cabal new-build -j1 --only-dependencies $EXTRA_ARGS && SUCCESS=1
           test -n "$IGNORE_FAILURE" -o -n "$SUCCESS" || false
 
     - save_cache:
