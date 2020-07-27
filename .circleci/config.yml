@@ -19,6 +19,10 @@ stack-build: &stack-build
     - run:
         name: Setup GHC
         command: |
+          if [ $RESOLVER = lts-7 ]; then
+            cabal update
+            cabal install happy
+          fi
           stack --resolver $RESOLVER --no-terminal setup
           stack --resolver $RESOLVER --no-terminal update
 
