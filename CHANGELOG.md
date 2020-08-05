@@ -1,4 +1,4 @@
-# Floskell 0.10.4 (unreleased)
+# Floskell 0.10.4 (2020-08-05)
 
 * Fix formatting of type applications
 * Fix for comments hopping over 'where' keyword
