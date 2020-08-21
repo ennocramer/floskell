@@ -678,16 +678,11 @@ prettyRecord len ctx name fields = withLayout cfgLayoutRecord flex vertical
   where
     flex = do
         withOperatorFormattingH ctx "record" (pretty name) id
-        groupH ctx "{" "}" $ inter (operatorH ctx ",") $
-            map prettyOnside fields
+        prettyRecordFields len ctx fields
 
     vertical = do
         withOperatorFormatting ctx "record" (pretty name) id
-        groupV ctx "{" "}" $ withComputedTabStop stopRecordField
-                                                 cfgAlignRecordFields
-                                                 (fmap (fmap pure) . len)
-                                                 fields $
-            listVinternal ctx "," fields
+        prettyRecordFields len ctx fields
 
 prettyRecordFields :: (Annotated ast, Pretty ast)
                    => (ast NodeInfo -> Printer (Maybe Int))
