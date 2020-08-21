@@ -618,7 +618,7 @@ prettyTypesig ctx names ty = do
   where
     align = alignOnOperator ctx "::" $ pretty ty
 
-    indentby i = indentedBy i $ do
+    indentby i = indented i $ do
         operator ctx "::"
         nl <- gets psNewline
         when nl $ do

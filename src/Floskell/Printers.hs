@@ -33,7 +33,6 @@ module Floskell.Printers
     , column
     , aligned
     , indented
-    , indentedBy
     , onside
     , depend
     , depend'
@@ -228,7 +227,7 @@ withIndent fn p = withIndentConfig fn align indentby
         space
         aligned p
 
-    indentby i = indentedBy i $ do
+    indentby i = indented i $ do
         newline
         p
 
@@ -239,7 +238,7 @@ withIndentFlex fn p = withIndentConfig fn align indentby
         space
         aligned p
 
-    indentby i = indentedBy i $ do
+    indentby i = indented i $ do
         spaceOrNewline
         p
 
@@ -253,7 +252,7 @@ withIndentAfter fn before p = withIndentConfig fn align indentby
 
     indentby i = do
         withIndentation id before
-        indentedBy i p
+        indented i p
 
 withIndentBy :: (IndentConfig -> Int) -> Printer a -> Printer a
 withIndentBy fn = withIndent (IndentBy . fn)
@@ -297,14 +296,9 @@ aligned p = do
     col <- getNextColumn
     column col p
 
-indented :: Printer a -> Printer a
-indented p = do
-    i <- getConfig (cfgIndentOnside . cfgIndent)
-    indentedBy i p
-
 -- | Increase indentation level by n spaces for the given printer.
-indentedBy :: Int -> Printer a -> Printer a
-indentedBy i p = do
+indented :: Int -> Printer a -> Printer a
+indented i p = do
     level <- gets psIndentLevel
     column (level + i) p
 
@@ -321,9 +315,10 @@ depend kw = depend' (write kw)
 
 depend' :: Printer () -> Printer a -> Printer a
 depend' kw p = do
+    i <- getConfig (cfgIndentOnside . cfgIndent)
     kw
     space
-    indented p
+    indented i p
 
 -- | Wrap in parens.
 parens :: Printer () -> Printer ()
