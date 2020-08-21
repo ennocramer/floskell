@@ -47,8 +47,6 @@ module Floskell.Printers
     , operatorH
     , operatorV
     , alignOnOperator
-    , alignOnOperatorH
-    , alignOnOperatorV
     , withOperatorFormatting
     , withOperatorFormattingH
     , withOperatorFormattingV
@@ -375,14 +373,6 @@ operatorV ctx op = withOperatorFormattingV ctx op (write op) id
 alignOnOperator :: LayoutContext -> ByteString -> Printer a -> Printer a
 alignOnOperator ctx op p =
     withOperatorFormatting ctx op (write op) (aligned . (*> p))
-
-alignOnOperatorH :: LayoutContext -> ByteString -> Printer a -> Printer a
-alignOnOperatorH ctx op p =
-    withOperatorFormattingH ctx op (write op) (aligned . (*> p))
-
-alignOnOperatorV :: LayoutContext -> ByteString -> Printer a -> Printer a
-alignOnOperatorV ctx op p =
-    withOperatorFormattingV ctx op (write op) (aligned . (*> p))
 
 withOperatorFormatting :: LayoutContext
                        -> ByteString
