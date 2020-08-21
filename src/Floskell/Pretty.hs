@@ -2102,15 +2102,6 @@ instance Pretty Stmt where
         operator Expression "<-"
         pretty expr
 
-    -- Special case for If in Do,
-    prettyPrint (Qualifier _ expr@If{}) = do
-        cfg <- getConfig (cfgIndentIf . cfgIndent)
-        case cfg of
-            Align -> do
-                write ""
-                indented $ pretty expr
-            _ -> pretty expr
-
     prettyPrint (Qualifier _ expr) = pretty expr
 
     prettyPrint (LetStmt _ binds) = do
