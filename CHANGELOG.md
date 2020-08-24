@@ -1,3 +1,7 @@
+# Floskell 0.10.5 (unreleased)
+
+* Fix indentation of nested list and tuple expressions
+
 # Floskell 0.10.4 (2020-08-05)
 
 * Fix formatting of type applications

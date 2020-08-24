@@ -283,14 +283,14 @@ listVinternal ctx sep xs = case xs of
             sepCol = itemCol - delta
         column itemCol $ do
             printComments' Before x
-            cut . onside $ prettyPrint x
+            cut $ prettyPrint x
             printComments After x
         -- `column sepCol` must not be within `column itemCol`, or the
         -- former can suppress onside for the latter.
         forM_ xs' $ \x' -> do
             column itemCol $ printComments Before x'
             column sepCol $ operatorV ctx sep
-            column itemCol $ cut . onside $ prettyPrint x'
+            column itemCol $ cut $ prettyPrint x'
             column itemCol $ printComments After x'
 
 listH :: (Annotated ast, Pretty ast)
@@ -616,7 +616,7 @@ prettyTypesig ctx names ty = do
     atTabStop stopRecordField
     withIndentConfig cfgIndentTypesig align indentby
   where
-    align = alignOnOperator ctx "::" $ pretty ty
+    align = onside . alignOnOperator ctx "::" $ pretty ty
 
     indentby i = indented i $ do
         operator ctx "::"
@@ -1142,8 +1142,10 @@ instance Pretty ClassDecl where
 
     prettyPrint (ClsTyDef _ typeeqn) = depend "type" $ pretty typeeqn
 
-    prettyPrint (ClsDefSig _ name ty) =
-        depend "default" $ prettyTypesig Declaration [ name ] ty
+    prettyPrint (ClsDefSig _ name ty) = do
+        write "default"
+        space
+        prettyTypesig Declaration [ name ] ty
 
 instance Pretty InstDecl where
     prettyPrint (InsDecl _ decl) = pretty decl
@@ -2110,9 +2112,10 @@ instance Pretty Stmt where
 instance Pretty FieldUpdate where
     prettyPrint (FieldUpdate _ qname expr) = do
         pretty qname
-        atTabStop stopRecordField
-        operator Expression "="
-        pretty expr
+        onside $ do
+            atTabStop stopRecordField
+            operator Expression "="
+            pretty expr
 
     prettyPrint (FieldPun _ qname) = pretty qname
 
