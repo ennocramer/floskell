@@ -268,8 +268,7 @@ defaultConfig =
     def { cfgOp    = OpConfig ((unOpConfig def) { cfgMapOverrides =
                                                       Map.fromList opWsOverrides
                                                 })
-        , cfgGroup = GroupConfig ((unGroupConfig def) { cfgMapOverrides =
-                                                            Map.fromList groupWsOverrides
+        , cfgGroup = GroupConfig ((unGroupConfig def) { cfgMapOverrides = Map.fromList groupWsOverrides
                                                       })
         }
   where

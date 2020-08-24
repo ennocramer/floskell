@@ -189,7 +189,8 @@ printCommentsInternal nlBefore loc ast = unless (null comments) $ do
     let correction = case loc of
             Before -> col - srcSpanStartColumn ssi + 1
             After -> col - srcSpanEndColumn ssi + 1
-    forM_ (zip comments (tail (map commentSpan comments ++ [ssi]))) $ printComment correction
+    forM_ (zip comments (tail (map commentSpan comments ++ [ ssi ]))) $
+        printComment correction
 
     -- Write newline before restoring onside indent.
     eol <- gets psEolComment
@@ -968,7 +969,8 @@ instance Pretty Decl where
     prettyPrint (PatSyn _ pat pat' patternsyndirection) = do
         depend "pattern" $ prettySimpleDecl pat sep pat'
         case patternsyndirection of
-            ExplicitBidirectional _ decls -> prettyBinds (BDecls noNodeInfo decls)
+            ExplicitBidirectional _ decls ->
+                prettyBinds (BDecls noNodeInfo decls)
             _ -> return ()
       where
         sep = case patternsyndirection of
@@ -1334,6 +1336,7 @@ instance Pretty Asst where
     prettyPrint (TypeA _ ty) = pretty ty
     prettyPrint (IParam _ ipname ty) = prettyTypesig Declaration [ ipname ] ty
     prettyPrint (ParenA _ asst) = parens $ pretty asst
+
 #else
 instance Pretty Asst where
     prettyPrint (ClassA _ qname types) = do
@@ -2133,7 +2136,8 @@ instance Pretty Bracket where
     prettyPrint (ExpBracket _ expr) = group Expression "[|" "|]" $ pretty expr
 
 #if MIN_VERSION_haskell_src_exts(1,22,0)
-    prettyPrint (TExpBracket _ expr) = group Expression "[||" "||]" $ pretty expr
+    prettyPrint (TExpBracket _ expr) =
+        group Expression "[||" "||]" $ pretty expr
 #endif
 
     prettyPrint (PatBracket _ pat) = group Expression "[p|" "|]" $ pretty pat
@@ -2156,7 +2160,6 @@ instance Pretty Splice where
         string str
 
     prettyPrint (TParenSplice _ expr) = group Expression "$$(" ")" $ pretty expr
-
 #endif
 
 instance Pretty ModulePragma where

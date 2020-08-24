@@ -90,14 +90,13 @@ chrisDoneCfg =
                               }
 
 cramerCfg :: Config
-cramerCfg =
-    defaultConfig { cfgAlign
-                  , cfgIndent
-                  , cfgLayout
-                  , cfgOp
-                  , cfgGroup
-                  , cfgOptions
-                  }
+cramerCfg = defaultConfig { cfgAlign
+                          , cfgIndent
+                          , cfgLayout
+                          , cfgOp
+                          , cfgGroup
+                          , cfgOptions
+                          }
   where
     cfgAlign = AlignConfig { cfgAlignLimits       = (10, 25)
                            , cfgAlignCase         = False
@@ -189,9 +188,7 @@ cramerCfg =
         , ( ConfigMapKey (Just "[") (Just Pattern)
           , Whitespace WsBoth WsAfter False
           )
-        , ( ConfigMapKey (Just "[") (Just Type)
-          , Whitespace WsNone WsNone False
-          )
+        , (ConfigMapKey (Just "[") (Just Type), Whitespace WsNone WsNone False)
         ]
 
     cfgOptions =
@@ -206,14 +203,13 @@ cramerCfg =
                      }
 
 gibianskyCfg :: Config
-gibianskyCfg =
-    defaultConfig { cfgAlign
-                  , cfgIndent
-                  , cfgLayout
-                  , cfgOp
-                  , cfgGroup
-                  , cfgOptions
-                  }
+gibianskyCfg = defaultConfig { cfgAlign
+                             , cfgIndent
+                             , cfgLayout
+                             , cfgOp
+                             , cfgGroup
+                             , cfgOptions
+                             }
   where
     cfgAlign = AlignConfig { cfgAlignLimits       = (10, 25)
                            , cfgAlignCase         = True
