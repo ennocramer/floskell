@@ -975,3 +975,17 @@ on individual declarations and quoted haskell code.
 >              | Three -- Baz
 >
 ```
+
+## Module Exports
+
+Long module exports don't force overlong line.
+
+``` haskell
+module SimpleFunctions
+    ( identity
+    , compose
+    , append
+    , firstElement
+    , secondElem
+    ) where
+```

@@ -743,25 +743,25 @@ instance Pretty ModuleHead where
         depend "module" $ do
             pretty name
             mayM_ mwarning $ withPrefix spaceOrNewline pretty
-        mayM_ mexports pretty
-        write " where"
+        withLayout cfgLayoutExportSpecList flex vertical
+      where
+        flex = do
+            mayM_ mexports $ \(ExportSpecList _ exports) -> do
+                space
+                listAutoWrap Other "(" ")" "," exports
+            write " where"
+
+        vertical = do
+            mayM_ mexports $ \(ExportSpecList _ exports) -> do
+                withIndent cfgIndentExportSpecList $
+                    listV Other "(" ")" "," exports
+            write " where"
 
 instance Pretty WarningText where
     prettyPrint (DeprText _ s) = write "{-# DEPRECATED " >> string (show s)
         >> write " #-}"
     prettyPrint (WarnText _ s) = write "{-# WARNING " >> string (show s)
         >> write " #-}"
-
-instance Pretty ExportSpecList where
-    prettyPrint (ExportSpecList _ exports) =
-        withLayout cfgLayoutExportSpecList flex vertical
-      where
-        flex = do
-            space
-            listAutoWrap Other "(" ")" "," exports
-
-        vertical = withIndent cfgIndentExportSpecList $
-            listV Other "(" ")" "," exports
 
 instance Pretty ExportSpec
 
