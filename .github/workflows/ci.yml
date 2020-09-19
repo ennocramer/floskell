@@ -1,0 +1,77 @@
+name: CI Pipeline
+
+on:
+  push:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+
+jobs:
+  cabal:
+    name: GHC ${{ matrix.ghc }} (${{ matrix.os }})
+
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, macOS-latest ]
+        ghc: [ 8.0.2, 8.2.2, 8.4.4, 8.6.5, 8.8.3, 8.10.1]
+        exclude:
+          - os: macOS-latest
+            ghc: 8.0.2
+          - os: macOS-latest
+            ghc: 8.2.2
+          - os: macOS-latest
+            ghc: 8.4.4
+          - os: windows-latest
+            ghc: 8.0.2
+          - os: windows-latest
+            ghc: 8.2.2
+          - os: windows-latest
+            ghc: 8.4.4
+
+    env:
+      CONFIG: --enable-tests --enable-benchmarks
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Haskell
+        uses: actions/setup-haskell@v1.1.2
+        id: setup-haskell-cabal
+        with:
+          ghc-version: ${{ matrix.ghc }}
+
+      - name: Cabal Update
+        run: cabal update
+
+      - name: Cabal Freeze
+        run: cabal freeze $CONFIG
+
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
+            dist-newstyle
+          key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.ghc }}-
+
+      - name: Build Dependencies
+        run: cabal build $CONFIG --only-dependencies
+
+      - name: Build Project
+        run: cabal build $CONFIG
+
+      - name: Run Test
+        run: cabal test $CONFIG
+
+      - name: Generate Documentation
+        run: cabal haddock $CONFIG
+
+      - name: Package Distribution
+        run: cabal sdist
+

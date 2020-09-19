@@ -1,4 +1,8 @@
-# Floskell [![Build Status](https://travis-ci.org/ennocramer/floskell.png)](https://travis-ci.org/ennocramer/floskell)
+# Floskell
+
+[![Hackage][hackage-image]][hackage-url]
+[![Build Status][ci-image]][ci-url]
+[![License][license-image]][license-url]
 
 Floskell is a flexible Haskell source code pretty printer.
 
@@ -323,3 +327,11 @@ which adds floskell to atom menu with each available style, and
 should be installed as package into `.atom\packages\${PACKAGE_NAME}`,
 here is simple example of atom
 [package](https://github.com/Heather/atom-hindent).
+
+<!-- Markdown link & img dfn's -->
+[hackage-image]: https://img.shields.io/hackage/v/floskell.svg?style=flat
+[hackage-url]: https://hackage.haskell.org/package/floskell
+[ci-image]: https://github.com/ennocramer/floskell/workflows/CI%20Pipeline/badge.svg
+[ci-url]: https://github.com/ennocramer/floskell/actions?query=workflow%3A%22CI+Pipeline%22
+[license-image]: https://img.shields.io/badge/license-BSD--3--Clause-blue?style=flat-square
+[license-url]: https://github.com/ennocramer/floskell/blob/master/LICENSE.md
