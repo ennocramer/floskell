@@ -389,12 +389,21 @@ listAutoWrap' ctx sep (x : xs) = aligned $ do
                      else BS.length sep + if wsSpace After ws then 1 else 0
     col <- getNextColumn
     pretty x
-    forM_ xs $ \x' -> do
+    go (col - correction) xs
+  where
+    go _ [] = return ()
+    go col [x'] = do
+        printComments Before x'
+        column col $ operator ctx sep
+        prettyPrint x'
+        printComments After x'
+    go col (x':xs') = do
         printComments Before x'
         cut $ do
-            column (col - correction) $ operator ctx sep
+            column col $ operator ctx sep
             prettyPrint x'
             printComments After x'
+        go col xs'
 
 measure :: Printer a -> Printer (Maybe Int)
 measure p = do
