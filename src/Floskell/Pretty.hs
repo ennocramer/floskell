@@ -1455,7 +1455,7 @@ instance Pretty Type where
             operator Type "::"
             pretty kind
 
-        prettyF ty@(TyPromoted _ _promoted) = prettyHSE ty
+        prettyF (TyPromoted _ promoted) = pretty promoted
 
         prettyF (TyEquals _ ty ty') = do
             pretty ty
@@ -1469,7 +1469,7 @@ instance Pretty Type where
             pretty bangtype
             pretty ty
 
-        prettyF ty@(TyWildCard _ _mname) = prettyHSE ty
+        prettyF ty@(TyWildCard _ _mname) = prettyHSE ty -- FIXME
 
         prettyF (TyQuasiQuote _ str str') = do
             write "["
@@ -1524,6 +1524,28 @@ instance Pretty Kind where
 
     prettyPrint (KindList _ kind) = group Type "'[" "]" $ pretty kind
 #endif
+
+instance Pretty Promoted where
+    prettyPrint (PromotedInteger _ _ str) = string str
+
+    prettyPrint (PromotedString _ _ str) = do
+        write "\""
+        string str
+        write "\""
+
+    prettyPrint (PromotedCon _ quote qname) = do
+        when quote $ write "'"
+        pretty qname
+
+    prettyPrint (PromotedList _ quote tys) = do
+        when quote $ write "'"
+        list Expression "[" "]" "," tys
+
+    prettyPrint (PromotedTuple _ tys) = do
+        write "'"
+        list Expression "(" ")" "," tys
+
+    prettyPrint (PromotedUnit _) = write "'()"
 
 instance Pretty TyVarBind where
     prettyPrint (KindedVar _ name kind) = parens $ do

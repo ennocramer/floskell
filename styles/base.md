@@ -781,6 +781,12 @@ newtype MyMonadT a b m
           (ReaderT a (ExceptT [ IM.IntMap b ]) (WriterT [ IS.IntSet x ] m)) }
 ```
 
+Promoted types.
+
+``` haskell
+type Foo = Bar 1 "foo" '() '( A, B ) '[ X, Y ]
+```
+
 ## Patterns
 
 Long function pattern matches allow linebreaks.

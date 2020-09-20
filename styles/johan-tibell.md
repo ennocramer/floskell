@@ -863,6 +863,12 @@ newtype MyMonadT a b m =
     }
 ```
 
+Promoted types.
+
+``` haskell
+type Foo = Bar 1 "foo" '() '(A, B) '[X, Y]
+```
+
 ## Patterns
 
 Long function pattern matches allow linebreaks.
