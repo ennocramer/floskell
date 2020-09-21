@@ -14,7 +14,23 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest, macOS-latest ]
-        ghc: [ 8.0.2, 8.2.2, 8.4.4, 8.6.5, 8.8.3, 8.10.1]
+        ghc: [ 8.0.2, 8.2.2, 8.4.4, 8.6.5, 8.8.3, 8.10.1 ]
+        include:
+          - os: ubuntu-latest
+            ghc: 8.0.2
+            hse-constraint: --constraint haskell-src-exts==1.19.1
+          - os: ubuntu-latest
+            ghc: 8.2.2
+            hse-constraint: --constraint haskell-src-exts==1.20.2
+          - os: ubuntu-latest
+            ghc: 8.4.4
+            hse-constraint: --constraint haskell-src-exts==1.20.3
+          - os: ubuntu-latest
+            ghc: 8.6.5
+            hse-constraint: --constraint haskell-src-exts==1.21.1
+          - os: ubuntu-latest
+            ghc: 8.8.3
+            hse-constraint: --constraint haskell-src-exts==1.22.0
         exclude:
           - os: macOS-latest
             ghc: 8.0.2
@@ -22,19 +38,18 @@ jobs:
             ghc: 8.2.2
           - os: macOS-latest
             ghc: 8.4.4
-          - os: windows-latest
-            ghc: 8.0.2
-          - os: windows-latest
-            ghc: 8.2.2
-          - os: windows-latest
-            ghc: 8.4.4
 
     env:
-      CONFIG: --enable-tests --enable-benchmarks
+      ARGS: --enable-tests --enable-benchmarks ${{ matrix.hse-constraint }}
 
     runs-on: ${{ matrix.os }}
 
     steps:
+      - name: Environment
+        run: |
+          echo "matrix=${{ toJSON(matrix) }}"
+          echo "ARGS=$ARGS"
+
       - name: Checkout
         uses: actions/checkout@v2
 
@@ -48,7 +63,7 @@ jobs:
         run: cabal update
 
       - name: Cabal Freeze
-        run: cabal freeze $CONFIG
+        run: cabal freeze $ARGS
 
       - name: Cache
         uses: actions/cache@v2
@@ -61,17 +76,16 @@ jobs:
             ${{ runner.os }}-${{ matrix.ghc }}-
 
       - name: Build Dependencies
-        run: cabal build $CONFIG --only-dependencies
+        run: cabal build $ARGS --only-dependencies
 
       - name: Build Project
-        run: cabal build $CONFIG
+        run: cabal build $ARGS
 
-      - name: Run Test
-        run: cabal test $CONFIG
+      - name: Run Tests
+        run: cabal test $ARGS
 
       - name: Generate Documentation
-        run: cabal haddock $CONFIG
+        run: cabal haddock $ARGS
 
       - name: Package Distribution
         run: cabal sdist
-
