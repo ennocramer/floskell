@@ -392,12 +392,12 @@ listAutoWrap' ctx sep (x : xs) = aligned $ do
     go (col - correction) xs
   where
     go _ [] = return ()
-    go col [x'] = do
+    go col [ x' ] = do
         printComments Before x'
         column col $ operator ctx sep
         prettyPrint x'
         printComments After x'
-    go col (x':xs') = do
+    go col (x' : xs') = do
         printComments Before x'
         cut $ do
             column col $ operator ctx sep
