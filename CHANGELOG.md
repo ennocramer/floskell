@@ -1,6 +1,8 @@
-# Floskell 0.10.5 (unreleased)
+# Floskell 0.10.5 (2020-09-21)
 
 * Fix indentation of nested list and tuple expressions
+* Fix formatting of slightly overlong module headers
+* Fix formatting of promoted types
 
 # Floskell 0.10.4 (2020-08-05)
 
