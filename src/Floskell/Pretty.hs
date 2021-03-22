@@ -1618,18 +1618,22 @@ instance Pretty Exp where
             write "let "
             prettyOnside (CompactBinds binds)
             spaceOrNewline
-            write "in "
+            nl <- gets psNewline
+            alignP <- getOption cfgOptionAlignLetBindsAndInExpr
+            write $ if nl && alignP then "in  " else "in "
             prettyOnside expr
 
-        vertical = withIndentAfter cfgIndentLet
-                                   (do
-                                        write "let"
-                                        withIndent cfgIndentLetBinds $
-                                            pretty (CompactBinds binds))
-                                   (do
-                                        newline
-                                        write "in"
-                                        withIndent cfgIndentLetIn $ pretty expr)
+        vertical = withIndentAfter
+                       cfgIndentLet
+                       (do
+                            write "let"
+                            withIndent cfgIndentLetBinds $
+                                pretty (CompactBinds binds))
+                       (do
+                            newline
+                            alignP <- getOption cfgOptionAlignLetBindsAndInExpr
+                            write $ if alignP then "in " else "in"
+                            withIndent cfgIndentLetIn $ pretty expr)
 
     prettyPrint (If _ expr expr' expr'') = withLayout cfgLayoutIf flex vertical
       where
