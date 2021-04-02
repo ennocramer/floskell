@@ -767,12 +767,13 @@ instance Pretty ExportSpec
 
 instance Pretty ImportDecl where
     prettyPrint ImportDecl{..} = do
-        inter space . map write $
-            filter (not . BS.null)
+        inter space . map string $
+            filter (not . null)
                    [ "import"
                    , if importSrc then "{-# SOURCE #-}" else ""
                    , if importSafe then "safe" else ""
                    , if importQualified then "qualified" else ""
+                   , maybe "" show importPkg
                    ]
         atTabStop stopImportModule
         space

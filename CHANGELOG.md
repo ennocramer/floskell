@@ -1,3 +1,8 @@
+# Floskell 0.10.6 (unreleased)
+
+* Add support for building with GHC-9.0.1
+* Fix formatting of package-qualified imports
+
 # Floskell 0.10.5 (2020-09-21)
 
 * Fix indentation of nested list and tuple expressions
