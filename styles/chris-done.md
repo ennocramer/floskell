@@ -989,6 +989,14 @@ consM m (Stream step state) = Stream step1 Nothing
         step1 _ _ = undefined
 ```
 
+Comments between declarations do not cause empty lines.
+
+``` haskell
+f :: ()
+--
+f = ()
+```
+
 ## Indentation and Line Prefixes
 
 Preserving indentation and line prefixes so that Floskell can be run

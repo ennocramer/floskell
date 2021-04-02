@@ -2,6 +2,7 @@
 
 * Add support for building with GHC-9.0.1
 * Fix formatting of package-qualified imports
+* Avoid inserting blank lines between comments and declarations
 
 # Floskell 0.10.5 (2020-09-21)
 

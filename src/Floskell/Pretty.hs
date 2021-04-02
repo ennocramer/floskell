@@ -512,14 +512,6 @@ prettyImports is = do
   where
     prettyGroups = inter blankline . map (inter newline . map (cut . pretty))
 
-skipBlank :: Annotated ast
-          => (ast NodeInfo -> ast NodeInfo -> Bool)
-          -> ast NodeInfo
-          -> ast NodeInfo
-          -> Bool
-skipBlank skip a b = skip a b && null (filterComments After a)
-    && null (filterComments Before b)
-
 skipBlankAfterDecl :: Decl a -> Bool
 skipBlankAfterDecl a = case a of
     TypeSig{} -> True
@@ -536,17 +528,17 @@ skipBlankAfterDecl a = case a of
     _ -> False
 
 skipBlankDecl :: Decl NodeInfo -> Decl NodeInfo -> Bool
-skipBlankDecl = skipBlank $ \a _ -> skipBlankAfterDecl a
+skipBlankDecl a _ = skipBlankAfterDecl a
 
 skipBlankClassDecl :: ClassDecl NodeInfo -> ClassDecl NodeInfo -> Bool
-skipBlankClassDecl = skipBlank $ \a _ -> case a of
+skipBlankClassDecl a _ = case a of
     (ClsDecl _ decl) -> skipBlankAfterDecl decl
     ClsTyDef{} -> True
     ClsDefSig{} -> True
     _ -> False
 
 skipBlankInstDecl :: InstDecl NodeInfo -> InstDecl NodeInfo -> Bool
-skipBlankInstDecl = skipBlank $ \a _ -> case a of
+skipBlankInstDecl a _ = case a of
     (InsDecl _ decl) -> skipBlankAfterDecl decl
     _ -> False
 
