@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE CPP #-}
 
 module Floskell.ConfigFile
     ( AppConfig(..)
@@ -29,10 +30,15 @@ import           Data.Aeson
 import qualified Data.Aeson                 as JSON
 import qualified Data.Aeson.Parser          as JSON ( json' )
 import qualified Data.Aeson.Types           as JSON ( typeMismatch )
+#if MIN_VERSION_aeson(2,0,0)
+import qualified Data.Aeson.KeyMap          as JSON ( unionWith )
+#endif
 import qualified Data.Attoparsec.ByteString as AP
 import qualified Data.ByteString            as BS
 import           Data.Char                  ( isLetter, isSpace )
+#if !(MIN_VERSION_aeson(2,0,0))
 import qualified Data.HashMap.Lazy          as HashMap
+#endif
 import           Data.List                  ( inits )
 import qualified Data.Text                  as T
 
@@ -90,7 +96,11 @@ instance FromJSON AppConfig where
         mergeJSON JSON.Null r = r
         mergeJSON l JSON.Null = l
         mergeJSON (JSON.Object l) (JSON.Object r) =
+#if MIN_VERSION_aeson(2,0,0)
+            JSON.Object (JSON.unionWith mergeJSON l r)
+#else
             JSON.Object (HashMap.unionWith mergeJSON l r)
+#endif
         mergeJSON _ r = r
 
     parseJSON v = JSON.typeMismatch "AppConfig" v
