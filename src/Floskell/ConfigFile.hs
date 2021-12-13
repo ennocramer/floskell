@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -27,12 +28,19 @@ import           Control.Applicative        ( (<|>) )
 import           Data.Aeson
                  ( (.:?), (.=), FromJSON(..), ToJSON(..) )
 import qualified Data.Aeson                 as JSON
-import qualified Data.Aeson.Parser          as JSON ( json' )
 import qualified Data.Aeson.Types           as JSON ( typeMismatch )
 import qualified Data.Attoparsec.ByteString as AP
 import qualified Data.ByteString            as BS
 import           Data.Char                  ( isLetter, isSpace )
-import qualified Data.HashMap.Lazy          as HashMap
+
+#if MIN_VERSION_aeson(2,0,0)
+import qualified Data.Aeson.KeyMap          as Map
+#else
+import qualified Data.Aeson.Parser          as JSON ( json' )
+import qualified Data.HashMap.Lazy          as Map
+#endif
+
+
 import           Data.List                  ( inits )
 import qualified Data.Text                  as T
 
@@ -90,7 +98,7 @@ instance FromJSON AppConfig where
         mergeJSON JSON.Null r = r
         mergeJSON l JSON.Null = l
         mergeJSON (JSON.Object l) (JSON.Object r) =
-            JSON.Object (HashMap.unionWith mergeJSON l r)
+            JSON.Object (Map.unionWith mergeJSON l r)
         mergeJSON _ r = r
 
     parseJSON v = JSON.typeMismatch "AppConfig" v
