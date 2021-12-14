@@ -1,6 +1,6 @@
-# Floskell 0.10.6 (unreleased)
+# Floskell 0.10.6 (2021-12-14)
 
-* Add support for building with GHC-9.0.1
+* Add support for building with GHC-9.0.1, GHC-9.2.1
 * Fix formatting of package-qualified imports
 * Avoid inserting blank lines between comments and declarations
 
