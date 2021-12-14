@@ -18,29 +18,29 @@ but generally will not produce exactly the same output.
 
 ## Installation
 
-    $ git clone https://github.com/ennocramer/floskell
-    $ cd floskell
-    $ stack install
+    git clone https://github.com/ennocramer/floskell
+    cd floskell
+    stack install
 
 
 ## Usage
 
 Floskell can be used to reformat Haskell source files in place
 
-    $ floskell path/to/sourcefile.hs
+    floskell path/to/sourcefile.hs
 
 or as a pipeline processor
 
-    $ cat path/to/sourcefile.hs | floskell > outfile.hs
+    cat path/to/sourcefile.hs | floskell > outfile.hs
 
 One of the predefined formatting styles can be selected with the
 `--style` option
 
-    $ floskell --style cramer path/to/sourcefile.hs
+    floskell --style cramer path/to/sourcefile.hs
 
 Or the style can be read from a configuration file
 
-    $ floskell --config path/to/config.json path/to/sourcefile.hs
+    floskell --config path/to/config.json path/to/sourcefile.hs
 
 If neither style nor configuration file is given on the command line,
 Floskell will try to find a configuration file in the current working
@@ -238,7 +238,7 @@ for a detailed description of the contents of the configuration file.
 The `--print-config` command line option can be used to create an
 initial configuration file.
 
-    $ floskell --style cramer --print-config > ~/.floskell.json
+    floskell --style cramer --print-config > ~/.floskell.json
 
 This command will create a configuration file with all fields and the
 entire definition of the selected style in the `formatting` block.
