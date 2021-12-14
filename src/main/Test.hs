@@ -10,7 +10,7 @@ import           Control.Monad                ( forM_, guard )
 
 import           Data.ByteString.Lazy         ( ByteString )
 import qualified Data.ByteString.Lazy         as L
-import qualified Data.ByteString.Lazy.Builder as B
+import qualified Data.ByteString.Builder      as B ( toLazyByteString )
 import qualified Data.ByteString.Lazy.UTF8    as UTF8
 import           Data.Maybe                   ( mapMaybe )
 import qualified Data.Text                    as T

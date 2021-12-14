@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE CPP #-}
 
 module Floskell.ConfigFile
     ( AppConfig(..)
@@ -29,6 +30,9 @@ import           Data.Aeson
                  ( (.:?), (.=), FromJSON(..), ToJSON(..) )
 import qualified Data.Aeson                 as JSON
 import qualified Data.Aeson.Types           as JSON ( typeMismatch )
+#if MIN_VERSION_aeson(2,0,0)
+import qualified Data.Aeson.KeyMap          as JSON ( unionWith )
+#endif
 import qualified Data.Attoparsec.ByteString as AP
 import qualified Data.ByteString            as BS
 import           Data.Char                  ( isLetter, isSpace )
@@ -39,7 +43,6 @@ import qualified Data.Aeson.KeyMap          as Map
 import qualified Data.Aeson.Parser          as JSON ( json' )
 import qualified Data.HashMap.Lazy          as Map
 #endif
-
 
 import           Data.List                  ( inits )
 import qualified Data.Text                  as T
