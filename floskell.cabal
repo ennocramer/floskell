@@ -1,6 +1,6 @@
 cabal-version:      >=1.10
 name:               floskell
-version:            0.10.6
+version:            0.10.7
 license:            BSD3
 license-file:       LICENSE.md
 copyright:
@@ -56,7 +56,7 @@ library
     default-language: Haskell2010
     ghc-options:      -Wall
     build-depends:
-        base >=4.9 && <4.17,
+        base >=4.9 && <=4.17,
         aeson >=0.11.3.0 && <2.1,
         attoparsec >=0.13.1.0 && <0.15,
         bytestring >=0.10.8.1 && <0.12,
@@ -80,7 +80,7 @@ executable floskell
         -Wall -Wno-missing-home-modules -optP-Wno-nonportable-include-path
 
     build-depends:
-        base >=4.9 && <4.17,
+        base >=4.9 && <=4.17,
         floskell -any,
         aeson-pretty >=0.8.2 && <0.9,
         bytestring >=0.10.8.1 && <0.12,
@@ -98,7 +98,7 @@ test-suite floskell-test
     default-language: Haskell2010
     ghc-options:      -Wall -threaded -rtsopts -with-rtsopts=-N
     build-depends:
-        base >=4.9 && <4.17,
+        base >=4.9 && <=4.17,
         floskell -any,
         bytestring >=0.10.8.1 && <0.12,
         deepseq >=1.4.2.0 && <1.5,
@@ -116,7 +116,7 @@ benchmark floskell-bench
     default-language: Haskell2010
     ghc-options:      -Wall -threaded -rtsopts -with-rtsopts=-N
     build-depends:
-        base >=4.9 && <4.17,
+        base >=4.9 && <=4.17,
         floskell -any,
         bytestring >=0.10.8.1 && <0.12,
         criterion >=1.1.1.0 && <1.6,
