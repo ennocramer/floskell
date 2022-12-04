@@ -14,11 +14,8 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest, macOS-latest ]
-        ghc: [ 8.2.2, 8.4.4, 8.6.5, 8.8.3, 8.10.1, 9.0.1, 9.2.1, 9.4.2 ]
+        ghc: [ 8.4.4, 8.6.5, 8.8.3, 8.10.1, 9.0.1, 9.2.1, 9.4.2 ]
         include:
-          - os: ubuntu-latest
-            ghc: 8.2.2
-            hse-constraint: --constraint haskell-src-exts==1.20.2
           - os: ubuntu-latest
             ghc: 8.4.4
             hse-constraint: --constraint haskell-src-exts==1.20.3
@@ -29,8 +26,6 @@ jobs:
             ghc: 8.8.3
             hse-constraint: --constraint haskell-src-exts==1.22.0
         exclude:
-          - os: macOS-latest
-            ghc: 8.2.2
           - os: macOS-latest
             ghc: 8.4.4
 
