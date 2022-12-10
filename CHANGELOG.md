@@ -1,3 +1,7 @@
+# Floskell 0.10.7 (2022-12-10)
+
+* Add support for building with GHC-9.4.3
+
 # Floskell 0.10.6 (2021-12-14)
 
 * Add support for building with GHC-9.0.1, GHC-9.2.1

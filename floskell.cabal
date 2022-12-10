@@ -1,6 +1,6 @@
 cabal-version:      >=1.10
 name:               floskell
-version:            0.10.6
+version:            0.10.7
 license:            BSD3
 license-file:       LICENSE.md
 copyright:
