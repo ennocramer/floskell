@@ -7,36 +7,31 @@ on:
       - opened
       - synchronize
 
+permissions:
+  contents: read
+
 jobs:
-  cabal:
+  build:
     name: GHC ${{ matrix.ghc }} (${{ matrix.os }})
 
     strategy:
+      fail-fast: false
       matrix:
         os: [ ubuntu-latest, macOS-latest ]
-        ghc: [ 8.4.4, 8.6.5, 8.8.4, 8.10.7, 9.0.2, 9.2.5, 9.4.3 ]
+        ghc: [ '8.4', '8.6', '8.8', '8.10', '9.0', '9.2', '9.4' ]
         include:
-          - os: ubuntu-20.04
-            ghc: 8.0.2
-            hse-constraint: --constraint haskell-src-exts==1.19.1
-          - os: ubuntu-20.04
-            ghc: 8.2.2
-            hse-constraint: --constraint haskell-src-exts==1.20.2
           - os: ubuntu-latest
-            ghc: 8.4.4
+            ghc: '8.4'
             hse-constraint: --constraint haskell-src-exts==1.20.3
           - os: ubuntu-latest
-            ghc: 8.6.5
+            ghc: '8.6'
             hse-constraint: --constraint haskell-src-exts==1.21.1
           - os: ubuntu-latest
-            ghc: 8.8.4
+            ghc: '8.8'
             hse-constraint: --constraint haskell-src-exts==1.22.0
         exclude:
           - os: macOS-latest
-            ghc: 8.4.4
-
-    env:
-      ARGS: --enable-tests --enable-benchmarks ${{ matrix.hse-constraint }}
+            ghc: '8.4'
 
     runs-on: ${{ matrix.os }}
 
@@ -44,44 +39,52 @@ jobs:
       - name: Environment
         run: |
           echo "matrix=${{ toJSON(matrix) }}"
-          echo "ARGS=$ARGS"
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Setup Haskell
-        uses: haskell/actions/setup@v1
-        id: setup-haskell-cabal
+      - name: Setup GHC/Cabal
+        uses: haskell/actions/setup@v2
+        id: setup
         with:
           ghc-version: ${{ matrix.ghc }}
 
-      - name: Cabal Update
-        run: cabal update
+      - name: Configure
+        run: |
+          cabal configure --enable-test --enable-benchmarks --disable-documentation ${{ matrix.hse-constraint }}
+          cabal build --dry-run
+        # The last step generates dist-newstyle/cache/plan.json for the cache key.
 
-      - name: Cabal Freeze
-        run: cabal freeze $ARGS
-
-      - name: Cache
-        uses: actions/cache@v2
+      - name: Restore Cache
+        uses: actions/cache/restore@v3
+        id: cache
+        env:
+          key: ${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-cabal-${{ steps.setup.outputs.cabal-version }}
         with:
-          path: |
-            ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
-            dist-newstyle
-          key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ matrix.ghc }}-
+          path: ${{ steps.setup.outputs.cabal-store }}
+          key: ${{ env.key }}-plan-${{ hashFiles('**/plan.json') }}
+          restore-keys: ${{ env.key }}-
 
       - name: Build Dependencies
-        run: cabal build $ARGS --only-dependencies
+        run: cabal build all --only-dependencies
+
+      # Cache dependencies already here, so that we do not have to rebuild them should the subsequent steps fail.
+      - name: Save Cache
+        uses: actions/cache/save@v3
+        # Caches are immutable, trying to save with the same key would error.
+        if: ${{ steps.cache.outputs.cache-primary-key != steps.cache.outputs.cache-matched-key }}
+        with:
+          path: ${{ steps.setup.outputs.cabal-store }}
+          key: ${{ steps.cache.outputs.cache-primary-key }}
 
       - name: Build Project
-        run: cabal build $ARGS
+        run: cabal build all
 
       - name: Run Tests
-        run: cabal test $ARGS
+        run: cabal test all
 
       - name: Generate Documentation
-        run: cabal haddock $ARGS
+        run: cabal haddock all
 
-      - name: Package Distribution
-        run: cabal sdist
+      - name: Check Cabal File
+        run: cabal check
