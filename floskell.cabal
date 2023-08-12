@@ -1,10 +1,10 @@
 cabal-version:      >=1.10
 name:               floskell
-version:            0.10.7
+version:            0.10.8
 license:            BSD3
 license-file:       LICENSE.md
 copyright:
-    2014 Chris Done, 2015 Andrew Gibiansky, 2016-2020 Enno Cramer
+    2014 Chris Done, 2015 Andrew Gibiansky, 2016-2023 Enno Cramer
 
 maintainer:         ecramer@memfrob.de
 author:
