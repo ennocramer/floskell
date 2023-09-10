@@ -12,13 +12,12 @@ import           Control.Monad
 import           Control.Monad.State.Strict   ( get, gets, modify )
 
 import           Data.Bool                    ( bool )
-import           Data.ByteString              ( ByteString )
-import qualified Data.ByteString              as BS
-import qualified Data.ByteString.Char8        as BS8
-import qualified Data.ByteString.Lazy         as BL
 import           Data.List                    ( groupBy, sortBy, sortOn )
 import           Data.Maybe                   ( catMaybes, fromMaybe )
 import qualified Data.Set                     as Set
+import           Data.Text                    ( Text )
+import qualified Data.Text                    as T
+import qualified Data.Text.Lazy               as TL
 
 import qualified Floskell.Buffer              as Buffer
 import           Floskell.Config
@@ -154,14 +153,14 @@ printComment correction (Comment{..}, nextSpan) = do
             column 0 $ string commentText
             modify (\s -> s { psEolComment = True })
         InlineComment -> do
-            write $ BS.replicate padding 32
+            write $ T.replicate padding " "
             write "{-"
             string commentText
             write "-}"
             when (srcSpanEndLine commentSpan /= srcSpanStartLine nextSpan) $
                 modify (\s -> s { psEolComment = True })
         LineComment -> do
-            write $ BS.replicate padding 32
+            write $ T.replicate padding " "
             write "--"
             string commentText
             modify (\s -> s { psEolComment = True })
@@ -205,13 +204,13 @@ printCommentsInternal nlBefore loc ast = unless (null comments) $ do
         < srcSpanStartLine (commentSpan comment)
 
 -- | Return the configuration name of an operator
-opName :: QOp a -> ByteString
+opName :: QOp a -> Text
 opName op = case op of
     (QVarOp _ qname) -> opName' qname
     (QConOp _ qname) -> opName' qname
 
 -- | Return the configuration name of an operator
-opName' :: QName a -> ByteString
+opName' :: QName a -> Text
 opName' (Qual _ _ name) = opName'' name
 opName' (UnQual _ name) = opName'' name
 opName' (Special _ (FunCon _)) = "->"
@@ -219,9 +218,9 @@ opName' (Special _ (Cons _)) = ":"
 opName' (Special _ _) = ""
 
 -- | Return the configuration name of an operator
-opName'' :: Name a -> ByteString
+opName'' :: Name a -> Text
 opName'' (Ident _ _) = "``"
-opName'' (Symbol _ str) = BS8.pack str
+opName'' (Symbol _ str) = T.pack str
 
 lineDelta :: Annotated ast => ast NodeInfo -> ast NodeInfo -> Int
 lineDelta prev next = nextLine - prevLine
@@ -262,16 +261,16 @@ lined = linedFn pretty
 linedOnside :: (Annotated ast, Pretty ast) => [ast NodeInfo] -> Printer ()
 linedOnside = linedFn prettyOnside
 
-listVOpLen :: LayoutContext -> ByteString -> Printer Int
+listVOpLen :: LayoutContext -> Text -> Printer Int
 listVOpLen ctx sep = do
     ws <- getConfig (cfgOpWs ctx sep . cfgOp)
     return $ if wsLinebreak After ws
              then 0
-             else BS.length sep + if wsSpace After ws then 1 else 0
+             else T.length sep + if wsSpace After ws then 1 else 0
 
 listVinternal :: (Annotated ast, Pretty ast)
               => LayoutContext
-              -> ByteString
+              -> Text
               -> [ast NodeInfo]
               -> Printer ()
 listVinternal ctx sep xs = case xs of
@@ -296,9 +295,9 @@ listVinternal ctx sep xs = case xs of
 
 listH :: (Annotated ast, Pretty ast)
       => LayoutContext
-      -> ByteString
-      -> ByteString
-      -> ByteString
+      -> Text
+      -> Text
+      -> Text
       -> [ast NodeInfo]
       -> Printer ()
 listH _ open close _ [] = do
@@ -310,9 +309,9 @@ listH ctx open close sep xs =
 
 listV :: (Annotated ast, Pretty ast)
       => LayoutContext
-      -> ByteString
-      -> ByteString
-      -> ByteString
+      -> Text
+      -> Text
+      -> Text
       -> [ast NodeInfo]
       -> Printer ()
 listV ctx open close sep xs = groupV ctx open close $ do
@@ -325,9 +324,9 @@ listV ctx open close sep xs = groupV ctx open close $ do
 
 list :: (Annotated ast, Pretty ast)
      => LayoutContext
-     -> ByteString
-     -> ByteString
-     -> ByteString
+     -> Text
+     -> Text
+     -> Text
      -> [ast NodeInfo]
      -> Printer ()
 list ctx open close sep xs = oneline hor <|> ver
@@ -338,14 +337,14 @@ list ctx open close sep xs = oneline hor <|> ver
 
 listH' :: (Annotated ast, Pretty ast)
        => LayoutContext
-       -> ByteString
+       -> Text
        -> [ast NodeInfo]
        -> Printer ()
 listH' ctx sep = inter (operatorH ctx sep) . map pretty
 
 listV' :: (Annotated ast, Pretty ast)
        => LayoutContext
-       -> ByteString
+       -> Text
        -> [ast NodeInfo]
        -> Printer ()
 listV' ctx sep xs =
@@ -353,7 +352,7 @@ listV' ctx sep xs =
 
 list' :: (Annotated ast, Pretty ast)
       => LayoutContext
-      -> ByteString
+      -> Text
       -> [ast NodeInfo]
       -> Printer ()
 list' ctx sep xs = oneline hor <|> ver
@@ -364,9 +363,9 @@ list' ctx sep xs = oneline hor <|> ver
 
 listAutoWrap :: (Annotated ast, Pretty ast)
              => LayoutContext
-             -> ByteString
-             -> ByteString
-             -> ByteString
+             -> Text
+             -> Text
+             -> Text
              -> [ast NodeInfo]
              -> Printer ()
 listAutoWrap _ open close _ [] = do
@@ -378,7 +377,7 @@ listAutoWrap ctx open close sep xs =
 
 listAutoWrap' :: (Annotated ast, Pretty ast)
               => LayoutContext
-              -> ByteString
+              -> Text
               -> [ast NodeInfo]
               -> Printer ()
 listAutoWrap' _ _ [] = return ()
@@ -386,7 +385,7 @@ listAutoWrap' ctx sep (x : xs) = aligned $ do
     ws <- getConfig (cfgOpWs ctx sep . cfgOp)
     let correction = if wsLinebreak After ws
                      then 0
-                     else BS.length sep + if wsSpace After ws then 1 else 0
+                     else T.length sep + if wsSpace After ws then 1 else 0
     col <- getNextColumn
     pretty x
     go (col - correction) xs
@@ -412,7 +411,7 @@ measure p = do
     return $ case execPrinter (oneline p) s' of
         Nothing -> Nothing
         Just (_, s'') -> Just . (\x -> x - psIndentLevel s) . fromIntegral
-            . BL.length . Buffer.toLazyByteString $ psBuffer s''
+            . TL.length . Buffer.toLazyText $ psBuffer s''
 
 measure' :: Printer a -> Printer (Maybe [Int])
 measure' p = fmap (: []) <$> measure p
@@ -554,7 +553,7 @@ prettyDecls fn dc = inter sep . map lined . runs fn
 
 prettySimpleDecl :: (Annotated ast1, Pretty ast1, Annotated ast2, Pretty ast2)
                  => ast1 NodeInfo
-                 -> ByteString
+                 -> Text
                  -> ast2 NodeInfo
                  -> Printer ()
 prettySimpleDecl lhs op rhs = withLayout cfgLayoutDeclaration flex vertical
@@ -625,7 +624,7 @@ prettyTypesig ctx names ty = do
         nl <- gets psNewline
         when nl $ do
             delta <- listVOpLen ctx "->"
-            write $ BS.replicate delta 32
+            write $ T.replicate delta " "
         pretty ty
 
 prettyApp :: (Annotated ast1, Annotated ast2, Pretty ast1, Pretty ast2)
@@ -646,7 +645,7 @@ prettyApp fn args = withLayout cfgLayoutApp flex vertical
 
 prettyInfixApp
     :: (Annotated ast, Pretty ast, Annotated op, HSE.Pretty (op NodeInfo))
-    => (op NodeInfo -> ByteString)
+    => (op NodeInfo -> Text)
     -> LayoutContext
     -> (ast NodeInfo, [(op NodeInfo, ast NodeInfo)])
     -> Printer ()
@@ -702,10 +701,10 @@ prettyRecordFields len ctx fields = withLayout cfgLayoutRecord flex vertical
                             (fmap (fmap pure) . len)
                             fields $ listVinternal ctx "," fields
 
-prettyPragma :: ByteString -> Printer () -> Printer ()
+prettyPragma :: Text -> Printer () -> Printer ()
 prettyPragma name = prettyPragma' name . Just
 
-prettyPragma' :: ByteString -> Maybe (Printer ()) -> Printer ()
+prettyPragma' :: Text -> Maybe (Printer ()) -> Printer ()
 prettyPragma' name mp = do
     write "{-# "
     write name
@@ -1616,17 +1615,17 @@ instance Pretty Exp where
             write $ if nl && alignP then "in  " else "in "
             prettyOnside expr
 
-        vertical = withIndentAfter
-                       cfgIndentLet
-                       (do
-                            write "let"
-                            withIndent cfgIndentLetBinds $
-                                pretty (CompactBinds binds))
-                       (do
-                            newline
-                            alignP <- getOption cfgOptionAlignLetBindsAndInExpr
-                            write $ if alignP then "in " else "in"
-                            withIndent cfgIndentLetIn $ pretty expr)
+        vertical =
+            withIndentAfter cfgIndentLet
+                            (do
+                                 write "let"
+                                 withIndent cfgIndentLetBinds $
+                                     pretty (CompactBinds binds))
+                            (do
+                                 newline
+                                 alignP <- getOption cfgOptionAlignLetBindsAndInExpr
+                                 write $ if alignP then "in " else "in"
+                                 withIndent cfgIndentLetIn $ pretty expr)
 
     prettyPrint (If _ expr expr' expr'') = withLayout cfgLayoutIf flex vertical
       where
@@ -2198,7 +2197,7 @@ instance Pretty ModulePragma where
         string (trim str)
       where
         name = case mtool of
-            Just tool -> "OPTIONS_" `mappend` BS8.pack (HSE.prettyPrint tool)
+            Just tool -> "OPTIONS_" `mappend` T.pack (HSE.prettyPrint tool)
             Nothing -> "OPTIONS"
 
         trim = reverse . dropWhile (== ' ') . reverse . dropWhile (== ' ')

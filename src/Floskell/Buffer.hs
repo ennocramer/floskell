@@ -1,5 +1,5 @@
--- | An outout buffer for ByteStrings that keeps track of line and
--- column numbers.
+-- | An outout buffer for Text that keeps track of line and column
+-- numbers.
 module Floskell.Buffer
     ( Buffer
     , empty
@@ -7,13 +7,14 @@ module Floskell.Buffer
     , write
     , line
     , column
-    , toLazyByteString
+    , toLazyText
     ) where
 
-import qualified Data.ByteString         as BS
-import           Data.ByteString.Builder ( Builder )
-import qualified Data.ByteString.Builder as BB
-import qualified Data.ByteString.Lazy    as BL
+import           Data.Text              ( Text )
+import qualified Data.Text              as T
+import qualified Data.Text.Lazy         as TL
+import           Data.Text.Lazy.Builder ( Builder )
+import qualified Data.Text.Lazy.Builder as TB
 
 data Buffer =
     Buffer { bufferData        :: !Builder -- ^ The current output.
@@ -30,17 +31,17 @@ empty = Buffer { bufferData        = mempty
                , bufferColumn      = 0
                }
 
--- | Append a ByteString to the output buffer.  It is an error for the
+-- | Append a Text to the output buffer.  It is an error for the
 -- string to contain newlines.
-write :: BS.ByteString -> Buffer -> Buffer
+write :: Text -> Buffer -> Buffer
 write str buf =
     buf { bufferData        = newBufferData
         , bufferDataNoSpace =
-              if BS.all (== 32) str then bufferData buf else newBufferData
-        , bufferColumn      = bufferColumn buf + BS.length str
+              if T.all (== ' ') str then bufferData buf else newBufferData
+        , bufferColumn      = bufferColumn buf + T.length str
         }
   where
-    newBufferData = bufferData buf `mappend` BB.byteString str
+    newBufferData = bufferData buf `mappend` TB.fromText str
 
 -- | Append a newline to the output buffer.
 newline :: Buffer -> Buffer
@@ -50,7 +51,7 @@ newline buf = buf { bufferData        = newBufferData
                   , bufferColumn      = 0
                   }
   where
-    newBufferData = bufferDataNoSpace buf `mappend` BB.char7 '\n'
+    newBufferData = bufferDataNoSpace buf `mappend` TB.singleton '\n'
 
 -- | Return the current line number, counting from 0.
 line :: Buffer -> Int
@@ -60,6 +61,6 @@ line = bufferLine
 column :: Buffer -> Int
 column = bufferColumn
 
--- | Return the contents of the output buffer as a lazy ByteString.
-toLazyByteString :: Buffer -> BL.ByteString
-toLazyByteString = BB.toLazyByteString . bufferData
+-- | Return the contents of the output buffer as a lazy Text.
+toLazyText :: Buffer -> TL.Text
+toLazyText = TB.toLazyText . bufferData

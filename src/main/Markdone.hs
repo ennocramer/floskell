@@ -13,27 +13,23 @@ module Markdone where
 import           Control.DeepSeq
 import           Control.Monad.Catch
 
-import           Data.ByteString.Builder    as B
-import qualified Data.ByteString.Char8      as S8
-import           Data.ByteString.Lazy       ( ByteString )
-import qualified Data.ByteString.Lazy.Char8 as L8
 import           Data.Char
-import           Data.Monoid                ( (<>) )
+import           Data.Monoid            ( (<>) )
+import           Data.Text.Lazy         ( Text )
+import qualified Data.Text.Lazy         as TL
+import qualified Data.Text.Lazy.Builder as TB
+import qualified Data.Text.Lazy.IO      as TIO
 import           Data.Typeable
 
 import           GHC.Generics
 
 -- | A markdone token.
-data Token = Heading !Int !ByteString
-           | PlainLine !ByteString
-           | BeginFence !ByteString
-           | EndFence
+data Token = Heading !Int !Text | PlainLine !Text | BeginFence !Text | EndFence
     deriving ( Show )
 
 -- | A markdone document.
-data Markdone = Section !ByteString ![Markdone]
-              | CodeFence !ByteString !ByteString
-              | PlainText !ByteString
+data Markdone =
+    Section !Text ![Markdone] | CodeFence !Text !Text | PlainText !Text
     deriving ( Show, Generic )
 
 instance NFData Markdone
@@ -45,18 +41,18 @@ data MarkdownError = NoFenceEnd | ExpectedSection
 instance Exception MarkdownError
 
 -- | Tokenize the bytestring.
-tokenize :: ByteString -> [Token]
-tokenize = map token . L8.lines
+tokenize :: Text -> [Token]
+tokenize = map token . TL.lines
   where
     token line
-        | L8.isPrefixOf "#" line = let (hashes, title) = L8.span (== '#') line
+        | TL.isPrefixOf "#" line = let (hashes, title) = TL.span (== '#') line
                                    in
-                                       Heading (fromIntegral $ L8.length hashes)
-                                               (L8.dropWhile isSpace title)
-        | L8.isPrefixOf "```" line =
+                                       Heading (fromIntegral $ TL.length hashes)
+                                               (TL.dropWhile isSpace title)
+        | TL.isPrefixOf "```" line =
             if line == "```"
             then EndFence
-            else BeginFence (L8.dropWhile (\c -> c == '`' || c == ' ') line)
+            else BeginFence (TL.dropWhile (\c -> c == '`' || c == ' ') line)
         | otherwise = PlainLine line
 
 -- | Parse into a forest.
@@ -84,7 +80,7 @@ parse = go (0 :: Int)
                     case rest' of
                         (EndFence : rest'') ->
                             fmap (CodeFence label
-                                            (L8.intercalate "\n"
+                                            (TL.intercalate "\n"
                                                             (map getPlain
                                                                  content)) :)
                                  (go level rest'')
@@ -96,7 +92,7 @@ parse = go (0 :: Int)
                                                  _ -> False)
                                             (PlainLine p : rest)
                 in
-                    fmap (PlainText (L8.intercalate "\n" (map getPlain content)) :)
+                    fmap (PlainText (TL.intercalate "\n" (map getPlain content)) :)
                          (go level rest')
         [] -> return []
         _ -> throwM ExpectedSection
@@ -104,16 +100,17 @@ parse = go (0 :: Int)
     getPlain (PlainLine x) = x
     getPlain _ = ""
 
-print :: [Markdone] -> B.Builder
-print = mconcat . map (go (0 :: Int))
+print :: [Markdone] -> TB.Builder
+print = mconcat . map (go 0)
   where
     go level = \case
         (Section heading children) ->
             let level' = level + 1
             in
-                B.byteString (S8.replicate level' '#') <> B.char7 ' '
-                <> B.lazyByteString heading <> B.byteString "\n"
+                TB.fromLazyText (TL.replicate level' "#") <> TB.singleton ' '
+                <> TB.fromLazyText heading <> TB.fromString "\n"
                 <> mconcat (map (go level') children)
-        (CodeFence lang code) -> B.byteString "``` " <> B.lazyByteString lang
-            <> B.char7 '\n' <> B.lazyByteString code <> B.byteString "\n```\n"
-        (PlainText text) -> B.lazyByteString text <> B.byteString "\n"
+        (CodeFence lang code) ->
+            TB.fromString "``` " <> TB.fromLazyText lang <> TB.singleton '\n'
+            <> TB.fromLazyText code <> TB.fromString "\n```\n"
+        (PlainText text) -> TB.fromLazyText text <> TB.fromString "\n"

@@ -5,43 +5,43 @@
 -- | Test the pretty printer.
 module Main where
 
-import           Control.Applicative          ( (<|>) )
-import           Control.Monad                ( forM_, guard )
+import           Control.Applicative    ( (<|>) )
+import           Control.Monad          ( forM_, guard )
 
-import           Data.ByteString.Lazy         ( ByteString )
-import qualified Data.ByteString.Lazy         as L
-import qualified Data.ByteString.Builder      as B ( toLazyByteString )
-import qualified Data.ByteString.Lazy.UTF8    as UTF8
-import           Data.Maybe                   ( mapMaybe )
-import qualified Data.Text                    as T
+import           Data.Maybe             ( mapMaybe )
+import qualified Data.Text              as T
+import           Data.Text.Lazy         ( Text )
+import qualified Data.Text.Lazy         as TL
+import qualified Data.Text.Lazy.Builder as TB ( toLazyText )
+import qualified Data.Text.Lazy.IO      as TIO
 
 import           Floskell
 
-import           Language.Haskell.Exts        ( Language(Haskell2010) )
+import           Language.Haskell.Exts  ( Language(Haskell2010) )
 
-import           Markdone                     ( Markdone(..) )
-import qualified Markdone                     as MD
+import           Markdone               ( Markdone(..) )
+import qualified Markdone               as MD
 
-import           System.Environment           ( getArgs )
+import           System.Environment     ( getArgs )
 
 import           Test.Hspec
 
 data TestTree =
-    TestSection String [TestTree] | TestSnippet ByteString | TestMismatchMarker
+    TestSection String [TestTree] | TestSnippet Text | TestMismatchMarker
 
 -- | Prints a string without quoting and escaping.
-newtype Readable = Readable ByteString
+newtype Readable = Readable Text
     deriving ( Eq )
 
 instance Show Readable where
-    show (Readable x) = "\n" ++ UTF8.toString x
+    show (Readable x) = "\n" ++ TL.unpack x
 
 -- | Version of 'shouldBe' that prints strings in a readable way,
 -- better for our use-case.
-shouldBeReadable :: ByteString -> ByteString -> Expectation
+shouldBeReadable :: Text -> Text -> Expectation
 shouldBeReadable x y = Readable x `shouldBe` Readable y
 
-haskell :: ByteString
+haskell :: Text
 haskell = "haskell"
 
 referenceFile :: Style -> String
@@ -51,19 +51,18 @@ referenceFile style = "styles/" ++ name ++ ".md"
 
 loadMarkdone :: String -> IO [Markdone]
 loadMarkdone filename = do
-    bytes <- L.readFile filename
+    bytes <- TIO.readFile filename
     MD.parse (MD.tokenize bytes)
 
 saveMarkdone :: String -> [Markdone] -> IO ()
 saveMarkdone filename doc =
-    L.writeFile filename . B.toLazyByteString $ MD.print doc
+    TIO.writeFile filename . TB.toLazyText $ MD.print doc
 
 -- | Extract code snippets from a Markdone document.
-extractSnippets :: ByteString -> [Markdone] -> [TestTree]
+extractSnippets :: Text -> [Markdone] -> [TestTree]
 extractSnippets lang = mapMaybe convert
   where
-    convert (Section name children) =
-        return $ TestSection (UTF8.toString name) $
+    convert (Section name children) = return $ TestSection (TL.unpack name) $
         extractSnippets lang children
     convert (CodeFence l c) = do
         guard $ l == lang
@@ -134,7 +133,7 @@ testAll = do
         tree <- loadSnippets $ referenceFile style
         return (name, style, tree)
 
-reformatSnippet :: Style -> ByteString -> Either String ByteString
+reformatSnippet :: Style -> Text -> Either String Text
 reformatSnippet style =
     reformat (AppConfig style Haskell2010 defaultExtensions [])
              (Just "TEST.md")
@@ -144,7 +143,7 @@ regenerate style = map fmt
   where
     fmt (CodeFence lang code) =
         if lang == haskell
-        then CodeFence lang $ either (UTF8.fromString . ("-- " ++) . show) id $
+        then CodeFence lang $ either (TL.pack . ("-- " ++) . show) id $
             reformatSnippet style code
         else CodeFence lang code
     fmt (Section heading children) =

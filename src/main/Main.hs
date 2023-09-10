@@ -13,6 +13,8 @@ import           Data.List                       ( sort )
 import           Data.Maybe                      ( isJust )
 import           Data.Monoid                     ( (<>) )
 import qualified Data.Text                       as T
+import qualified Data.Text.Lazy                  as TL
+import qualified Data.Text.Lazy.IO               as TIO
 import           Data.Version                    ( showVersion )
 
 import           Floskell
@@ -137,15 +139,15 @@ run config files = case files of
 
 -- | Reformat stdin according to Style, Language, and Extensions.
 reformatStdin :: AppConfig -> IO ()
-reformatStdin config = BL.interact $ reformatByteString config Nothing
+reformatStdin config = TIO.interact $ reformatText config Nothing
 
 -- | Reformat a file according to Style, Language, and Extensions.
 reformatFile :: AppConfig -> FilePath -> IO ()
 reformatFile config file = do
-    text <- BL.readFile file
+    text <- TIO.readFile file
     tmpDir <- getTemporaryDirectory
     (fp, h) <- openTempFile tmpDir "floskell.hs"
-    BL.hPutStr h $ reformatByteString config (Just file) text
+    TIO.hPutStr h $ reformatText config (Just file) text
     hFlush h
     hClose h
     let exdev e = if ioe_errno e == Just ((\(Errno a) -> a) eXDEV)
@@ -154,11 +156,9 @@ reformatFile config file = do
     copyPermissions file fp
     renameFile fp file `catch` exdev
 
--- | Reformat a ByteString according to Style, Language, and Extensions.
-reformatByteString
-    :: AppConfig -> Maybe FilePath -> BL.ByteString -> BL.ByteString
-reformatByteString config mpath text =
-    either error id $ reformat config mpath text
+-- | Reformat a Text according to Style, Language, and Extensions.
+reformatText :: AppConfig -> Maybe FilePath -> TL.Text -> TL.Text
+reformatText config mpath text = either error id $ reformat config mpath text
 
 -- | Update the program configuration from the program options.
 mergeAppConfig :: AppConfig -> Options -> AppConfig

@@ -60,13 +60,11 @@ import           Control.Monad              ( guard, unless, when )
 import           Control.Monad.Search       ( cost, winner )
 import           Control.Monad.State.Strict ( get, gets, modify )
 
-import           Data.ByteString            ( ByteString )
-import qualified Data.ByteString            as BS
-import qualified Data.ByteString.Builder    as BB
-import qualified Data.ByteString.Lazy       as BL
 import           Data.List                  ( intersperse )
 import qualified Data.Map.Strict            as Map
 import           Data.Monoid                ( (<>) )
+import           Data.Text                  ( Text )
+import qualified Data.Text                  as T
 
 import qualified Floskell.Buffer            as Buffer
 import           Floskell.Config
@@ -124,7 +122,7 @@ ignoreOneline :: Printer a -> Printer a
 ignoreOneline = withOutputRestriction Anything
 
 -- | Write out a string, updating the current position information.
-write :: ByteString -> Printer ()
+write :: Text -> Printer ()
 write x = do
     closeEolComment
     write' x
@@ -133,10 +131,10 @@ write x = do
         state <- get
         let indentLevel = psIndentLevel state
             out = if psNewline state
-                  then BS.replicate indentLevel 32 <> x'
+                  then T.replicate indentLevel " " <> x'
                   else x'
             buffer = psBuffer state
-            newCol = Buffer.column buffer + BS.length out
+            newCol = Buffer.column buffer + T.length out
         guard $ psOutputRestriction state == Anything || newCol
             < penaltyMaxLineLength (cfgPenalty (psConfig state))
         penalty <- linePenalty False newCol
@@ -146,7 +144,7 @@ write x = do
 
 -- | Write a string.
 string :: String -> Printer ()
-string = write . BL.toStrict . BB.toLazyByteString . BB.stringUtf8
+string = write . T.pack
 
 -- | Write an integral.
 int :: Int -> Printer ()
@@ -197,7 +195,7 @@ atTabStop tabstop = do
     mayM_ mstop $ \stop -> do
         col <- getNextColumn
         let padding = max 0 (stop - col)
-        write (BS.replicate padding 32)
+        write (T.replicate padding " ")
 
 mayM_ :: Maybe a -> (a -> Printer ()) -> Printer ()
 mayM_ Nothing _ = return ()
@@ -308,7 +306,7 @@ onside p = do
     onsideIndent <- getConfig (cfgIndentOnside . cfgIndent)
     withIndentation (\(l, _) -> (l, onsideIndent)) p
 
-depend :: ByteString -> Printer a -> Printer a
+depend :: Text -> Printer a -> Printer a
 depend kw = depend' (write kw)
 
 depend' :: Printer () -> Printer a -> Printer a
@@ -334,7 +332,7 @@ brackets p = do
         p
         write "]"
 
-group :: LayoutContext -> ByteString -> ByteString -> Printer () -> Printer ()
+group :: LayoutContext -> Text -> Text -> Printer () -> Printer ()
 group ctx open close p = do
     force <- getConfig (wsForceLinebreak . cfgGroupWs ctx open . cfgGroup)
     if force then vert else oneline hor <|> vert
@@ -343,7 +341,7 @@ group ctx open close p = do
 
     vert = groupV ctx open close p
 
-groupH :: LayoutContext -> ByteString -> ByteString -> Printer () -> Printer ()
+groupH :: LayoutContext -> Text -> Text -> Printer () -> Printer ()
 groupH ctx open close p = do
     ws <- getConfig (cfgGroupWs ctx open . cfgGroup)
     write open
@@ -352,7 +350,7 @@ groupH ctx open close p = do
     when (wsSpace After ws) space
     write close
 
-groupV :: LayoutContext -> ByteString -> ByteString -> Printer () -> Printer ()
+groupV :: LayoutContext -> Text -> Text -> Printer () -> Printer ()
 groupV ctx open close p = aligned $ do
     ws <- getConfig (cfgGroupWs ctx open . cfgGroup)
     write open
@@ -361,21 +359,21 @@ groupV ctx open close p = aligned $ do
     if wsLinebreak After ws then newline else when (wsSpace After ws) space
     write close
 
-operator :: LayoutContext -> ByteString -> Printer ()
+operator :: LayoutContext -> Text -> Printer ()
 operator ctx op = withOperatorFormatting ctx op (write op) id
 
-operatorH :: LayoutContext -> ByteString -> Printer ()
+operatorH :: LayoutContext -> Text -> Printer ()
 operatorH ctx op = withOperatorFormattingH ctx op (write op) id
 
-operatorV :: LayoutContext -> ByteString -> Printer ()
+operatorV :: LayoutContext -> Text -> Printer ()
 operatorV ctx op = withOperatorFormattingV ctx op (write op) id
 
-alignOnOperator :: LayoutContext -> ByteString -> Printer a -> Printer a
+alignOnOperator :: LayoutContext -> Text -> Printer a -> Printer a
 alignOnOperator ctx op p =
     withOperatorFormatting ctx op (write op) (aligned . (*> p))
 
 withOperatorFormatting :: LayoutContext
-                       -> ByteString
+                       -> Text
                        -> Printer ()
                        -> (Printer () -> Printer a)
                        -> Printer a
@@ -388,7 +386,7 @@ withOperatorFormatting ctx op opp fn = do
     vert = withOperatorFormattingV ctx op opp fn
 
 withOperatorFormattingH :: LayoutContext
-                        -> ByteString
+                        -> Text
                         -> Printer ()
                         -> (Printer () -> Printer a)
                         -> Printer a
@@ -400,7 +398,7 @@ withOperatorFormattingH ctx op opp fn = do
         when (wsSpace After ws) space
 
 withOperatorFormattingV :: LayoutContext
-                        -> ByteString
+                        -> Text
                         -> Printer ()
                         -> (Printer () -> Printer a)
                         -> Printer a
@@ -411,13 +409,13 @@ withOperatorFormattingV ctx op opp fn = do
         opp
         if wsLinebreak After ws then newline else when (wsSpace After ws) space
 
-operatorSectionL :: LayoutContext -> ByteString -> Printer () -> Printer ()
+operatorSectionL :: LayoutContext -> Text -> Printer () -> Printer ()
 operatorSectionL ctx op opp = do
     ws <- getConfig (cfgOpWs ctx op . cfgOp)
     when (wsSpace Before ws) space
     opp
 
-operatorSectionR :: LayoutContext -> ByteString -> Printer () -> Printer ()
+operatorSectionR :: LayoutContext -> Text -> Printer () -> Printer ()
 operatorSectionR ctx op opp = do
     ws <- getConfig (cfgOpWs ctx op . cfgOp)
     opp

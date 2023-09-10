@@ -35,18 +35,17 @@ module Floskell.Config
 
 import           Data.Aeson
                  ( FromJSON(..), ToJSON(..), genericParseJSON, genericToJSON )
-import qualified Data.Aeson         as JSON
-import           Data.Aeson.Types   as JSON
+import qualified Data.Aeson        as JSON
+import           Data.Aeson.Types  as JSON
                  ( Options(..), camelTo2, typeMismatch )
-import           Data.ByteString    ( ByteString )
-import           Data.Default       ( Default(..) )
-import qualified Data.HashMap.Lazy  as HashMap
-import           Data.Map.Strict    ( Map )
-import qualified Data.Map.Strict    as Map
-import           Data.Set           ( Set )
-import qualified Data.Set           as Set
-import qualified Data.Text          as T
-import qualified Data.Text.Encoding as T ( decodeUtf8, encodeUtf8 )
+import           Data.Default      ( Default(..) )
+import qualified Data.HashMap.Lazy as HashMap
+import           Data.Map.Strict   ( Map )
+import qualified Data.Map.Strict   as Map
+import           Data.Set          ( Set )
+import qualified Data.Set          as Set
+import           Data.Text         ( Text )
+import qualified Data.Text         as T
 
 import           GHC.Generics
 
@@ -71,7 +70,7 @@ data Whitespace = Whitespace { wsSpaces         :: !WsLoc
 data Layout = Flex | Vertical | TryOneline
     deriving ( Eq, Ord, Bounded, Enum, Show, Generic )
 
-data ConfigMapKey = ConfigMapKey !(Maybe ByteString) !(Maybe LayoutContext)
+data ConfigMapKey = ConfigMapKey !(Maybe Text) !(Maybe LayoutContext)
     deriving ( Eq, Ord, Show )
 
 data ConfigMap a =
@@ -310,7 +309,7 @@ safeConfig cfg = cfg { cfgGroup = group, cfgOp = op }
                        (cfgMapFind ctx key config) { wsSpaces = ws }
                        m
 
-cfgMapFind :: LayoutContext -> ByteString -> ConfigMap a -> a
+cfgMapFind :: LayoutContext -> Text -> ConfigMap a -> a
 cfgMapFind ctx key ConfigMap{..} =
     let value = cfgMapDefault
         value' = Map.findWithDefault value
@@ -325,10 +324,10 @@ cfgMapFind ctx key ConfigMap{..} =
     in
         value'''
 
-cfgOpWs :: LayoutContext -> ByteString -> OpConfig -> Whitespace
+cfgOpWs :: LayoutContext -> Text -> OpConfig -> Whitespace
 cfgOpWs ctx op = cfgMapFind ctx op . unOpConfig
 
-cfgGroupWs :: LayoutContext -> ByteString -> GroupConfig -> Whitespace
+cfgGroupWs :: LayoutContext -> Text -> GroupConfig -> Whitespace
 cfgGroupWs ctx op = cfgMapFind ctx op . unGroupConfig
 
 inWs :: Location -> WsLoc -> Bool
@@ -418,20 +417,19 @@ textToLayout _ = Nothing
 
 keyToText :: ConfigMapKey -> T.Text
 keyToText (ConfigMapKey Nothing Nothing) = "default"
-keyToText (ConfigMapKey (Just n) Nothing) = T.decodeUtf8 n
+keyToText (ConfigMapKey (Just n) Nothing) = n
 keyToText (ConfigMapKey Nothing (Just l)) = "* in " `T.append` layoutToText l
 keyToText (ConfigMapKey (Just n) (Just l)) =
-    T.decodeUtf8 n `T.append` " in " `T.append` layoutToText l
+    n `T.append` " in " `T.append` layoutToText l
 
 textToKey :: T.Text -> Maybe ConfigMapKey
 textToKey t = case T.splitOn " in " t of
     [ "default" ] -> Just (ConfigMapKey Nothing Nothing)
     [ "*", "*" ] -> Just (ConfigMapKey Nothing Nothing)
-    [ name ] -> Just (ConfigMapKey (Just (T.encodeUtf8 name)) Nothing)
-    [ name, "*" ] -> Just (ConfigMapKey (Just (T.encodeUtf8 name)) Nothing)
+    [ name ] -> Just (ConfigMapKey (Just name) Nothing)
+    [ name, "*" ] -> Just (ConfigMapKey (Just name) Nothing)
     [ "*", layout ] -> ConfigMapKey Nothing . Just <$> textToLayout layout
-    [ name, layout ] -> ConfigMapKey (Just (T.encodeUtf8 name)) . Just
-        <$> textToLayout layout
+    [ name, layout ] -> ConfigMapKey (Just name) . Just <$> textToLayout layout
     _ -> Nothing
 
 instance ToJSON a => ToJSON (ConfigMap a) where

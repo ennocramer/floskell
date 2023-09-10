@@ -24,29 +24,28 @@ module Floskell
     , defaultExtensions
     ) where
 
-import           Data.ByteString.Lazy       ( ByteString )
-import qualified Data.ByteString.Lazy.Char8 as L8
-import qualified Data.ByteString.Lazy.UTF8  as UTF8
 import           Data.List
 import           Data.Maybe
 #if __GLASGOW_HASKELL__ <= 802
 import           Data.Monoid
 #endif
+import           Data.Text.Lazy        ( Text )
+import qualified Data.Text.Lazy        as TL
 
-import qualified Floskell.Buffer            as Buffer
+import qualified Floskell.Buffer       as Buffer
 import           Floskell.Comments
 import           Floskell.Config
 import           Floskell.ConfigFile
-import           Floskell.Fixities          ( builtinFixities )
-import           Floskell.Pretty            ( pretty )
-import           Floskell.Styles            ( Style(..), styles )
+import           Floskell.Fixities     ( builtinFixities )
+import           Floskell.Pretty       ( pretty )
+import           Floskell.Styles       ( Style(..), styles )
 import           Floskell.Types
 
 import           Language.Haskell.Exts
                  hiding ( Comment, Pretty, Style, parse, prettyPrint, style )
-import qualified Language.Haskell.Exts      as Exts
+import qualified Language.Haskell.Exts as Exts
 
-data CodeBlock = HaskellSource Int [ByteString] | CPPDirectives [ByteString]
+data CodeBlock = HaskellSource Int [Text] | CPPDirectives [Text]
     deriving ( Show, Eq )
 
 trimBy :: (a -> Bool) -> [a] -> ([a], [a], [a])
@@ -60,63 +59,54 @@ trimBy f xs = (prefix, middle, suffix)
 
     suffix = reverse suffix'
 
-findLinePrefix :: (Char -> Bool) -> [ByteString] -> ByteString
+findLinePrefix :: (Char -> Bool) -> [Text] -> Text
 findLinePrefix _ [] = ""
-findLinePrefix f (x : xs') = go (L8.takeWhile f x) xs'
+findLinePrefix f (x : xs') = go (TL.takeWhile f x) xs'
   where
-    go prefix xs = if all (prefix `L8.isPrefixOf`) xs
+    go prefix xs = if all (prefix `TL.isPrefixOf`) xs
                    then prefix
-                   else go (L8.take (L8.length prefix - 1) prefix) xs
+                   else go (TL.take (TL.length prefix - 1) prefix) xs
 
-findIndent :: (Char -> Bool) -> [ByteString] -> ByteString
+findIndent :: (Char -> Bool) -> [Text] -> Text
 findIndent _ [] = ""
-findIndent f (x : xs') = go (L8.takeWhile f x) $ filter (not . L8.all f) xs'
+findIndent f (x : xs') = go (TL.takeWhile f x) $ filter (not . TL.all f) xs'
   where
-    go indent xs = if all (indent `L8.isPrefixOf`) xs
+    go indent xs = if all (indent `TL.isPrefixOf`) xs
                    then indent
-                   else go (L8.take (L8.length indent - 1) indent) xs
+                   else go (TL.take (TL.length indent - 1) indent) xs
 
-preserveVSpace :: Monad m
-               => ([ByteString] -> m [ByteString])
-               -> [ByteString]
-               -> m [ByteString]
+preserveVSpace :: Monad m => ([Text] -> m [Text]) -> [Text] -> m [Text]
 preserveVSpace format input = do
     output <- format input'
     return $ prefix ++ output ++ suffix
   where
-    (prefix, input', suffix) = trimBy L8.null input
+    (prefix, input', suffix) = trimBy TL.null input
 
-preservePrefix :: Monad m
-               => (Int -> [ByteString] -> m [ByteString])
-               -> [ByteString]
-               -> m [ByteString]
+preservePrefix :: Monad m => (Int -> [Text] -> m [Text]) -> [Text] -> m [Text]
 preservePrefix format input = do
     output <- format (prefixLength prefix) input'
     return $ map (prefix <>) output
   where
     prefix = findLinePrefix allowed input
 
-    input' = map (L8.drop $ L8.length prefix) input
+    input' = map (TL.drop $ TL.length prefix) input
 
     allowed c = c == ' ' || c == '\t' || c == '>'
 
-    prefixLength = sum . map (\c -> if c == '\t' then 8 else 1) . L8.unpack
+    prefixLength = sum . map (\c -> if c == '\t' then 8 else 1) . TL.unpack
 
-preserveIndent :: Monad m
-               => (Int -> [ByteString] -> m [ByteString])
-               -> [ByteString]
-               -> m [ByteString]
+preserveIndent :: Monad m => (Int -> [Text] -> m [Text]) -> [Text] -> m [Text]
 preserveIndent format input = do
     output <- format (prefixLength prefix) input'
     return $ map (prefix <>) output
   where
     prefix = findIndent allowed input
 
-    input' = map (L8.drop $ L8.length prefix) input
+    input' = map (TL.drop $ TL.length prefix) input
 
     allowed c = c == ' ' || c == '\t'
 
-    prefixLength = sum . map (\c -> if c == '\t' then 8 else 1) . L8.unpack
+    prefixLength = sum . map (\c -> if c == '\t' then 8 else 1) . TL.unpack
 
 withReducedLineLength :: Int -> Config -> Config
 withReducedLineLength offset config = config { cfgPenalty = penalty }
@@ -127,13 +117,11 @@ withReducedLineLength offset config = config { cfgPenalty = penalty }
                                   }
 
 -- | Format the given source.
-reformat
-    :: AppConfig -> Maybe FilePath -> ByteString -> Either String ByteString
-reformat config mfilepath input = fmap (L8.intercalate "\n")
-    . preserveVSpace (preservePrefix (reformatLines mode cfg)) $
-    L8.split '\n' input
+reformat :: AppConfig -> Maybe FilePath -> Text -> Either String Text
+reformat config mfilepath input = fmap (TL.intercalate "\n")
+    . preserveVSpace (preservePrefix (reformatLines mode cfg)) $ TL.lines input
   where
-    mode = case readExtensions $ UTF8.toString input of
+    mode = case readExtensions $ TL.unpack input of
         Nothing -> mode'
         Just (Nothing, exts') ->
             mode' { extensions = exts' ++ extensions mode' }
@@ -151,8 +139,7 @@ reformat config mfilepath input = fmap (L8.intercalate "\n")
 
     cfg = safeConfig . styleConfig $ appStyle config
 
-reformatLines
-    :: ParseMode -> Config -> Int -> [ByteString] -> Either String [ByteString]
+reformatLines :: ParseMode -> Config -> Int -> [Text] -> Either String [Text]
 reformatLines mode config indent = format . filterPreprocessorDirectives
   where
     config' = withReducedLineLength indent config
@@ -166,8 +153,8 @@ reformatBlock :: ParseMode
               -> Config
               -> [Comment]
               -> Int
-              -> [ByteString]
-              -> Either String [ByteString]
+              -> [Text]
+              -> Either String [Text]
 reformatBlock mode config cpp indent lines =
     case parseModuleWithComments mode code of
         ParseOk (m, comments') ->
@@ -176,11 +163,11 @@ reformatBlock mode config cpp indent lines =
             in
                 case prettyPrint (pretty ast) config' of
                     Nothing -> Left "Printer failed with mzero call."
-                    Just output -> Right $ L8.lines output
+                    Just output -> Right $ TL.lines output
         ParseFailed loc e -> Left $
             Exts.prettyPrint (loc { srcLine = srcLine loc }) ++ ": " ++ e
   where
-    code = UTF8.toString $ L8.intercalate "\n" lines
+    code = TL.unpack $ TL.intercalate "\n" lines
 
     config' = withReducedLineLength indent config
 
@@ -195,7 +182,7 @@ reformatBlock mode config cpp indent lines =
         else y : mergeComments xs ys'
 
 -- | Remove CPP directives from input source, retur
-filterPreprocessorDirectives :: [ByteString] -> ([ByteString], [Comment])
+filterPreprocessorDirectives :: [Text] -> ([Text], [Comment])
 filterPreprocessorDirectives lines = (code, comments)
   where
     code = map (\l -> if cppLine l then "" else l) lines
@@ -204,11 +191,11 @@ filterPreprocessorDirectives lines = (code, comments)
 
     makeComment (n, l) =
         Comment PreprocessorDirective
-                (SrcSpan "" n 1 n (fromIntegral $ L8.length l + 1))
-                (L8.unpack l)
+                (SrcSpan "" n 1 n (fromIntegral $ TL.length l + 1))
+                (TL.unpack l)
 
     cppLine src =
-        any (`L8.isPrefixOf` src)
+        any (`TL.isPrefixOf` src)
             [ "#if"
             , "#end"
             , "#else"
@@ -220,8 +207,8 @@ filterPreprocessorDirectives lines = (code, comments)
             , "#warning"
             ]
 
-prettyPrint :: Printer a -> Config -> Maybe ByteString
-prettyPrint printer = fmap (Buffer.toLazyByteString . psBuffer . snd)
+prettyPrint :: Printer a -> Config -> Maybe Text
+prettyPrint printer = fmap (Buffer.toLazyText . psBuffer . snd)
     . execPrinter printer . initialPrintState
 
 -- | Default extensions.

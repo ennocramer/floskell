@@ -192,17 +192,16 @@ cramerCfg = defaultConfig { cfgAlign
         , (ConfigMapKey (Just "[") (Just Type), Whitespace WsNone WsNone False)
         ]
 
-    cfgOptions =
-        OptionConfig { cfgOptionSortPragmas            = True
-                     , cfgOptionSplitLanguagePragmas   = True
-                     , cfgOptionSortImports            = SortImportsByPrefix
-                     , cfgOptionSortImportLists        = True
-                     , cfgOptionAlignSumTypeDecl       = False
-                     , cfgOptionFlexibleOneline        = False
-                     , cfgOptionPreserveVerticalSpace  = True
-                     , cfgOptionDeclNoBlankLines       = Set.empty
-                     , cfgOptionAlignLetBindsAndInExpr = False
-                     }
+    cfgOptions = OptionConfig { cfgOptionSortPragmas            = True
+                              , cfgOptionSplitLanguagePragmas   = True
+                              , cfgOptionSortImports            = SortImportsByPrefix
+                              , cfgOptionSortImportLists        = True
+                              , cfgOptionAlignSumTypeDecl       = False
+                              , cfgOptionFlexibleOneline        = False
+                              , cfgOptionPreserveVerticalSpace  = True
+                              , cfgOptionDeclNoBlankLines       = Set.empty
+                              , cfgOptionAlignLetBindsAndInExpr = False
+                              }
 
 gibianskyCfg :: Config
 gibianskyCfg = defaultConfig { cfgAlign
