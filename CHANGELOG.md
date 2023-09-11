@@ -1,3 +1,7 @@
+# Floskell 0.11.0 (unreleased)
+
+* Fix alignment of non-ASCII identifiers
+
 # Floskell 0.10.8 (2023-08-12)
 
 * Add support for building with GHC-9.6.2
