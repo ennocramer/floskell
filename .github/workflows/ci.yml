@@ -84,7 +84,8 @@ jobs:
         run: cabal test all
 
       - name: Generate Documentation
-        run: cabal haddock all
+        run: |
+          [ "${{ matrix.ghc }}" == 8.4 ] || cabal haddock all
 
       - name: Check Cabal File
         run: cabal check
