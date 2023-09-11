@@ -69,8 +69,7 @@ library
         mtl >=2.2.1 && <2.4,
         text >=1.2.2.2 && <2.1,
         transformers >=0.5.2.0 && <0.7,
-        unordered-containers >=0.2.8.0 && <0.3,
-        utf8-string >=1.0.1.1 && <1.1
+        unordered-containers >=0.2.8.0 && <0.3
 
 executable floskell
     main-is:          Main.hs
@@ -105,8 +104,7 @@ test-suite floskell-test
         exceptions >=0.8.3 && <0.12,
         haskell-src-exts >=1.19 && <1.24,
         hspec >=2.2.4 && <2.11,
-        text >=1.2.2.2 && <2.1,
-        utf8-string >=1.0.1.1 && <1.1
+        text >=1.2.2.2 && <2.1
 
 benchmark floskell-bench
     type:             exitcode-stdio-1.0
@@ -124,5 +122,4 @@ benchmark floskell-bench
         exceptions >=0.8.3 && <0.11,
         ghc-prim >=0.5.0.0 && <0.11,
         haskell-src-exts >=1.19 && <1.24,
-        text >=1.2.2.2 && <2.1,
-        utf8-string >=1.0.1.1 && <1.1
+        text >=1.2.2.2 && <2.1
