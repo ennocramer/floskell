@@ -59,7 +59,7 @@ library
         base >=4.9 && <4.19,
         aeson >=0.11.3.0 && <2.2,
         attoparsec >=0.13.1.0 && <0.15,
-        bytestring >=0.10.8.1 && <0.12,
+        bytestring >=0.10.8.1 && <0.13,
         containers >=0.5.7.1 && <0.7,
         data-default >=0.7.1.1 && <0.8,
         directory >=1.2.6.2 && <1.4,
@@ -67,7 +67,7 @@ library
         haskell-src-exts >=1.19 && <1.24,
         monad-dijkstra >=0.1.1 && <0.2,
         mtl >=2.2.1 && <2.4,
-        text >=1.2.2.2 && <2.1,
+        text >=1.2.2.2 && <2.2,
         transformers >=0.5.2.0 && <0.7,
         unordered-containers >=0.2.8.0 && <0.3
 
@@ -82,12 +82,12 @@ executable floskell
         base >=4.9 && <4.19,
         floskell -any,
         aeson-pretty >=0.8.2 && <0.9,
-        bytestring >=0.10.8.1 && <0.12,
+        bytestring >=0.10.8.1 && <0.13,
         directory >=1.2.6.2 && <1.4,
         ghc-prim >=0.5.0.0 && <0.11,
         haskell-src-exts >=1.19 && <1.24,
         optparse-applicative >=0.12.1.0 && <0.18,
-        text >=1.2.2.2 && <2.1
+        text >=1.2.2.2 && <2.2
 
 test-suite floskell-test
     type:             exitcode-stdio-1.0
@@ -99,12 +99,12 @@ test-suite floskell-test
     build-depends:
         base >=4.9 && <4.19,
         floskell -any,
-        bytestring >=0.10.8.1 && <0.12,
-        deepseq >=1.4.2.0 && <1.5,
+        bytestring >=0.10.8.1 && <0.13,
+        deepseq >=1.4.2.0 && <1.6,
         exceptions >=0.8.3 && <0.12,
         haskell-src-exts >=1.19 && <1.24,
-        hspec >=2.2.4 && <2.11,
-        text >=1.2.2.2 && <2.1
+        hspec >=2.2.4 && <2.12,
+        text >=1.2.2.2 && <2.2
 
 benchmark floskell-bench
     type:             exitcode-stdio-1.0
@@ -116,10 +116,10 @@ benchmark floskell-bench
     build-depends:
         base >=4.9 && <4.19,
         floskell -any,
-        bytestring >=0.10.8.1 && <0.12,
+        bytestring >=0.10.8.1 && <0.13,
         criterion >=1.1.1.0 && <1.7,
-        deepseq >=1.4.2.0 && <1.5,
+        deepseq >=1.4.2.0 && <1.6,
         exceptions >=0.8.3 && <0.11,
         ghc-prim >=0.5.0.0 && <0.11,
         haskell-src-exts >=1.19 && <1.24,
-        text >=1.2.2.2 && <2.1
+        text >=1.2.2.2 && <2.2
