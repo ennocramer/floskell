@@ -29,6 +29,7 @@ import           Control.Applicative        ( (<|>) )
 import           Data.Aeson
                  ( (.:?), (.=), FromJSON(..), ToJSON(..) )
 import qualified Data.Aeson                 as JSON
+import qualified Data.Aeson.Parser          as JSON ( json' )
 import qualified Data.Aeson.Types           as JSON ( typeMismatch )
 import qualified Data.Attoparsec.ByteString as AP
 import qualified Data.ByteString            as BS
@@ -37,7 +38,6 @@ import           Data.Char                  ( isLetter, isSpace )
 #if MIN_VERSION_aeson(2,0,0)
 import qualified Data.Aeson.KeyMap          as Map
 #else
-import qualified Data.Aeson.Parser          as JSON ( json' )
 import qualified Data.HashMap.Lazy          as Map
 #endif
 
