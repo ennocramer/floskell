@@ -1,6 +1,7 @@
 # Floskell 0.11.0 (unreleased)
 
 * Fix alignment of non-ASCII identifiers
+* Add support for building with aeson-2.2.0.0 and optparse-applicative-0.18.1.0
 
 # Floskell 0.10.8 (2023-08-12)
 

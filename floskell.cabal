@@ -83,11 +83,12 @@ executable floskell
         base >=4.9 && <4.19,
         floskell -any,
         aeson-pretty >=0.8.2 && <0.9,
+        ansi-wl-pprint >=0.6.6 && <1.1,
         bytestring >=0.10.8.1 && <0.13,
         directory >=1.2.6.2 && <1.4,
         ghc-prim >=0.5.0.0 && <0.11,
         haskell-src-exts >=1.19 && <1.24,
-        optparse-applicative >=0.12.1.0 && <0.18,
+        optparse-applicative >=0.12.1.0 && <0.19,
         text >=1.2.2.2 && <2.2
 
 test-suite floskell-test

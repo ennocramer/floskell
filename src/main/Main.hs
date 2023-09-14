@@ -35,7 +35,6 @@ import           Options.Applicative
                  ( ParseError(..), abortOption, argument, execParser, footerDoc
                  , fullDesc, header, help, helper, hidden, info, long, metavar
                  , option, progDesc, short, str, switch )
-import qualified Options.Applicative.Help.Pretty as PP
 
 import           Paths_floskell                  ( version )
 
@@ -44,6 +43,8 @@ import           System.Directory
                  , renameFile )
 import           System.IO
                  ( FilePath, hClose, hFlush, openTempFile, stdout )
+
+import qualified Text.PrettyPrint.ANSI.Leijen as PP
 
 -- | Program options.
 data Options = Options { optStyle         :: Maybe String
