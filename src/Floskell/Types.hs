@@ -101,7 +101,8 @@ initialPrintState :: Config -> PrintState
 initialPrintState config =
     PrintState Buffer.empty 0 0 Map.empty config False Anything TypeFree
 
-data CommentType = InlineComment | LineComment | PreprocessorDirective
+data CommentType =
+    InlineComment | LineComment | PreprocessorDirective | IgnoredLine
     deriving ( Show )
 
 data Comment = Comment { commentType :: !CommentType

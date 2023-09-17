@@ -2,6 +2,7 @@
 
 * Fix alignment of non-ASCII identifiers
 * Fix extra whitespace generated for preprocessor directives at top/bottom of files
+* Add support for manual formatting / hiding regions of code from the formatter
 * Add support for multi-line preprocessor directives
 * Add support for hsc2hs #enum directives
 * Add support for building with aeson-2.2.0.0 and optparse-applicative-0.18.1.0

@@ -1,8 +1,9 @@
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 -- | Comment handling.
-module Floskell.Comments ( filterPreprocessorDirectives, annotateWithComments ) where
+module Floskell.Comments ( filterCommentLike, annotateWithComments ) where
 
 import           Control.Arrow                ( first, second )
 import           Control.Monad.State.Strict
@@ -17,7 +18,7 @@ import           Floskell.Types
 
 import           Language.Haskell.Exts.SrcLoc ( SrcSpanInfo(..) )
 
-data FilterMode = Normal | CppContinuation
+data FilterMode = Normal | CppContinuation | Unformatted
     deriving ( Eq, Ord, Enum, Show )
 
 data FilterState = FilterState { stMode     :: !FilterMode
@@ -50,38 +51,44 @@ instance Ord OrderByEnd where
 
 -- | Remove comment-like blocks from input source, replacing them with
 -- blank likes to keep SrcSpan information intact.
-filterPreprocessorDirectives :: [Text] -> ([Text], [Comment])
-filterPreprocessorDirectives = finish . foldl' go start . zip [ 1 .. ]
+filterCommentLike :: [Text] -> ([Text], [Comment])
+filterCommentLike = finish . foldl' go start . zip [ 1 .. ]
   where
     start = FilterState Normal [] []
 
     go s@FilterState{..} (n, l) = case stMode of
-        Normal ->
-            if isCppLine l
-            then let newMode = if isCppContinuation l
-                               then CppContinuation
-                               else Normal
-                     s' = s { stMode = newMode }
-                 in
-                     addComment s' n l
-            else addLine s l
+        Normal -> if
+            | isCppLine l ->
+                let newMode =
+                        if isCppContinuation l then CppContinuation else Normal
+                in
+                    addComment s newMode PreprocessorDirective n l
+            | isBeginIgnore l -> addComment s Unformatted IgnoredLine n l
+            | otherwise -> addLine s l
 
         CppContinuation ->
             let newMode =
                     if isCppContinuation l then CppContinuation else Normal
-                s' = s { stMode = newMode }
             in
-                addComment s' n l
+                addComment s newMode PreprocessorDirective n l
+
+        Unformatted ->
+            let newMode = if isEndIgnore l then Normal else Unformatted
+            in
+                addComment s newMode IgnoredLine n l
 
     finish s = (reverse $ stLines s, reverse $ stComments s)
 
     addLine s@FilterState{..} l = s { stLines = l : stLines }
 
-    addComment s@FilterState{..} n l =
-        s { stLines = "" : stLines, stComments = makeComment n l : stComments }
+    addComment s@FilterState{..} mode t n l =
+        s { stMode     = mode
+          , stLines    = "" : stLines
+          , stComments = makeComment t n l : stComments
+          }
 
-    makeComment n l =
-        Comment PreprocessorDirective
+    makeComment t n l =
+        Comment t
                 (SrcSpan "" n 1 n (fromIntegral $ TL.length l + 1))
                 (TL.unpack l)
 
@@ -100,6 +107,18 @@ filterPreprocessorDirectives = finish . foldl' go start . zip [ 1 .. ]
             ]
 
     isCppContinuation = TL.isSuffixOf "\\"
+
+    isBeginIgnore src = any (`TL.isPrefixOf` src)
+                            [ "-- floskell-begin-disable-region"
+                            , "-- floskell-disable"
+                            , "{- floskell-disable"
+                            ]
+
+    isEndIgnore src = any (`TL.isPrefixOf` src)
+                          [ "-- floskell-end-disable-region"
+                          , "-- floskell-enable"
+                          , "{- floskell-enable"
+                          ]
 
 onSameLine :: SrcSpan -> SrcSpan -> Bool
 onSameLine ss ss' = srcSpanEndLine ss == srcSpanStartLine ss'

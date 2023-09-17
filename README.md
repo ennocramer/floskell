@@ -224,6 +224,18 @@ so that the contents of the `#if` are valid Haskell on their own.
 #endif
 ```
 
+### Manual Formatting and Hiding Code
+
+Floskell can be told to not change the formatting of a section of code
+by enclosing the section with `floskell-disable` and `floskell-enable`
+comments. The comments must be on a line of their own and can use the
+`--` and `{- -}` syntax.
+
+As Floskell will simply copy anything between these comments to the
+output and not attempt to parse the contents, this mechanism can also
+be used to hide constructs from Floskell that the parser does not
+support.
+
 
 ## Customization
 

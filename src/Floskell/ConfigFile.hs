@@ -33,11 +33,6 @@ import qualified Data.Aeson.Types           as JSON ( typeMismatch )
 import qualified Data.Attoparsec.ByteString as AP
 import qualified Data.ByteString            as BS
 import           Data.Char                  ( isLetter, isSpace )
-#if MIN_VERSION_aeson(2,0,0)
-import qualified Data.Aeson.KeyMap          as Map
-#else
-import qualified Data.HashMap.Lazy          as Map
-#endif
 import           Data.List                  ( inits )
 import qualified Data.Text                  as T
 
@@ -57,6 +52,14 @@ import           System.Directory
                  , getHomeDirectory, getXdgDirectory )
 import           System.FilePath
                  ( joinPath, splitDirectories, takeDirectory )
+
+{- floskell-disable -}
+#if MIN_VERSION_aeson(2,0,0)
+import qualified Data.Aeson.KeyMap          as Map
+#else
+import qualified Data.HashMap.Lazy          as Map
+#endif
+{- floskell-enable -}
 
 data AppConfig = AppConfig { appStyle      :: Style
                            , appLanguage   :: Language

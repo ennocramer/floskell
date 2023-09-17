@@ -145,7 +145,7 @@ reformatLines mode config indent = preserveVSpace (preserveIndent format)
   where
     format indent' =
         reformatBlock mode (withReducedLineLength (indent + indent') config)
-        . filterPreprocessorDirectives
+        . filterCommentLike
 
 -- | Format a continuous block of code without CPP directives.
 reformatBlock

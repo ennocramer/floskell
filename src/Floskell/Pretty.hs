@@ -148,8 +148,7 @@ printComment correction (Comment{..}, nextSpan) = do
     let padding = max 0 $ srcSpanStartColumn commentSpan + correction - col - 1
     case commentType of
         PreprocessorDirective -> do
-            nl <- gets psNewline
-            unless nl newline
+            ensureNewline
             column 0 $ string commentText
             modify (\s -> s { psEolComment = True })
         InlineComment -> do
@@ -163,6 +162,10 @@ printComment correction (Comment{..}, nextSpan) = do
             write $ T.replicate padding " "
             write "--"
             string commentText
+            modify (\s -> s { psEolComment = True })
+        IgnoredLine -> do
+            ensureNewline
+            column 0 $ string commentText
             modify (\s -> s { psEolComment = True })
 
 -- | Print comments of a node.

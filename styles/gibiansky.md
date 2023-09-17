@@ -1005,6 +1005,19 @@ Support for Hsc2hs #enum
   , mem = CTL_VM
 ```
 
+## Ignored Lines
+
+Ignore lines nested in `floskell-disable` and `floskell-enable`
+
+``` haskell
+-- floskell-disable
+This is ignored.
+-- floskell-enable
+{- floskell-disable -}
+And so is this.
+{- floskell-enable -}
+```
+
 ## Indentation and Line Prefixes
 
 Preserving indentation and line prefixes so that Floskell can be run

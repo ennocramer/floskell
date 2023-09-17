@@ -5,6 +5,7 @@
     "DeriveGeneric",
     "GeneralizedNewtypeDeriving",
     "LambdaCase",
+    "MultiWayIf",
     "NamedFieldPuns",
     "OverloadedStrings",
     "PatternGuards",
