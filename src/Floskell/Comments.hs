@@ -1,16 +1,30 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+
 -- | Comment handling.
-module Floskell.Comments ( annotateWithComments ) where
+module Floskell.Comments ( filterPreprocessorDirectives, annotateWithComments ) where
 
 import           Control.Arrow                ( first, second )
 import           Control.Monad.State.Strict
 
 import           Data.Foldable                ( traverse_ )
-import           Data.List                    ( isPrefixOf )
+import           Data.List                    ( foldl', isPrefixOf )
 import qualified Data.Map.Strict              as M
+import           Data.Text.Lazy               ( Text )
+import qualified Data.Text.Lazy               as TL
 
 import           Floskell.Types
 
 import           Language.Haskell.Exts.SrcLoc ( SrcSpanInfo(..) )
+
+data FilterMode = Normal | CppContinuation
+    deriving ( Eq, Ord, Enum, Show )
+
+data FilterState = FilterState { stMode     :: !FilterMode
+                               , stLines    :: [Text]
+                               , stComments :: [Comment]
+                               }
+    deriving ( Show )
 
 -- Order by start of span, larger spans before smaller spans.
 newtype OrderByStart = OrderByStart SrcSpan
@@ -33,6 +47,58 @@ instance Ord OrderByEnd where
         `mappend` compare (srcSpanEndColumn l) (srcSpanEndColumn r)
         `mappend` compare (srcSpanStartLine r) (srcSpanStartLine l)
         `mappend` compare (srcSpanStartColumn r) (srcSpanStartColumn l)
+
+-- | Remove comment-like blocks from input source, replacing them with
+-- blank likes to keep SrcSpan information intact.
+filterPreprocessorDirectives :: [Text] -> ([Text], [Comment])
+filterPreprocessorDirectives = finish . foldl' go start . zip [ 1 .. ]
+  where
+    start = FilterState Normal [] []
+
+    go s@FilterState{..} (n, l) = case stMode of
+        Normal ->
+            if isCppLine l
+            then let newMode = if isCppContinuation l
+                               then CppContinuation
+                               else Normal
+                     s' = s { stMode = newMode }
+                 in
+                     addComment s' n l
+            else addLine s l
+
+        CppContinuation ->
+            let newMode =
+                    if isCppContinuation l then CppContinuation else Normal
+                s' = s { stMode = newMode }
+            in
+                addComment s' n l
+
+    finish s = (reverse $ stLines s, reverse $ stComments s)
+
+    addLine s@FilterState{..} l = s { stLines = l : stLines }
+
+    addComment s@FilterState{..} n l =
+        s { stLines = "" : stLines, stComments = makeComment n l : stComments }
+
+    makeComment n l =
+        Comment PreprocessorDirective
+                (SrcSpan "" n 1 n (fromIntegral $ TL.length l + 1))
+                (TL.unpack l)
+
+    isCppLine src =
+        any (`TL.isPrefixOf` src)
+            [ "#define"
+            , "#elif"
+            , "#else"
+            , "#end"
+            , "#error"
+            , "#if"
+            , "#include"
+            , "#undef"
+            , "#warning"
+            ]
+
+    isCppContinuation = TL.isSuffixOf "\\"
 
 onSameLine :: SrcSpan -> SrcSpan -> Bool
 onSameLine ss ss' = srcSpanEndLine ss == srcSpanStartLine ss'

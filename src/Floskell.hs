@@ -174,32 +174,6 @@ reformatBlock mode config (lines, cpp) =
         then x : mergeComments xs' ys
         else y : mergeComments xs ys'
 
--- | Remove CPP directives from input source, retur
-filterPreprocessorDirectives :: [Text] -> ([Text], [Comment])
-filterPreprocessorDirectives lines = (code, comments)
-  where
-    code = map (\l -> if cppLine l then "" else l) lines
-
-    comments = map makeComment . filter (cppLine . snd) $ zip [ 1 .. ] lines
-
-    makeComment (n, l) =
-        Comment PreprocessorDirective
-                (SrcSpan "" n 1 n (fromIntegral $ TL.length l + 1))
-                (TL.unpack l)
-
-    cppLine src =
-        any (`TL.isPrefixOf` src)
-            [ "#if"
-            , "#end"
-            , "#else"
-            , "#define"
-            , "#undef"
-            , "#elif"
-            , "#include"
-            , "#error"
-            , "#warning"
-            ]
-
 prettyPrint :: Printer a -> Config -> Maybe Text
 prettyPrint printer = fmap (Buffer.toLazyText . psBuffer . snd)
     . execPrinter printer . initialPrintState

@@ -950,6 +950,17 @@ Preprocessor directives are accepted and retained.
  #error "ERROR"
 ```
 
+Multiline directives
+
+``` haskell
+ #define FOO \
+   bar
+ #if FOO \
+     && BAR
+ foo = bar
+ #endif
+```
+
 ## Indentation and Line Prefixes
 
 Preserving indentation and line prefixes so that Floskell can be run
