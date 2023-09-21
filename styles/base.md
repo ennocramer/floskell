@@ -932,6 +932,24 @@ f :: ()
 f = ()
 ```
 
+## Preprocessor Directives
+
+Preprocessor directives are accepted and retained.
+
+``` haskell
+ #include <file.h>
+ instance Monoid Penalty where
+     mempty = 0
+ 
+ #if !(MIN_VERSION_base(4,11,0))
+     mappend = (<>)
+ #endif
+ #define FOO 1
+ #undef FOO
+ #warning "WARNING"
+ #error "ERROR"
+```
+
 ## Indentation and Line Prefixes
 
 Preserving indentation and line prefixes so that Floskell can be run

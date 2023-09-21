@@ -141,36 +141,28 @@ reformat config mfilepath input = fmap (TL.intercalate "\n")
     cfg = safeConfig . styleConfig $ appStyle config
 
 reformatLines :: ParseMode -> Config -> Int -> [Text] -> Either String [Text]
-reformatLines mode config indent = format . filterPreprocessorDirectives
+reformatLines mode config indent = preserveVSpace (preserveIndent format)
   where
-    config' = withReducedLineLength indent config
-
-    format (code, comments) =
-        preserveVSpace (preserveIndent (reformatBlock mode config' comments))
-                       code
+    format indent' =
+        reformatBlock mode (withReducedLineLength (indent + indent') config)
+        . filterPreprocessorDirectives
 
 -- | Format a continuous block of code without CPP directives.
-reformatBlock :: ParseMode
-              -> Config
-              -> [Comment]
-              -> Int
-              -> [Text]
-              -> Either String [Text]
-reformatBlock mode config cpp indent lines =
+reformatBlock
+    :: ParseMode -> Config -> ([Text], [Comment]) -> Either String [Text]
+reformatBlock mode config (lines, cpp) =
     case parseModuleWithComments mode code of
         ParseOk (m, comments') ->
             let comments = map makeComment comments'
                 ast = annotateWithComments m (mergeComments comments cpp)
             in
-                case prettyPrint (pretty ast) config' of
+                case prettyPrint (pretty ast) config of
                     Nothing -> Left "Printer failed with mzero call."
                     Just output -> Right $ TL.lines output
         ParseFailed loc e -> Left $
             Exts.prettyPrint (loc { srcLine = srcLine loc }) ++ ": " ++ e
   where
     code = TL.unpack $ TL.intercalate "\n" lines
-
-    config' = withReducedLineLength indent config
 
     makeComment (Exts.Comment inline span text) =
         Comment (if inline then InlineComment else LineComment) span text
