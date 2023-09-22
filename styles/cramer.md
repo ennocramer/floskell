@@ -1002,6 +1002,18 @@ Multiline directives
  #endif
 ```
 
+Support for Hsc2hs #enum
+
+``` haskell
+ #enum CInt,        \
+  , fs = CTL_FS     \
+  , hw = CTL_HW     \
+  , kern = CTL_KERN \
+  , net = CTL_NET   \
+  , vfs = CTL_VFS   \
+  , mem = CTL_VM
+```
+
 ## Indentation and Line Prefixes
 
 Preserving indentation and line prefixes so that Floskell can be run

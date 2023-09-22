@@ -91,6 +91,7 @@ filterPreprocessorDirectives = finish . foldl' go start . zip [ 1 .. ]
             , "#elif"
             , "#else"
             , "#end"
+            , "#enum"
             , "#error"
             , "#if"
             , "#include"
