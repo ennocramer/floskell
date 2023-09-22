@@ -985,8 +985,10 @@ Preprocessor directives are accepted and retained.
  #if !(MIN_VERSION_base(4,11,0))
      mappend = (<>)
  #endif
+
  #define FOO 1
  #undef FOO
+
  #warning "WARNING"
  #error "ERROR"
 ```
@@ -996,6 +998,7 @@ Multiline directives
 ``` haskell
  #define FOO \
    bar
+
  #if FOO \
      && BAR
  foo = bar
@@ -1022,6 +1025,7 @@ Ignore lines nested in `floskell-disable` and `floskell-enable`
 -- floskell-disable
 This is ignored.
 -- floskell-enable
+
 {- floskell-disable -}
 And so is this.
 {- floskell-enable -}

@@ -100,20 +100,19 @@ class Pretty ast where
 -- | Pretty print a syntax tree with annotated comments
 pretty :: (Annotated ast, Pretty ast) => ast NodeInfo -> Printer ()
 pretty ast = do
-    printComments Before ast
+    printCommentsBefore True ast
     prettyPrint ast
-    printComments After ast
+    printCommentsAfter ast
 
 prettyOnside :: (Annotated ast, Pretty ast) => ast NodeInfo -> Printer ()
 prettyOnside ast = do
-    eol <- gets psEolComment
-    when eol newline
+    closeEolComment
     nl <- gets psNewline
     if nl
         then do
-            printComments Before ast
+            printCommentsBefore True ast
             onside $ prettyPrint ast
-            printComments After ast
+            printCommentsAfter ast
         else onside $ pretty ast
 
 -- | Compare two AST nodes ignoring the annotation
@@ -142,8 +141,8 @@ copyComments After from to =
          to
 
 -- | Pretty print a comment.
-printComment :: Int -> (Comment, SrcSpan) -> Printer ()
-printComment correction (Comment{..}, nextSpan) = do
+printComment :: Int -> Comment -> Printer ()
+printComment correction Comment{..} = do
     col <- getNextColumn
     let padding = max 0 $ srcSpanStartColumn commentSpan + correction - col - 1
     case commentType of
@@ -156,8 +155,6 @@ printComment correction (Comment{..}, nextSpan) = do
             write "{-"
             string commentText
             write "-}"
-            when (srcSpanEndLine commentSpan /= srcSpanStartLine nextSpan) $
-                modify (\s -> s { psEolComment = True })
         LineComment -> do
             write $ T.replicate padding " "
             write "--"
@@ -168,43 +165,37 @@ printComment correction (Comment{..}, nextSpan) = do
             column 0 $ string commentText
             modify (\s -> s { psEolComment = True })
 
--- | Print comments of a node.
-printComments :: Annotated ast => Location -> ast NodeInfo -> Printer ()
-printComments = printCommentsInternal True
-
--- | Print comments of a node, but do not force newline before leading comments.
-printComments' :: Annotated ast => Location -> ast NodeInfo -> Printer ()
-printComments' = printCommentsInternal False
-
-printCommentsInternal
-    :: Annotated ast => Bool -> Location -> ast NodeInfo -> Printer ()
-printCommentsInternal nlBefore loc ast = unless (null comments) $ do
-    let firstComment = head comments
-    -- Preceeding comments must have a newline before them, but not break onside indent.
-    nl <- gets psNewline
-    onside' <- gets psOnside
-    when nl $ modify $ \s -> s { psOnside = 0 }
-    when (loc == Before && not nl && nlBefore) newline
-    when (loc == After && not nl && notSameLine firstComment) newline
-
+printCommentsBefore :: Annotated ast => Bool -> ast NodeInfo -> Printer ()
+printCommentsBefore nlBefore ast = unless (null comments) $ suppressOnside $ do
+    when nlBefore ensureNewline
     col <- getNextColumn
-    let correction = case loc of
-            Before -> col - srcSpanStartColumn ssi + 1
-            After -> col - srcSpanEndColumn ssi + 1
-    forM_ (zip comments (tail (map commentSpan comments ++ [ ssi ]))) $
-        printComment correction
-
-    -- Write newline before restoring onside indent.
-    eol <- gets psEolComment
-    when (loc == Before && eol && onside' > 0) newline
-    when nl $ modify $ \s -> s { psOnside = onside' }
+    printCommentsInternal (col - srcSpanStartColumn (nodeSpan ast) + 1)
+                          comments
+    when (srcSpanEndLine (commentSpan (last comments))
+          < srcSpanStartLine (nodeSpan ast))
+         ensureNewline
+    closeEolComment
   where
-    ssi = nodeSpan ast
+    comments = nodeInfoLeadingComments $ ann ast
 
-    comments = filterComments loc ast
+printCommentsAfter :: Annotated ast => ast NodeInfo -> Printer ()
+printCommentsAfter ast = unless (null comments) $ suppressOnside $ do
+    when (srcSpanStartLine (commentSpan (head comments))
+          > srcSpanEndLine (nodeSpan ast))
+         ensureNewline
+    col <- getNextColumn
+    printCommentsInternal (col - srcSpanEndColumn (nodeSpan ast) + 1) comments
+  where
+    comments = nodeInfoTrailingComments $ ann ast
 
-    notSameLine comment = srcSpanEndLine ssi
-        < srcSpanStartLine (commentSpan comment)
+printCommentsInternal :: Int -> [Comment] -> Printer ()
+printCommentsInternal correction comments = do
+    printComment correction (head comments)
+    forM_ (zip (tail comments) (map (srcSpanEndLine . commentSpan) comments)) $
+        \(comment, prevLine) -> do
+            let nextLine = srcSpanStartLine $ commentSpan comment
+            replicateM_ (nextLine - prevLine) newline
+            printComment correction comment
 
 -- | Return the configuration name of an operator
 opName :: QOp a -> Text
@@ -285,16 +276,16 @@ listVinternal ctx sep xs = case xs of
         let itemCol = if nl && length xs > 1 then col + delta else col
             sepCol = itemCol - delta
         column itemCol $ do
-            printComments' Before x
+            printCommentsBefore False x
             cut $ prettyPrint x
-            printComments After x
+            printCommentsAfter x
         -- `column sepCol` must not be within `column itemCol`, or the
         -- former can suppress onside for the latter.
         forM_ xs' $ \x' -> do
-            column itemCol $ printComments Before x'
+            column itemCol $ printCommentsBefore True x'
             column sepCol $ operatorV ctx sep
             column itemCol $ cut $ prettyPrint x'
-            column itemCol $ printComments After x'
+            column itemCol $ printCommentsAfter x'
 
 listH :: (Annotated ast, Pretty ast)
       => LayoutContext
@@ -395,16 +386,16 @@ listAutoWrap' ctx sep (x : xs) = aligned $ do
   where
     go _ [] = return ()
     go col [ x' ] = do
-        printComments Before x'
+        printCommentsBefore True x'
         column col $ operator ctx sep
         prettyPrint x'
-        printComments After x'
+        printCommentsAfter x'
     go col (x' : xs') = do
-        printComments Before x'
+        printCommentsBefore True x'
         cut $ do
             column col $ operator ctx sep
             prettyPrint x'
-            printComments After x'
+            printCommentsAfter x'
         go col xs'
 
 measure :: Printer a -> Printer (Maybe Int)
@@ -668,9 +659,9 @@ prettyInfixApp nameFn ctx (lhs, args) =
             pretty arg
 
     prettyOp op = do
-        printComments Before op
+        printCommentsBefore True op
         prettyHSE op
-        printComments After op
+        printCommentsAfter op
 
 prettyRecord :: (Annotated ast1, Pretty ast1, Annotated ast2, Pretty ast2)
              => (ast2 NodeInfo -> Printer (Maybe Int))

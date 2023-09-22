@@ -4,6 +4,7 @@ module Floskell.Printers
     ( getConfig
     , getOption
     , cut
+    , closeEolComment
     , oneline
     , ignoreOneline
       -- * Basic printing
@@ -12,6 +13,7 @@ module Floskell.Printers
     , int
     , space
     , newline
+    , ensureNewline
     , blankline
     , spaceOrNewline
       -- * Tab stops
@@ -34,6 +36,7 @@ module Floskell.Printers
     , aligned
     , indented
     , onside
+    , suppressOnside
     , depend
     , depend'
     , parens
@@ -169,6 +172,12 @@ newline = do
                     , psEolComment = False
                     })
 
+-- | Output a newline if not at the start of a line
+ensureNewline :: Printer ()
+ensureNewline = do
+    nl <- gets psNewline
+    unless nl newline
+
 blankline :: Printer ()
 blankline = newline >> newline
 
@@ -298,13 +307,22 @@ indented i p = do
     level <- gets psIndentLevel
     column (level + i) p
 
--- | Increase indentation level b n spaces for the given printer, but
+-- | Increase indentation level by n spaces for the given printer, but
 -- ignore increase when computing further indentations.
 onside :: Printer a -> Printer a
 onside p = do
     closeEolComment
     onsideIndent <- getConfig (cfgIndentOnside . cfgIndent)
     withIndentation (\(l, _) -> (l, onsideIndent)) p
+
+-- | Temporarily ignore any onside identation.
+suppressOnside :: Printer () -> Printer ()
+suppressOnside printer = do
+    nl <- gets psNewline
+    onsideIndent <- gets psOnside
+    when nl $ modify $ \s -> s { psOnside = 0 }
+    printer
+    modify $ \s -> s { psOnside = onsideIndent }
 
 depend :: Text -> Printer a -> Printer a
 depend kw = depend' (write kw)
@@ -404,7 +422,9 @@ withOperatorFormattingV :: LayoutContext
                         -> Printer a
 withOperatorFormattingV ctx op opp fn = do
     ws <- getConfig (cfgOpWs ctx op . cfgOp)
-    if wsLinebreak Before ws then newline else when (wsSpace Before ws) space
+    if wsLinebreak Before ws
+        then ensureNewline
+        else when (wsSpace Before ws) space
     fn $ do
         opp
         if wsLinebreak After ws then newline else when (wsSpace After ws) space
