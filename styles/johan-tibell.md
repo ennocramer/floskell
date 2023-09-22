@@ -1082,6 +1082,21 @@ And so is this.
 {- floskell-enable -}
 ```
 
+Ignore shebang lines
+
+``` haskell
+ #! /usr/bin/env nix-shell
+ #! nix-shell -p ghcid
+ #! nix-shell -p "haskellPackages.ghcWithPackages (p: with p; [ shower ])"
+ #! nix-shell -i "ghcid -c 'ghci -Wall' -T':!pkill --full ghc\\ .\\*./Main.hs' -T main"
+ module Main where
+ 
+ import Shower
+ 
+ main :: IO ()
+ main = printer "Hello"
+```
+
 ## Indentation and Line Prefixes
 
 Preserving indentation and line prefixes so that Floskell can be run

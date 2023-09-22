@@ -58,6 +58,7 @@ filterCommentLike = finish . foldl' go start . zip [ 1 .. ]
 
     go s@FilterState{..} (n, l) = case stMode of
         Normal -> if
+            | isShebangLine l -> addComment s Normal IgnoredLine n l
             | isCppLine l ->
                 let newMode =
                         if isCppContinuation l then CppContinuation else Normal
@@ -91,6 +92,8 @@ filterCommentLike = finish . foldl' go start . zip [ 1 .. ]
         Comment t
                 (SrcSpan "" n 1 n (fromIntegral $ TL.length l + 1))
                 (TL.unpack l)
+
+    isShebangLine = TL.isPrefixOf "#!"
 
     isCppLine src =
         any (`TL.isPrefixOf` src)

@@ -5,6 +5,7 @@
 * Add support for manual formatting / hiding regions of code from the formatter
 * Add support for multi-line preprocessor directives
 * Add support for hsc2hs #enum directives
+* Add support for shebang lines
 * Add support for building with aeson-2.2.0.0 and optparse-applicative-0.18.1.0
 
 # Floskell 0.10.8 (2023-08-12)
