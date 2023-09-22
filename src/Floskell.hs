@@ -98,7 +98,7 @@ preservePrefix format input = do
 preserveIndent :: Monad m => (Int -> [Text] -> m [Text]) -> [Text] -> m [Text]
 preserveIndent format input = do
     output <- format (prefixLength prefix) input'
-    return $ map (prefix <>) output
+    return $ map (\l -> if TL.null l then l else prefix <> l) output
   where
     prefix = findIndent allowed input
 

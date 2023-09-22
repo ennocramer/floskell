@@ -1005,7 +1005,7 @@ Preprocessor directives are accepted and retained.
  #include <file.h>
  instance Monoid Penalty where
    mempty = 0
- 
+
  #if !(MIN_VERSION_base(4,11,0))
    mappend = (<>)
  #endif
@@ -1059,9 +1059,9 @@ Ignore shebang lines
  #! nix-shell -p "haskellPackages.ghcWithPackages (p: with p; [ shower ])"
  #! nix-shell -i "ghcid -c 'ghci -Wall' -T':!pkill --full ghc\\ .\\*./Main.hs' -T main"
  module Main where
- 
+
  import Shower
- 
+
  main :: IO ()
  main = printer "Hello"
 ```
