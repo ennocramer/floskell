@@ -642,12 +642,12 @@ foo = [ ( x, y ) | x <- xs
 foo = Point { x = 1, y = 2 }
 
 foo = Point { x = 1 -- the one
-    , y, .. }
+            , y, .. }
 
 foo = bar { x = 1 }
 
 foo = bar { x = 1 -- the one
-    , y, .. }
+          , y, .. }
 ```
 
 ### Let, If, MultiIf, and Case
@@ -777,9 +777,9 @@ foo = do
 Long types allow linebreaks.
 
 ``` haskell
-newtype MyMonadT a b m
-    = MyMonad { runMyMonad :: StateT ([ ( a, a -> b ) ])
-          (ReaderT a (ExceptT [ IM.IntMap b ]) (WriterT [ IS.IntSet x ] m)) }
+newtype MyMonadT a b m = MyMonad { runMyMonad :: StateT ([ ( a, a -> b ) ])
+                                       (ReaderT a (ExceptT [ IM.IntMap b ])
+                                        (WriterT [ IS.IntSet x ] m)) }
 ```
 
 Promoted types.
@@ -869,7 +869,7 @@ Don't be too eager in assigning comments to the following AST node.
 
 ``` haskell
 data Foo = Foo { fooBar :: Text
-               -- ^A comment, long enough to end up on its own line, or at least I hope so.
+                 -- ^A comment, long enough to end up on its own line, or at least I hope so.
            }
     deriving ( Eq )
 ```

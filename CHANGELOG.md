@@ -2,6 +2,7 @@
 
 * Fix alignment of non-ASCII identifiers
 * Fix extra whitespace generated for preprocessor directives at top/bottom of files
+* Fix runtime blow-up with large number of pattern guards
 * Add support for manual formatting / hiding regions of code from the formatter
 * Add support for multi-line preprocessor directives
 * Add support for hsc2hs #enum directives

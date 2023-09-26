@@ -79,7 +79,8 @@ disabled :: T.Text -> [Int] -> Maybe String
 disabled style path = lookup (Just style, path) disabledTests
     <|> lookup (Nothing :: Maybe T.Text, path) disabledTests
   where
-    disabledTests = []
+    disabledTests =
+        []
 #if MIN_VERSION_haskell_src_exts(1,21,0)
 #else
         ++ [ ((Nothing, [ 2, 3, 4, 1 ]), "requires haskell-src-exts >=1.21.0")

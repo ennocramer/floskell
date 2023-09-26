@@ -521,10 +521,10 @@ foreign export ccall callback :: Int -> Int
 
 {-# DEPRECATED #-}
 {-# DEPRECATED foo "use bar instead" #-}
-{-# DEPRECATED foo, bar, baz "no longer supported" #-}
+{-# DEPRECATED foo,bar,baz "no longer supported" #-}
 {-# WARNING #-}
 {-# WARNING foo "use bar instead" #-}
-{-# WARNING foo, bar, baz "no longer supported" #-}
+{-# WARNING foo,bar,baz "no longer supported" #-}
 {-# INLINE foo #-}
 {-# INLINE [3] foo #-}
 {-# INLINE [~3] foo #-}

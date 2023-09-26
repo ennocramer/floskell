@@ -610,7 +610,7 @@ prettyTypesig :: (Annotated ast, Pretty ast)
               -> Type NodeInfo
               -> Printer ()
 prettyTypesig ctx names ty = do
-    inter comma $ map pretty names
+    listAutoWrap' ctx "," names
     atTabStop stopRecordField
     withIndentConfig cfgIndentTypesig align indentby
   where
@@ -689,8 +689,7 @@ prettyRecordFields :: (Annotated ast, Pretty ast)
                    -> Printer ()
 prettyRecordFields len ctx fields = withLayout cfgLayoutRecord flex vertical
   where
-    flex = groupH ctx "{" "}" $ inter (operatorH ctx ",") $
-        map prettyOnside fields
+    flex = groupH ctx "{" "}" $ listAutoWrap' ctx "," fields
 
     vertical = groupV ctx "{" "}" $
         withComputedTabStop stopRecordField
@@ -926,7 +925,7 @@ instance Pretty Decl where
                            mtyvarbinds'
                            mcontext'
                            ty) = depend "pattern" $ do
-        inter comma $ map pretty names
+        listAutoWrap' Declaration "," names
         operator Declaration "::"
         mapM_ prettyForall mtyvarbinds
         mayM_ mcontext pretty
@@ -936,7 +935,7 @@ instance Pretty Decl where
 #elif MIN_VERSION_haskell_src_exts(1,20,0)
     prettyPrint (PatSynSig _ names mtyvarbinds mcontext mcontext' ty) =
         depend "pattern" $ do
-            inter comma $ map pretty names
+            listAutoWrap' Declaration "," names
             operator Declaration "::"
             mapM_ prettyForall mtyvarbinds
             mayM_ mcontext pretty
@@ -1002,7 +1001,7 @@ instance Pretty Decl where
         else prettyPragma "DEPRECATED" $ forM_ deprecations $
             \(names, str) -> do
                 unless (null names) $ do
-                    inter comma $ map pretty names
+                    listAutoWrap' Other "," names
                     space
                 string (show str)
 
@@ -1011,7 +1010,7 @@ instance Pretty Decl where
         then prettyPragma' "WARNING" Nothing
         else prettyPragma "WARNING" $ forM_ warnings $ \(names, str) -> do
             unless (null names) $ do
-                inter comma $ map pretty names
+                listAutoWrap' Other "," names
                 space
             string (show str)
 
@@ -1031,14 +1030,14 @@ instance Pretty Decl where
             mayM_ mactivation $ withPostfix space pretty
             pretty qname
             operator Declaration "::"
-            inter comma $ map pretty types
+            listAutoWrap' Declaration "," types
 
     prettyPrint (SpecInlineSig _ inline mactivation qname types) =
         prettyPragma name $ do
             mayM_ mactivation $ withPostfix space pretty
             pretty qname
             operator Declaration "::"
-            inter comma $ map pretty types
+            listAutoWrap' Declaration "," types
       where
         name = if inline then "SPECIALISE INLINE" else "SPECIALISE NOINLINE"
 
@@ -1269,7 +1268,7 @@ instance Pretty Match where
                                    (opName'' name)
                                    (prettyHSE $ VarOp noNodeInfo name)
                                    id
-            inter spaceOrNewline $ map pretty pats
+            inter spaceOrNewline $ map (cut . pretty) pats
 
         vertical = do
             pretty pat
@@ -1300,13 +1299,13 @@ instance Pretty GuardedRhs where
       where
         flex = do
             operatorSectionR Pattern "|" $ write "|"
-            inter comma $ map pretty stmts
+            listAutoWrap' Pattern "," stmts
             operator Declaration "="
             pretty expr
 
         vertical = do
             operatorSectionR Pattern "|" $ write "|"
-            inter comma $ map pretty stmts
+            list' Pattern "," stmts
             operatorV Declaration "="
             pretty expr
 
@@ -1473,9 +1472,7 @@ instance Pretty Type where
 
         prettyV (TyForall _ mtyvarbinds mcontext ty) = do
             forM_ mtyvarbinds $ \tyvarbinds -> do
-                write "forall "
-                inter space $ map pretty tyvarbinds
-                withOperatorFormattingV Type "." (write "." >> space) id
+                prettyForall tyvarbinds
             forM_ mcontext $ \context -> do
                 case context of
                     (CxSingle _ asst) -> pretty asst
@@ -2188,7 +2185,7 @@ instance Pretty Splice where
 
 instance Pretty ModulePragma where
     prettyPrint (LanguagePragma _ names) =
-        prettyPragma "LANGUAGE" . inter comma $ map pretty names
+        prettyPragma "LANGUAGE" $ listAutoWrap' Other "," names
 
     prettyPrint (OptionsPragma _ mtool str) = prettyPragma name $
         string (trim str)
@@ -2245,10 +2242,10 @@ instance Pretty BooleanFormula where
     prettyPrint (VarFormula _ name) = pretty name
 
     prettyPrint (AndFormula _ booleanformulas) =
-        inter comma $ map pretty booleanformulas
+        listAutoWrap' Expression "," booleanformulas
 
     prettyPrint (OrFormula _ booleanformulas) =
-        inter (operator Expression "|") $ map pretty booleanformulas
+        listAutoWrap' Expression "|" booleanformulas
 
     prettyPrint (ParenFormula _ booleanformula) = parens $ pretty booleanformula
 
@@ -2288,7 +2285,7 @@ newtype GuardedAlt l = GuardedAlt (GuardedRhs l)
 instance Pretty GuardedAlt where
     prettyPrint (GuardedAlt (GuardedRhs _ stmts expr)) = cut $ do
         operatorSectionR Pattern "|" $ write "|"
-        inter comma $ map pretty stmts
+        listAutoWrap' Expression "," stmts
         operator Expression "->"
         pretty expr
 
