@@ -78,14 +78,14 @@ runPrinter m s = runSearchBest $ runStateT (unPrinter m) s
 
 -- | The state of the pretty printer.
 data PrintState =
-    PrintState { psBuffer :: !Buffer -- ^ Output buffer
-               , psIndentLevel :: !Int -- ^ Current indentation level.
-               , psOnside :: !Int -- ^ Extra indentation is necessary with next line break.
-               , psTabStops :: !(Map.Map TabStop Int) -- ^ Tab stops for alignment.
-               , psConfig :: !Config -- ^ Style definition.
-               , psEolComment :: !Bool -- ^ An end of line comment has just been outputted.
+    PrintState { psBuffer            :: !Buffer -- ^ Output buffer
+               , psIndentLevel       :: !Int -- ^ Current indentation level.
+               , psOnside            :: !Int -- ^ Extra indentation is necessary with next line break.
+               , psTabStops          :: !(Map.Map TabStop Int) -- ^ Tab stops for alignment.
+               , psConfig            :: !Config -- ^ Style definition.
+               , psEolComment        :: !Bool -- ^ An end of line comment has just been outputted.
                , psOutputRestriction :: !OutputRestriction
-               , psTypeLayout :: !TypeLayout
+               , psTypeLayout        :: !TypeLayout
                }
 
 psLine :: PrintState -> Int
@@ -112,8 +112,8 @@ data Comment = Comment { commentType :: !CommentType
 
 -- | Information for each node in the AST.
 data NodeInfo =
-    NodeInfo { nodeInfoSpan :: !SrcSpan               -- ^ Location info from the parser.
-             , nodeInfoLeadingComments :: ![Comment]  -- ^ Leading comments attached to this node.
+    NodeInfo { nodeInfoSpan             :: !SrcSpan               -- ^ Location info from the parser.
+             , nodeInfoLeadingComments  :: ![Comment]  -- ^ Leading comments attached to this node.
              , nodeInfoTrailingComments :: ![Comment] -- ^ Trailing comments attached to this node.
              }
     deriving ( Show )

@@ -4,29 +4,29 @@
 -- | Main entry point to floskell.
 module Main ( main ) where
 
-import           Control.Applicative             ( many, optional )
-import           Control.Exception               ( catch, throw )
+import           Control.Applicative          ( many, optional )
+import           Control.Exception            ( catch, throw )
 
-import qualified Data.Aeson.Encode.Pretty        as JSON ( encodePretty )
-import qualified Data.ByteString.Lazy            as BL
-import           Data.List                       ( sort )
-import           Data.Maybe                      ( isJust )
-import           Data.Monoid                     ( (<>) )
-import qualified Data.Text                       as T
-import qualified Data.Text.Lazy                  as TL
-import qualified Data.Text.Lazy.IO               as TIO
-import           Data.Version                    ( showVersion )
+import qualified Data.Aeson.Encode.Pretty     as JSON ( encodePretty )
+import qualified Data.ByteString.Lazy         as BL
+import           Data.List                    ( sort )
+import           Data.Maybe                   ( isJust )
+import           Data.Monoid                  ( (<>) )
+import qualified Data.Text                    as T
+import qualified Data.Text.Lazy               as TL
+import qualified Data.Text.Lazy.IO            as TIO
+import           Data.Version                 ( showVersion )
 
 import           Floskell
                  ( AppConfig(..), Style(..), defaultAppConfig, findAppConfig
                  , readAppConfig, reformat, setExtensions, setFixities
                  , setLanguage, setStyle, styles )
-import           Floskell.ConfigFile             ( showFixity )
-import           Floskell.Fixities               ( packageFixities )
+import           Floskell.ConfigFile          ( showFixity )
+import           Floskell.Fixities            ( packageFixities )
 
-import           Foreign.C.Error                 ( Errno(..), eXDEV )
+import           Foreign.C.Error              ( Errno(..), eXDEV )
 
-import           GHC.IO.Exception                ( ioe_errno )
+import           GHC.IO.Exception             ( ioe_errno )
 
 import           Language.Haskell.Exts
                  ( Extension(..), knownExtensions, knownLanguages )
@@ -36,7 +36,7 @@ import           Options.Applicative
                  , fullDesc, header, help, helper, hidden, info, long, metavar
                  , option, progDesc, short, str, switch )
 
-import           Paths_floskell                  ( version )
+import           Paths_floskell               ( version )
 
 import           System.Directory
                  ( copyFile, copyPermissions, getTemporaryDirectory, removeFile

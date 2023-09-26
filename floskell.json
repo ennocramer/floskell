@@ -19,7 +19,7 @@
       "import-spec": true,
       "let-binds": false,
       "limits": [
-        10,
+        12,
         25
       ],
       "record-fields": true,

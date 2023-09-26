@@ -119,71 +119,71 @@ instance Default AlignConfig where
                       }
 
 data IndentConfig =
-    IndentConfig { cfgIndentOnside :: !Int
-                 , cfgIndentDeriving :: !Int
-                 , cfgIndentWhere :: !Int
-                 , cfgIndentApp :: !Indent
-                 , cfgIndentCase :: !Indent
-                 , cfgIndentClass :: !Indent
-                 , cfgIndentDo :: !Indent
+    IndentConfig { cfgIndentOnside         :: !Int
+                 , cfgIndentDeriving       :: !Int
+                 , cfgIndentWhere          :: !Int
+                 , cfgIndentApp            :: !Indent
+                 , cfgIndentCase           :: !Indent
+                 , cfgIndentClass          :: !Indent
+                 , cfgIndentDo             :: !Indent
                  , cfgIndentExportSpecList :: !Indent
-                 , cfgIndentIf :: !Indent
+                 , cfgIndentIf             :: !Indent
                  , cfgIndentImportSpecList :: !Indent
-                 , cfgIndentLet :: !Indent
-                 , cfgIndentLetBinds :: !Indent
-                 , cfgIndentLetIn :: !Indent
-                 , cfgIndentMultiIf :: !Indent
-                 , cfgIndentTypesig :: !Indent
-                 , cfgIndentWhereBinds :: !Indent
+                 , cfgIndentLet            :: !Indent
+                 , cfgIndentLetBinds       :: !Indent
+                 , cfgIndentLetIn          :: !Indent
+                 , cfgIndentMultiIf        :: !Indent
+                 , cfgIndentTypesig        :: !Indent
+                 , cfgIndentWhereBinds     :: !Indent
                  }
     deriving ( Generic )
 
 instance Default IndentConfig where
-    def = IndentConfig { cfgIndentOnside = 4
-                       , cfgIndentDeriving = 4
-                       , cfgIndentWhere = 2
-                       , cfgIndentApp = IndentBy 4
-                       , cfgIndentCase = IndentBy 4
-                       , cfgIndentClass = IndentBy 4
-                       , cfgIndentDo = IndentBy 4
+    def = IndentConfig { cfgIndentOnside         = 4
+                       , cfgIndentDeriving       = 4
+                       , cfgIndentWhere          = 2
+                       , cfgIndentApp            = IndentBy 4
+                       , cfgIndentCase           = IndentBy 4
+                       , cfgIndentClass          = IndentBy 4
+                       , cfgIndentDo             = IndentBy 4
                        , cfgIndentExportSpecList = IndentBy 4
-                       , cfgIndentIf = IndentBy 4
+                       , cfgIndentIf             = IndentBy 4
                        , cfgIndentImportSpecList = IndentBy 4
-                       , cfgIndentLet = IndentBy 4
-                       , cfgIndentLetBinds = IndentBy 4
-                       , cfgIndentLetIn = IndentBy 4
-                       , cfgIndentMultiIf = IndentBy 4
-                       , cfgIndentTypesig = IndentBy 4
-                       , cfgIndentWhereBinds = IndentBy 2
+                       , cfgIndentLet            = IndentBy 4
+                       , cfgIndentLetBinds       = IndentBy 4
+                       , cfgIndentLetIn          = IndentBy 4
+                       , cfgIndentMultiIf        = IndentBy 4
+                       , cfgIndentTypesig        = IndentBy 4
+                       , cfgIndentWhereBinds     = IndentBy 2
                        }
 
 data LayoutConfig =
-    LayoutConfig { cfgLayoutApp :: !Layout
-                 , cfgLayoutConDecls :: !Layout
-                 , cfgLayoutDeclaration :: !Layout
+    LayoutConfig { cfgLayoutApp            :: !Layout
+                 , cfgLayoutConDecls       :: !Layout
+                 , cfgLayoutDeclaration    :: !Layout
                  , cfgLayoutExportSpecList :: !Layout
-                 , cfgLayoutIf :: !Layout
+                 , cfgLayoutIf             :: !Layout
                  , cfgLayoutImportSpecList :: !Layout
-                 , cfgLayoutInfixApp :: !Layout
-                 , cfgLayoutLet :: !Layout
-                 , cfgLayoutListComp :: !Layout
-                 , cfgLayoutRecord :: !Layout
-                 , cfgLayoutType :: !Layout
+                 , cfgLayoutInfixApp       :: !Layout
+                 , cfgLayoutLet            :: !Layout
+                 , cfgLayoutListComp       :: !Layout
+                 , cfgLayoutRecord         :: !Layout
+                 , cfgLayoutType           :: !Layout
                  }
     deriving ( Generic )
 
 instance Default LayoutConfig where
-    def = LayoutConfig { cfgLayoutApp = Flex
-                       , cfgLayoutConDecls = Flex
-                       , cfgLayoutDeclaration = Flex
+    def = LayoutConfig { cfgLayoutApp            = Flex
+                       , cfgLayoutConDecls       = Flex
+                       , cfgLayoutDeclaration    = Flex
                        , cfgLayoutExportSpecList = Flex
-                       , cfgLayoutIf = Flex
+                       , cfgLayoutIf             = Flex
                        , cfgLayoutImportSpecList = Flex
-                       , cfgLayoutInfixApp = Flex
-                       , cfgLayoutLet = Flex
-                       , cfgLayoutListComp = Flex
-                       , cfgLayoutRecord = Flex
-                       , cfgLayoutType = Flex
+                       , cfgLayoutInfixApp       = Flex
+                       , cfgLayoutLet            = Flex
+                       , cfgLayoutListComp       = Flex
+                       , cfgLayoutRecord         = Flex
+                       , cfgLayoutType           = Flex
                        }
 
 newtype OpConfig = OpConfig { unOpConfig :: ConfigMap Whitespace }
@@ -227,7 +227,8 @@ data OptionConfig =
                  , cfgOptionAlignSumTypeDecl       :: !Bool
                  , cfgOptionFlexibleOneline        :: !Bool
                  , cfgOptionPreserveVerticalSpace  :: !Bool
-                 , cfgOptionDeclNoBlankLines       :: !(Set DeclarationConstruct)
+                 , cfgOptionDeclNoBlankLines
+                       :: !(Set DeclarationConstruct)
                  , cfgOptionAlignLetBindsAndInExpr :: !Bool
                  }
     deriving ( Generic )

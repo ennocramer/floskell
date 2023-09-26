@@ -22,35 +22,35 @@ chrisDoneCfg =
     defaultConfig { cfgIndent, cfgLayout, cfgOp, cfgGroup, cfgOptions }
   where
     cfgIndent =
-        IndentConfig { cfgIndentOnside = 2
-                     , cfgIndentDeriving = 2
-                     , cfgIndentWhere = 2
-                     , cfgIndentApp = Align
-                     , cfgIndentCase = IndentBy 2
-                     , cfgIndentClass = IndentBy 2
-                     , cfgIndentDo = Align
-                     , cfgIndentIf = IndentBy 3
-                     , cfgIndentLet = Align
-                     , cfgIndentLetBinds = Align
-                     , cfgIndentLetIn = Align
-                     , cfgIndentMultiIf = IndentBy 2
-                     , cfgIndentTypesig = Align
-                     , cfgIndentWhereBinds = Align
+        IndentConfig { cfgIndentOnside         = 2
+                     , cfgIndentDeriving       = 2
+                     , cfgIndentWhere          = 2
+                     , cfgIndentApp            = Align
+                     , cfgIndentCase           = IndentBy 2
+                     , cfgIndentClass          = IndentBy 2
+                     , cfgIndentDo             = Align
+                     , cfgIndentIf             = IndentBy 3
+                     , cfgIndentLet            = Align
+                     , cfgIndentLetBinds       = Align
+                     , cfgIndentLetIn          = Align
+                     , cfgIndentMultiIf        = IndentBy 2
+                     , cfgIndentTypesig        = Align
+                     , cfgIndentWhereBinds     = Align
                      , cfgIndentExportSpecList = IndentBy 2
                      , cfgIndentImportSpecList = AlignOrIndentBy 7
                      }
 
-    cfgLayout = LayoutConfig { cfgLayoutApp = TryOneline
-                             , cfgLayoutConDecls = Vertical
-                             , cfgLayoutDeclaration = TryOneline
+    cfgLayout = LayoutConfig { cfgLayoutApp            = TryOneline
+                             , cfgLayoutConDecls       = Vertical
+                             , cfgLayoutDeclaration    = TryOneline
                              , cfgLayoutExportSpecList = TryOneline
-                             , cfgLayoutIf = Vertical
+                             , cfgLayoutIf             = Vertical
                              , cfgLayoutImportSpecList = Flex
-                             , cfgLayoutInfixApp = TryOneline
-                             , cfgLayoutLet = Vertical
-                             , cfgLayoutListComp = Flex
-                             , cfgLayoutRecord = Vertical
-                             , cfgLayoutType = TryOneline
+                             , cfgLayoutInfixApp       = TryOneline
+                             , cfgLayoutLet            = Vertical
+                             , cfgLayoutListComp       = Flex
+                             , cfgLayoutRecord         = Vertical
+                             , cfgLayoutType           = TryOneline
                              }
 
     cfgOp =
@@ -111,35 +111,35 @@ cramerCfg = defaultConfig { cfgAlign
                            }
 
     cfgIndent =
-        IndentConfig { cfgIndentOnside = 4
-                     , cfgIndentDeriving = 4
-                     , cfgIndentWhere = 2
-                     , cfgIndentApp = Align
-                     , cfgIndentCase = IndentBy 4
-                     , cfgIndentClass = IndentBy 4
-                     , cfgIndentDo = IndentBy 4
-                     , cfgIndentIf = Align
-                     , cfgIndentLet = Align
-                     , cfgIndentLetBinds = Align
-                     , cfgIndentLetIn = IndentBy 4
-                     , cfgIndentMultiIf = IndentBy 4
-                     , cfgIndentTypesig = Align
-                     , cfgIndentWhereBinds = IndentBy 2
+        IndentConfig { cfgIndentOnside         = 4
+                     , cfgIndentDeriving       = 4
+                     , cfgIndentWhere          = 2
+                     , cfgIndentApp            = Align
+                     , cfgIndentCase           = IndentBy 4
+                     , cfgIndentClass          = IndentBy 4
+                     , cfgIndentDo             = IndentBy 4
+                     , cfgIndentIf             = Align
+                     , cfgIndentLet            = Align
+                     , cfgIndentLetBinds       = Align
+                     , cfgIndentLetIn          = IndentBy 4
+                     , cfgIndentMultiIf        = IndentBy 4
+                     , cfgIndentTypesig        = Align
+                     , cfgIndentWhereBinds     = IndentBy 2
                      , cfgIndentExportSpecList = IndentBy 4
                      , cfgIndentImportSpecList = AlignOrIndentBy 17
                      }
 
-    cfgLayout = LayoutConfig { cfgLayoutApp = TryOneline
-                             , cfgLayoutConDecls = TryOneline
-                             , cfgLayoutDeclaration = Flex
+    cfgLayout = LayoutConfig { cfgLayoutApp            = TryOneline
+                             , cfgLayoutConDecls       = TryOneline
+                             , cfgLayoutDeclaration    = Flex
                              , cfgLayoutExportSpecList = TryOneline
-                             , cfgLayoutIf = TryOneline
+                             , cfgLayoutIf             = TryOneline
                              , cfgLayoutImportSpecList = Flex
-                             , cfgLayoutInfixApp = Flex
-                             , cfgLayoutLet = TryOneline
-                             , cfgLayoutListComp = TryOneline
-                             , cfgLayoutRecord = TryOneline
-                             , cfgLayoutType = TryOneline
+                             , cfgLayoutInfixApp       = Flex
+                             , cfgLayoutLet            = TryOneline
+                             , cfgLayoutListComp       = TryOneline
+                             , cfgLayoutRecord         = TryOneline
+                             , cfgLayoutType           = TryOneline
                              }
 
     cfgOp =
@@ -192,16 +192,17 @@ cramerCfg = defaultConfig { cfgAlign
         , (ConfigMapKey (Just "[") (Just Type), Whitespace WsNone WsNone False)
         ]
 
-    cfgOptions = OptionConfig { cfgOptionSortPragmas            = True
-                              , cfgOptionSplitLanguagePragmas   = True
-                              , cfgOptionSortImports            = SortImportsByPrefix
-                              , cfgOptionSortImportLists        = True
-                              , cfgOptionAlignSumTypeDecl       = False
-                              , cfgOptionFlexibleOneline        = False
-                              , cfgOptionPreserveVerticalSpace  = True
-                              , cfgOptionDeclNoBlankLines       = Set.empty
-                              , cfgOptionAlignLetBindsAndInExpr = False
-                              }
+    cfgOptions =
+        OptionConfig { cfgOptionSortPragmas            = True
+                     , cfgOptionSplitLanguagePragmas   = True
+                     , cfgOptionSortImports            = SortImportsByPrefix
+                     , cfgOptionSortImportLists        = True
+                     , cfgOptionAlignSumTypeDecl       = False
+                     , cfgOptionFlexibleOneline        = False
+                     , cfgOptionPreserveVerticalSpace  = True
+                     , cfgOptionDeclNoBlankLines       = Set.empty
+                     , cfgOptionAlignLetBindsAndInExpr = False
+                     }
 
 gibianskyCfg :: Config
 gibianskyCfg = defaultConfig { cfgAlign
@@ -224,35 +225,35 @@ gibianskyCfg = defaultConfig { cfgAlign
                            }
 
     cfgIndent =
-        IndentConfig { cfgIndentOnside = 2
-                     , cfgIndentDeriving = 2
-                     , cfgIndentWhere = 2
-                     , cfgIndentApp = IndentBy 2
-                     , cfgIndentCase = IndentBy 2
-                     , cfgIndentClass = IndentBy 2
-                     , cfgIndentDo = IndentBy 2
-                     , cfgIndentIf = Align
-                     , cfgIndentLet = Align
-                     , cfgIndentLetBinds = Align
-                     , cfgIndentLetIn = Align
-                     , cfgIndentMultiIf = IndentBy 2
-                     , cfgIndentTypesig = Align
-                     , cfgIndentWhereBinds = IndentBy 2
+        IndentConfig { cfgIndentOnside         = 2
+                     , cfgIndentDeriving       = 2
+                     , cfgIndentWhere          = 2
+                     , cfgIndentApp            = IndentBy 2
+                     , cfgIndentCase           = IndentBy 2
+                     , cfgIndentClass          = IndentBy 2
+                     , cfgIndentDo             = IndentBy 2
+                     , cfgIndentIf             = Align
+                     , cfgIndentLet            = Align
+                     , cfgIndentLetBinds       = Align
+                     , cfgIndentLetIn          = Align
+                     , cfgIndentMultiIf        = IndentBy 2
+                     , cfgIndentTypesig        = Align
+                     , cfgIndentWhereBinds     = IndentBy 2
                      , cfgIndentExportSpecList = IndentBy 4
                      , cfgIndentImportSpecList = Align
                      }
 
-    cfgLayout = LayoutConfig { cfgLayoutApp = TryOneline
-                             , cfgLayoutConDecls = Vertical
-                             , cfgLayoutDeclaration = Flex
+    cfgLayout = LayoutConfig { cfgLayoutApp            = TryOneline
+                             , cfgLayoutConDecls       = Vertical
+                             , cfgLayoutDeclaration    = Flex
                              , cfgLayoutExportSpecList = TryOneline
-                             , cfgLayoutIf = Vertical
+                             , cfgLayoutIf             = Vertical
                              , cfgLayoutImportSpecList = Flex
-                             , cfgLayoutInfixApp = TryOneline
-                             , cfgLayoutLet = Vertical
-                             , cfgLayoutListComp = TryOneline
-                             , cfgLayoutRecord = TryOneline
-                             , cfgLayoutType = TryOneline
+                             , cfgLayoutInfixApp       = TryOneline
+                             , cfgLayoutLet            = Vertical
+                             , cfgLayoutListComp       = TryOneline
+                             , cfgLayoutRecord         = TryOneline
+                             , cfgLayoutType           = TryOneline
                              }
 
     cfgOp =
@@ -297,35 +298,35 @@ johanTibellCfg =
     defaultConfig { cfgIndent, cfgLayout, cfgOp, cfgGroup, cfgOptions }
   where
     cfgIndent =
-        IndentConfig { cfgIndentOnside = 4
-                     , cfgIndentDeriving = 4
-                     , cfgIndentWhere = 2
-                     , cfgIndentApp = IndentBy 4
-                     , cfgIndentCase = IndentBy 4
-                     , cfgIndentClass = IndentBy 4
-                     , cfgIndentDo = IndentBy 4
-                     , cfgIndentIf = IndentBy 4
-                     , cfgIndentLet = Align
-                     , cfgIndentLetBinds = Align
-                     , cfgIndentLetIn = Align
-                     , cfgIndentMultiIf = IndentBy 2
-                     , cfgIndentTypesig = Align
-                     , cfgIndentWhereBinds = IndentBy 2
+        IndentConfig { cfgIndentOnside         = 4
+                     , cfgIndentDeriving       = 4
+                     , cfgIndentWhere          = 2
+                     , cfgIndentApp            = IndentBy 4
+                     , cfgIndentCase           = IndentBy 4
+                     , cfgIndentClass          = IndentBy 4
+                     , cfgIndentDo             = IndentBy 4
+                     , cfgIndentIf             = IndentBy 4
+                     , cfgIndentLet            = Align
+                     , cfgIndentLetBinds       = Align
+                     , cfgIndentLetIn          = Align
+                     , cfgIndentMultiIf        = IndentBy 2
+                     , cfgIndentTypesig        = Align
+                     , cfgIndentWhereBinds     = IndentBy 2
                      , cfgIndentExportSpecList = IndentBy 2
                      , cfgIndentImportSpecList = AlignOrIndentBy 7
                      }
 
-    cfgLayout = LayoutConfig { cfgLayoutApp = TryOneline
-                             , cfgLayoutConDecls = Vertical
-                             , cfgLayoutDeclaration = TryOneline
+    cfgLayout = LayoutConfig { cfgLayoutApp            = TryOneline
+                             , cfgLayoutConDecls       = Vertical
+                             , cfgLayoutDeclaration    = TryOneline
                              , cfgLayoutExportSpecList = TryOneline
-                             , cfgLayoutIf = Vertical
+                             , cfgLayoutIf             = Vertical
                              , cfgLayoutImportSpecList = Flex
-                             , cfgLayoutInfixApp = TryOneline
-                             , cfgLayoutLet = Vertical
-                             , cfgLayoutListComp = Flex
-                             , cfgLayoutRecord = Vertical
-                             , cfgLayoutType = TryOneline
+                             , cfgLayoutInfixApp       = TryOneline
+                             , cfgLayoutLet            = Vertical
+                             , cfgLayoutListComp       = Flex
+                             , cfgLayoutRecord         = Vertical
+                             , cfgLayoutType           = TryOneline
                              }
 
     cfgOp =
