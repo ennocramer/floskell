@@ -1038,6 +1038,7 @@ Ignore shebang lines
  #! nix-shell -p ghcid
  #! nix-shell -p "haskellPackages.ghcWithPackages (p: with p; [ shower ])"
  #! nix-shell -i "ghcid -c 'ghci -Wall' -T':!pkill --full ghc\\ .\\*./Main.hs' -T main"
+
  module Main where
 
  import           Shower

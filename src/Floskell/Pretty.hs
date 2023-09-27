@@ -171,18 +171,21 @@ printCommentsBefore nlBefore ast = unless (null comments) $ suppressOnside $ do
     col <- getNextColumn
     printCommentsInternal (col - srcSpanStartColumn (nodeSpan ast) + 1)
                           comments
-    when (srcSpanEndLine (commentSpan (last comments))
-          < srcSpanStartLine (nodeSpan ast))
-         ensureNewline
-    closeEolComment
+    let distance = srcSpanStartLine (nodeSpan ast)
+            - srcSpanEndLine (commentSpan (last comments))
+    when (distance > 0) $ do
+        ensureNewline
+        replicateM_ (distance - 1) newline
   where
     comments = nodeInfoLeadingComments $ ann ast
 
 printCommentsAfter :: Annotated ast => ast NodeInfo -> Printer ()
 printCommentsAfter ast = unless (null comments) $ suppressOnside $ do
-    when (srcSpanStartLine (commentSpan (head comments))
-          > srcSpanEndLine (nodeSpan ast))
-         ensureNewline
+    let distance = srcSpanStartLine (commentSpan (head comments))
+            - srcSpanEndLine (nodeSpan ast)
+    when (distance > 0) $ do
+        ensureNewline
+        replicateM_ (distance - 1) newline
     col <- getNextColumn
     printCommentsInternal (col - srcSpanEndColumn (nodeSpan ast) + 1) comments
   where
