@@ -119,7 +119,8 @@ withReducedLineLength offset config = config { cfgPenalty = penalty }
 -- | Format the given source.
 reformat :: AppConfig -> Maybe FilePath -> Text -> Either String Text
 reformat config mfilepath input = fmap (TL.intercalate "\n")
-    . preserveVSpace (preservePrefix (reformatLines mode cfg)) $ TL.lines input
+    . preserveVSpace (preservePrefix (reformatLines mode cfg)) $
+    TL.split (== '\n') input
   where
     mode = case readExtensions $ TL.unpack input of
         Nothing -> mode'
