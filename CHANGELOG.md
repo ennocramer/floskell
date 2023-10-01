@@ -1,4 +1,4 @@
-# Floskell 0.11.0 (unreleased)
+# Floskell 0.11.0 (2023-10-01)
 
 * Fix alignment of non-ASCII identifiers
 * Fix extra whitespace generated for preprocessor directives at top/bottom of files
