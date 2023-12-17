@@ -44,7 +44,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Setup GHC/Cabal
-        uses: haskell/actions/setup@v2
+        uses: haskell-actions/setup@v2
         id: setup
         with:
           ghc-version: ${{ matrix.ghc }}
