@@ -1,3 +1,8 @@
+# Floskell 0.11.1 (2023-12-18)
+
+* Add support for building with containers-0.7.0.0 and filepath-1.5.0.0
+* Add support for building with GHC-9.8.1
+
 # Floskell 0.11.0 (2023-10-01)
 
 * Fix alignment of non-ASCII identifiers
