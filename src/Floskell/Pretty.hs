@@ -111,7 +111,7 @@ prettyOnside ast = do
     if nl
         then do
             printCommentsBefore True ast
-            onside $ prettyPrint ast
+            onside $ cut $ prettyPrint ast
             printCommentsAfter ast
         else onside $ pretty ast
 
