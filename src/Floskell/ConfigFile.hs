@@ -149,7 +149,7 @@ lookupLanguage name = case classifyLanguage name of
 -- | Lookup an extension by name.
 lookupExtension :: String -> Extension
 lookupExtension name = case classifyExtension name of
-    UnknownExtension _ -> error $ "Unkown extension: " ++ name
+    UnknownExtension _ -> error $ "Unknown extension: " ++ name
     x -> x
 
 -- | Parse a fixity declaration.
