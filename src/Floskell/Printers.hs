@@ -315,7 +315,7 @@ onside p = do
     onsideIndent <- getConfig (cfgIndentOnside . cfgIndent)
     withIndentation (\(l, _) -> (l, onsideIndent)) p
 
--- | Temporarily ignore any onside identation.
+-- | Temporarily ignore any onside indentation.
 suppressOnside :: Printer () -> Printer ()
 suppressOnside printer = do
     nl <- gets psNewline

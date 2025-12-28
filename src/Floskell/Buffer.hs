@@ -1,4 +1,4 @@
--- | An outout buffer for Text that keeps track of line and column
+-- | An output buffer for Text that keeps track of line and column
 -- numbers.
 module Floskell.Buffer
     ( Buffer

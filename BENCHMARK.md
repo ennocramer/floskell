@@ -26,7 +26,7 @@ printComments loc' ast = do
   comments <- return $ map comInfoComment commentsWithLocation
 
   forM_ comments $ \comment -> do
-    -- Preceeding comments must have a newline before them.
+    -- Preceding comments must have a newline before them.
     hasNewline <- gets psNewline
     when (not hasNewline && loc' == Before) newline
 
