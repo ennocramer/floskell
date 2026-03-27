@@ -111,7 +111,7 @@ prettyOnside ast = do
     if nl
         then do
             printCommentsBefore True ast
-            onside $ prettyPrint ast
+            onside $ cut $ prettyPrint ast
             printCommentsAfter ast
         else onside $ pretty ast
 
@@ -414,7 +414,9 @@ measure' :: Printer a -> Printer (Maybe [Int])
 measure' p = fmap (: []) <$> measure p
 
 measureMatch :: Match NodeInfo -> Printer (Maybe [Int])
-measureMatch (Match _ name pats _ Nothing) = measure' (prettyApp name pats)
+measureMatch (Match _ name pats rhs _) = case rhs of
+    UnGuardedRhs _ _ -> measure' (prettyApp name pats)
+    GuardedRhss _ grhss -> fmap sequence (mapM measureGuardedRhs grhss)
 measureMatch (InfixMatch _ pat name pats _ Nothing) = measure' go
   where
     go = do
@@ -425,6 +427,12 @@ measureMatch (InfixMatch _ pat name pats _ Nothing) = measure' go
                                id
         inter spaceOrNewline $ map pretty pats
 measureMatch _ = return Nothing
+
+measureGuardedRhs :: GuardedRhs NodeInfo -> Printer (Maybe Int)
+measureGuardedRhs (GuardedRhs _ stmts _) = measure $
+    withIndentConfig cfgIndentMultiIf (space >> aligned p) (flip indented p)
+  where
+    p = prettyGuard stmts
 
 measureDecl :: Decl NodeInfo -> Printer (Maybe [Int])
 measureDecl (PatBind _ pat _ Nothing) = measure' (pretty pat)
@@ -495,7 +503,10 @@ prettyImports is = do
     alignModuleP <- getConfig (cfgAlignImportModule . cfgAlign)
     alignSpecP <- getConfig (cfgAlignImportSpec . cfgAlign)
     let maxNameLength = maximum $ map (length . moduleName . importModule) is
-        alignModule = if alignModuleP then Just 16 else Nothing
+        hasQualifiedImport = any importQualified is
+        alignModule = if alignModuleP && hasQualifiedImport
+                      then Just 16
+                      else Nothing
         alignSpec = if alignSpecP
                     then Just (fromMaybe 0 alignModule + 1 + maxNameLength)
                     else Nothing
@@ -711,6 +722,16 @@ prettyBinds :: Binds NodeInfo -> Printer ()
 prettyBinds binds = withIndentBy cfgIndentWhere $ do
     write "where"
     withIndent cfgIndentWhereBinds $ pretty binds
+
+prettyGuard :: [Stmt NodeInfo] -> Printer ()
+prettyGuard stmts = do
+    operatorSectionR Pattern "|" $ write "|"
+    withLayout cfgLayoutDeclaration flex vertical
+  where
+    flex = listAutoWrap' pat sep stmts
+    vertical = list' pat sep stmts
+    pat = Pattern
+    sep = ","
 
 instance Pretty Module where
     prettyPrint (Module _ mhead pragmas imports decls) = inter blankline $
@@ -1294,20 +1315,14 @@ instance Pretty Rhs where
         withIndent cfgIndentMultiIf $ linedOnside guardedrhss
 
 instance Pretty GuardedRhs where
-    prettyPrint (GuardedRhs _ stmts expr) =
-        withLayout cfgLayoutDeclaration flex vertical
+    prettyPrint (GuardedRhs _ stmts expr) = do
+        prettyGuard stmts
+        atTabStop stopRhs
+        withLayout cfgLayoutDeclaration (operator d op) (operatorV d op)
+        pretty expr
       where
-        flex = do
-            operatorSectionR Pattern "|" $ write "|"
-            listAutoWrap' Pattern "," stmts
-            operator Declaration "="
-            pretty expr
-
-        vertical = do
-            operatorSectionR Pattern "|" $ write "|"
-            list' Pattern "," stmts
-            operatorV Declaration "="
-            pretty expr
+        d = Declaration
+        op = "="
 
 instance Pretty Context where
     prettyPrint (CxSingle _ asst) = do

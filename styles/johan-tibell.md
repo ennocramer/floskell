@@ -181,10 +181,17 @@ module Main {-# WARNING "do not use" #-} where
 import Prelude
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text as Text
 import qualified Data.ByteString (ByteString,pack,unpack)
 import qualified Data.ByteString as BS (pack,unpack)
 import Control.Monad hiding (forM)
 import {-# SOURCE #-} safe qualified "foo" Foo as F
+```
+
+``` haskell
+import Prelude
+import Data.Text (Text)
+import Control.Monad hiding (forM)
 ```
 
 ## Decl

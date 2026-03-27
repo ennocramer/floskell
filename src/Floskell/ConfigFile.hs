@@ -33,7 +33,7 @@ import qualified Data.Aeson.Types           as JSON ( typeMismatch )
 import qualified Data.Attoparsec.ByteString as AP
 import qualified Data.ByteString            as BS
 import           Data.Char                  ( isLetter, isSpace )
-import           Data.List                  ( inits )
+import           Data.List                  ( (\\), inits )
 import qualified Data.Text                  as T
 
 import           Floskell.Attoparsec        ( parseOnly )
@@ -42,8 +42,9 @@ import           Floskell.Styles            ( Style(..), styles )
 import           GHC.Generics               ( Generic )
 
 import           Language.Haskell.Exts
-                 ( Extension(..), Fixity(..), Language(..), classifyExtension
-                 , classifyLanguage )
+                 ( Extension(..), Fixity(..), KnownExtension(..)
+                 , Language(..), classifyExtension, classifyLanguage
+                 , knownExtensions )
 import qualified Language.Haskell.Exts      as HSE
 
 import           System.Directory
@@ -83,7 +84,8 @@ instance FromJSON AppConfig where
         language <- maybe (appLanguage defaultAppConfig) lookupLanguage
             <$> o .:? "language"
         extensions <- maybe (appExtensions defaultAppConfig)
-                            (map lookupExtension) <$> o .:? "extensions"
+                            ((appExtensions defaultAppConfig ++) . map lookupExtension)
+                            <$> o .:? "extensions"
         fixities <- maybe (appFixities defaultAppConfig) (map lookupFixity)
             <$> o .:? "fixities"
         let fmt = styleConfig style
@@ -105,7 +107,24 @@ instance FromJSON AppConfig where
 
 -- | Default program configuration.
 defaultAppConfig :: AppConfig
-defaultAppConfig = AppConfig (head styles) Haskell2010 [] []
+defaultAppConfig = AppConfig (head styles) Haskell2010 defaultExtensions []
+
+defaultExtensions :: [Extension]
+defaultExtensions = [ e | e@EnableExtension{} <- knownExtensions ]
+    \\ map EnableExtension badExtensions
+
+badExtensions :: [KnownExtension]
+badExtensions =
+    [ Arrows -- steals proc
+    , TransformListComp -- steals the group keyword
+    , XmlSyntax
+    , RegularPatterns -- steals a-b
+    , UnboxedTuples -- breaks (#) lens operator
+    , PatternSynonyms -- steals the pattern keyword
+    , RecursiveDo -- steals the rec keyword
+    , DoRec -- same
+    , TypeApplications -- since GHC 8 and haskell-src-exts-1.19
+    ]
 
 -- | Show name of a style.
 showStyle :: Style -> String
@@ -148,6 +167,8 @@ lookupLanguage name = case classifyLanguage name of
 
 -- | Lookup an extension by name.
 lookupExtension :: String -> Extension
+lookupExtension "ImportQualifiedPost" = UnknownExtension "ImportQualifiedPost"
+lookupExtension "NoImportQualifiedPost" = UnknownExtension "NoImportQualifiedPost"
 lookupExtension name = case classifyExtension name of
     UnknownExtension _ -> error $ "Unkown extension: " ++ name
     x -> x

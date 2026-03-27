@@ -24,11 +24,13 @@ module Floskell
     , defaultExtensions
     ) where
 
+import           Control.Monad          ( guard )
 import           Data.List
 import           Data.Maybe
 #if __GLASGOW_HASKELL__ <= 802
 import           Data.Monoid
 #endif
+import           Data.Char             ( isSpace )
 import           Data.Text.Lazy        ( Text )
 import qualified Data.Text.Lazy        as TL
 
@@ -162,7 +164,7 @@ reformatBlock mode config (lines, cpp) =
         ParseFailed loc e -> Left $
             Exts.prettyPrint (loc { srcLine = srcLine loc }) ++ ": " ++ e
   where
-    code = TL.unpack $ TL.intercalate "\n" lines
+    code = TL.unpack $ TL.intercalate "\n" $ map rewriteImportQualifiedPost lines
 
     makeComment (Exts.Comment inline span text) =
         Comment (if inline then InlineComment else LineComment) span text
@@ -173,6 +175,84 @@ reformatBlock mode config (lines, cpp) =
         if srcSpanStartLine (commentSpan x) < srcSpanStartLine (commentSpan y)
         then x : mergeComments xs' ys
         else y : mergeComments xs ys'
+
+rewriteImportQualifiedPost :: Text -> Text
+rewriteImportQualifiedPost = TL.pack . rewriteImportQualifiedPostString . TL.unpack
+
+rewriteImportQualifiedPostString :: String -> String
+rewriteImportQualifiedPostString line = case findPostQualifiedImport line of
+    Just (moduleToken, qualifiedToken) ->
+        swapTokens moduleToken qualifiedToken line
+    Nothing -> line
+
+findPostQualifiedImport :: String -> Maybe (ImportToken, ImportToken)
+findPostQualifiedImport line = do
+    let tokens = tokenize line
+    (importToken, rest) <- uncons tokens
+    guard $ tokenText importToken == "import"
+    let rest' = skipImportModifiers rest
+    (moduleToken, afterModule) <- uncons rest'
+    qualifiedToken <- listToMaybe afterModule
+    guard $ tokenText qualifiedToken == "qualified"
+    return (moduleToken, qualifiedToken)
+
+skipImportModifiers :: [ImportToken] -> [ImportToken]
+skipImportModifiers
+    ( ImportToken _ _ "{-#"
+    : ImportToken _ _ "SOURCE"
+    : ImportToken _ _ "#-}"
+    : xs
+    ) =
+    skipImportModifiers xs
+skipImportModifiers (tok : xs)
+    | tokenText tok == "safe" = skipImportModifiers xs
+    | isPackageToken tok = skipImportModifiers xs
+skipImportModifiers xs = xs
+
+isPackageToken :: ImportToken -> Bool
+isPackageToken tok = case tokenText tok of
+    '"' : _ -> True
+    _ -> False
+
+swapTokens :: ImportToken -> ImportToken -> String -> String
+swapTokens moduleToken qualifiedToken line =
+    prefix ++ tokenText qualifiedToken ++ middle ++ tokenText moduleToken ++ suffix
+  where
+    prefix = take (tokenStart moduleToken) line
+    middle = take (tokenStart qualifiedToken - tokenEnd moduleToken)
+        $ drop (tokenEnd moduleToken) line
+    suffix = drop (tokenEnd qualifiedToken) line
+
+data ImportToken = ImportToken
+    { tokenStart :: Int
+    , tokenEnd :: Int
+    , tokenText :: String
+    }
+
+tokenize :: String -> [ImportToken]
+tokenize = go 0
+  where
+    go _ [] = []
+    go i xs@(x : xs')
+        | isSpace x = go (i + 1) xs'
+        | x == '"' =
+            let (tok, rest) = spanString xs
+                len = length tok
+            in
+                ImportToken i (i + len) tok : go (i + len) rest
+        | otherwise =
+            let (tok, rest) = break isSpace xs
+                len = length tok
+            in
+                ImportToken i (i + len) tok : go (i + len) rest
+
+    spanString [] = ([], [])
+    spanString (x : xs) = firstChar [x] xs
+
+    firstChar acc [] = (reverse acc, [])
+    firstChar acc (x : xs)
+        | x == '"' = (reverse (x : acc), xs)
+        | otherwise = firstChar (x : acc) xs
 
 prettyPrint :: Printer a -> Config -> Maybe Text
 prettyPrint printer = fmap (Buffer.toLazyText . psBuffer . snd)

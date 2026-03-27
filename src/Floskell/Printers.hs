@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Floskell.Printers
@@ -65,7 +66,9 @@ import           Control.Monad.State.Strict ( get, gets, modify )
 
 import           Data.List                  ( intersperse )
 import qualified Data.Map.Strict            as Map
+#if __GLASGOW_HASKELL__ <= 802
 import           Data.Monoid                ( (<>) )
+#endif
 import           Data.Text                  ( Text )
 import qualified Data.Text                  as T
 

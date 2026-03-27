@@ -14,11 +14,9 @@ import           Control.DeepSeq
 import           Control.Monad.Catch
 
 import           Data.Char
-import           Data.Monoid            ( (<>) )
 import           Data.Text.Lazy         ( Text )
 import qualified Data.Text.Lazy         as TL
 import qualified Data.Text.Lazy.Builder as TB
-import qualified Data.Text.Lazy.IO      as TIO
 import           Data.Typeable
 
 import           GHC.Generics

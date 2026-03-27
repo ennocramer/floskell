@@ -11,7 +11,6 @@ import qualified Data.Aeson.Encode.Pretty     as JSON ( encodePretty )
 import qualified Data.ByteString.Lazy         as BL
 import           Data.List                    ( sort )
 import           Data.Maybe                   ( isJust )
-import           Data.Monoid                  ( (<>) )
 import qualified Data.Text                    as T
 import qualified Data.Text.Lazy               as TL
 import qualified Data.Text.Lazy.IO            as TIO
@@ -39,12 +38,12 @@ import           Options.Applicative
 import           Paths_floskell               ( version )
 
 import           System.Directory
-                 ( copyFile, copyPermissions, getTemporaryDirectory, removeFile
-                 , renameFile )
+                  ( copyFile, copyPermissions, getTemporaryDirectory, removeFile
+                  , renameFile )
 import           System.IO
-                 ( FilePath, hClose, hFlush, openTempFile, stdout )
+                  ( hClose, hFlush, openTempFile, stdout )
 
-import qualified Text.PrettyPrint.ANSI.Leijen as PP
+import qualified Options.Applicative.Help.Pretty as PP
 
 -- | Program options.
 data Options = Options { optStyle         :: Maybe String
@@ -70,18 +69,19 @@ main = do
         Nothing -> return defaultAppConfig
     let config = mergeAppConfig baseConfig opts
     if optPrintFixities opts
-        then PP.displayIO stdout . PP.renderPretty 1.0 80 $
-            docFixities packageFixities <> PP.linebreak
+        then PP.hPutDoc stdout $ docFixities packageFixities <> PP.hardline
         else if optPrintConfig opts
              then BL.putStr $ JSON.encodePretty config
              else run config (optFiles opts)
   where
     parser = info (helper <*> versioner <*> options)
-                  (fullDesc
-                   <> progDesc "Floskell reformats one or more Haskell modules."
-                   <> header "floskell - A Haskell Source Code Pretty Printer"
-                   <> footerDoc (Just (footerStyles PP.<$$> footerLanguages
-                                       PP.<$$> footerExtensions)))
+                   (fullDesc
+                    <> progDesc "Floskell reformats one or more Haskell modules."
+                    <> header "floskell - A Haskell Source Code Pretty Printer"
+                    <> footerDoc (Just (PP.vsep [ footerStyles
+                                                , footerLanguages
+                                                , footerExtensions
+                                                ])))
 
     versioner = abortOption (InfoMsg $ "floskell " ++ showVersion version)
                             (long "version"
@@ -120,17 +120,23 @@ main = do
         makeFooter "Supported extensions:"
                    [ show e | EnableExtension e <- knownExtensions ]
 
+    makeFooter :: String -> [String] -> PP.Doc
     makeFooter hdr xs =
-        PP.empty PP.<$$> PP.text hdr PP.<$$> (PP.indent 2 . PP.fillSep
-                                              . PP.punctuate PP.comma
-                                              . map PP.text $ sort xs)
+        PP.vsep [ PP.emptyDoc
+                , PP.pretty hdr
+                , PP.indent 2 . PP.fillSep . PP.punctuate PP.comma
+                  . map PP.pretty $ sort xs
+                ]
 
-    docFixities = PP.vcat . PP.punctuate PP.linebreak
+    docFixities = PP.vcat . PP.punctuate PP.hardline
         . map (uncurry docPackageFixities)
 
-    docPackageFixities p fs = PP.text (p ++ ":")
-        PP.<$$> (PP.indent 2 . PP.fillSep . PP.punctuate PP.comma
-                 . map (PP.text . showFixity) $ sort fs)
+    docPackageFixities p fs = PP.vsep
+        [ PP.pretty (p ++ ":")
+        , PP.indent 2 . PP.fillSep . PP.punctuate PP.comma
+          . map (PP.pretty . showFixity) $ sort fs
+        ]
+
 
 -- | Reformat files or stdin based on provided configuration.
 run :: AppConfig -> [FilePath] -> IO ()

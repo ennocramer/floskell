@@ -168,10 +168,19 @@ import qualified Data.ByteString ( ByteString, pack, unpack )
 import qualified Data.ByteString as BS ( pack, unpack )
 import           Data.Text       ( Text )
 import qualified Data.Text       as T
+import qualified Data.Text       as Text
 
 import {-# SOURCE #-} safe qualified "foo" Foo as F
 
 import           Prelude
+```
+
+``` haskell
+import Control.Monad hiding ( forM )
+
+import Data.Text ( Text )
+
+import Prelude
 ```
 
 ## Decl
@@ -1041,7 +1050,7 @@ Ignore shebang lines
 
  module Main where
 
- import           Shower
+ import Shower
 
  main :: IO ()
  main = printer "Hello"
